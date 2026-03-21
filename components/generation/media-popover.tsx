@@ -325,7 +325,9 @@ export function MediaPopover({ onSettingsOpen }: MediaPopoverProps) {
     }
     setOpen(isOpen);
     if (isOpen) {
-      const first = (['image', 'video', 'tts', 'asr', 'outline'] as TabId[]).find((id) => enabledMap[id]);
+      const first = (['image', 'video', 'tts', 'asr', 'outline'] as TabId[]).find(
+        (id) => enabledMap[id],
+      );
       setActiveTab(first || 'image');
     }
   };
