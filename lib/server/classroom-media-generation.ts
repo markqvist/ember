@@ -26,6 +26,7 @@ import {
   resolveVideoBaseUrl,
   resolveTTSApiKey,
   resolveTTSBaseUrl,
+  resolveTTSModel,
 } from '@/lib/server/provider-config';
 import type { SceneOutline } from '@/lib/types/generation';
 import type { Scene } from '@/lib/types/stage';
@@ -225,6 +226,7 @@ export async function generateTTSForClassroom(
     return;
   }
   const ttsBaseUrl = resolveTTSBaseUrl(providerId) || TTS_PROVIDERS[providerId]?.defaultBaseUrl;
+  const ttsModel = resolveTTSModel(providerId);
   const voice = DEFAULT_TTS_VOICES[providerId] || 'default';
   const format = TTS_PROVIDERS[providerId]?.supportedFormats?.[0] || 'mp3';
 
@@ -242,7 +244,7 @@ export async function generateTTSForClassroom(
 
       try {
         const result = await generateTTS(
-          { providerId, apiKey, baseUrl: ttsBaseUrl, voice, speed: speechAction.speed },
+          { providerId, apiKey, baseUrl: ttsBaseUrl, voice, speed: speechAction.speed, model: ttsModel },
           speechAction.text,
         );
 

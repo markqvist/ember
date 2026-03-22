@@ -45,6 +45,9 @@ export const TTS_PROVIDERS: Record<TTSProviderId, TTSProviderConfig> = {
     name: 'OpenAI TTS',
     requiresApiKey: true,
     defaultBaseUrl: 'https://api.openai.com/v1',
+    defaultModel: 'gpt-4o-mini-tts',
+    supportsCustomModels: true,
+    supportsVoiceFetching: true,
     icon: '/logos/openai.svg',
     voices: [
       // Recommended voices (best quality)

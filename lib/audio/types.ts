@@ -117,6 +117,9 @@ export interface TTSProviderConfig {
     max: number;
     default: number;
   };
+  defaultModel?: string; // Default TTS model for this provider (e.g., 'gpt-4o-mini-tts')
+  supportsCustomModels?: boolean; // Whether user can configure custom model ID
+  supportsVoiceFetching?: boolean; // Whether provider supports /v1/voices endpoint
 }
 
 /**
@@ -129,6 +132,7 @@ export interface TTSModelConfig {
   voice: string;
   speed?: number;
   format?: string;
+  model?: string; // Custom model ID override (e.g., 'gpt-4o-mini-tts', 'tts-1', etc.)
 }
 
 // ============================================================================

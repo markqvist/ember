@@ -52,6 +52,7 @@ export interface SettingsState {
       enabled: boolean;
       isServerConfigured?: boolean;
       serverBaseUrl?: string;
+      model?: string; // Custom TTS model ID (e.g., 'gpt-4o-mini-tts', 'tts-1')
     }
   >;
 
@@ -177,7 +178,7 @@ export interface SettingsState {
   setASRLanguage: (language: string) => void;
   setTTSProviderConfig: (
     providerId: TTSProviderId,
-    config: Partial<{ apiKey: string; baseUrl: string; enabled: boolean }>,
+    config: Partial<{ apiKey: string; baseUrl: string; enabled: boolean; model?: string }>,
   ) => void;
   setASRProviderConfig: (
     providerId: ASRProviderId,

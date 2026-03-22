@@ -149,7 +149,9 @@ async function generateOpenAITTS(
 ): Promise<TTSGenerationResult> {
   const baseUrl = config.baseUrl || TTS_PROVIDERS['openai-tts'].defaultBaseUrl;
 
-  // Use gpt-4o-mini-tts for best quality and intelligent realtime applications
+  // Use configured model, provider default, or fallback to gpt-4o-mini-tts
+  const model = config.model || TTS_PROVIDERS['openai-tts'].defaultModel || 'gpt-4o-mini-tts';
+
   const response = await fetch(`${baseUrl}/audio/speech`, {
     method: 'POST',
     headers: {
@@ -157,7 +159,7 @@ async function generateOpenAITTS(
       'Content-Type': 'application/json; charset=utf-8',
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini-tts',
+      model: model,
       input: text,
       voice: config.voice,
       speed: config.speed || 1.0,
@@ -337,6 +339,7 @@ export async function getCurrentTTSConfig(): Promise<TTSModelConfig> {
     baseUrl: providerConfig?.baseUrl,
     voice: ttsVoice,
     speed: ttsSpeed,
+    model: providerConfig?.model,
   };
 }
 

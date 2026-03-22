@@ -4,14 +4,22 @@ import { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useI18n } from '@/lib/hooks/use-i18n';
 import { useSettingsStore } from '@/lib/store/settings';
-import { TTS_PROVIDERS, DEFAULT_TTS_VOICES } from '@/lib/audio/constants';
+import { TTS_PROVIDERS, DEFAULT_TTS_VOICES, getTTSVoices } from '@/lib/audio/constants';
 import type { TTSProviderId } from '@/lib/audio/types';
-import { Volume2, Loader2, CheckCircle2, XCircle, Eye, EyeOff } from 'lucide-react';
+import { Volume2, Loader2, CheckCircle2, XCircle, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createLogger } from '@/lib/logger';
 import { useTTSPreview } from '@/lib/audio/use-tts-preview';
+import { useVoices } from '@/lib/audio/use-voices';
 
 const log = createLogger('TTSSettings');
 
@@ -26,6 +34,7 @@ export function TTSSettings({ selectedProviderId }: TTSSettingsProps) {
   const ttsSpeed = useSettingsStore((state) => state.ttsSpeed);
   const ttsProvidersConfig = useSettingsStore((state) => state.ttsProvidersConfig);
   const setTTSProviderConfig = useSettingsStore((state) => state.setTTSProviderConfig);
+  const setTTSVoice = useSettingsStore((state) => state.setTTSVoice);
   const activeProviderId = useSettingsStore((state) => state.ttsProviderId);
 
   // When testing a non-active provider, use that provider's default voice
@@ -43,6 +52,31 @@ export function TTSSettings({ selectedProviderId }: TTSSettingsProps) {
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [testMessage, setTestMessage] = useState('');
   const { previewing: testingTTS, startPreview, stopPreview } = useTTSPreview();
+
+  // Voice fetching for providers that support it
+  const {
+    voices: fetchedVoices,
+    isLoading: fetchingVoices,
+    error: voicesError,
+    fetchVoices,
+  } = useVoices({
+    providerId: selectedProviderId,
+    apiKey: ttsProvidersConfig[selectedProviderId]?.apiKey,
+    baseUrl: ttsProvidersConfig[selectedProviderId]?.baseUrl || ttsProvider.defaultBaseUrl,
+    model: ttsProvidersConfig[selectedProviderId]?.model,
+  });
+
+  // Use fetched voices if available, otherwise fall back to static
+  const supportsVoiceFetching = ttsProvider.supportsVoiceFetching;
+  const staticVoices = getTTSVoices(selectedProviderId);
+  const availableVoices = fetchedVoices.length > 0 ? fetchedVoices : staticVoices;
+
+  // Auto-fetch voices when provider changes and supports fetching
+  useEffect(() => {
+    if (supportsVoiceFetching) {
+      fetchVoices();
+    }
+  }, [selectedProviderId, supportsVoiceFetching]);
 
   // Update test text when language changes
   useEffect(() => {
@@ -71,6 +105,7 @@ export function TTSSettings({ selectedProviderId }: TTSSettingsProps) {
         speed: ttsSpeed,
         apiKey: ttsProvidersConfig[selectedProviderId]?.apiKey,
         baseUrl: ttsProvidersConfig[selectedProviderId]?.baseUrl,
+        model: ttsProvidersConfig[selectedProviderId]?.model,
       });
       setTestStatus('success');
       setTestMessage(t('settings.ttsTestSuccess'));
@@ -174,6 +209,78 @@ export function TTSSettings({ selectedProviderId }: TTSSettingsProps) {
           })()}
         </>
       )}
+
+      {/* Model Configuration (for providers that support custom models) */}
+      {ttsProvider.supportsCustomModels && (
+        <div className="space-y-2">
+          <Label className="text-sm">Model</Label>
+          <Input
+            placeholder={ttsProvider.defaultModel || 'gpt-4o-mini-tts'}
+            value={ttsProvidersConfig[selectedProviderId]?.model || ''}
+            onChange={(e) =>
+              setTTSProviderConfig(selectedProviderId, {
+                model: e.target.value,
+              })
+            }
+            className="font-mono text-sm"
+          />
+          <p className="text-xs text-muted-foreground">
+            Custom model ID (e.g., gpt-4o-mini-tts, tts-1, tts-1-hd). Leave empty to use provider default.
+          </p>
+        </div>
+      )}
+
+      {/* Voice Selection */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label className="text-sm">{t('settings.ttsVoice')}</Label>
+          {supportsVoiceFetching && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={fetchVoices}
+              disabled={fetchingVoices}
+              className="h-7 px-2 text-xs"
+            >
+              {fetchingVoices ? (
+                <Loader2 className="h-3 w-3 animate-spin mr-1" />
+              ) : (
+                <RefreshCw className="h-3 w-3 mr-1" />
+              )}
+              {t('settings.fetchVoices')}
+            </Button>
+          )}
+        </div>
+        <Select value={effectiveVoice} onValueChange={setTTSVoice}>
+          <SelectTrigger className="text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="max-h-[300px]">
+            {availableVoices.map((voice) => (
+              <SelectItem key={voice.id} value={voice.id} className="text-sm">
+                <div className="flex flex-col">
+                  <span>{voice.name}</span>
+                  {voice.description && (
+                    <span className="text-xs text-muted-foreground">
+                      {t(`settings.${voice.description}`) || voice.description}
+                    </span>
+                  )}
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {voicesError && (
+          <p className="text-xs text-destructive">
+            {t('settings.fetchVoicesFailed')}: {voicesError}
+          </p>
+        )}
+        {fetchedVoices.length > 0 && (
+          <p className="text-xs text-muted-foreground">
+            {t('settings.voicesFetched')}: {fetchedVoices.length} voices
+          </p>
+        )}
+      </div>
 
       {/* Test TTS */}
       <div className="space-y-2">

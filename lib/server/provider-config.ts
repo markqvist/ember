@@ -20,6 +20,7 @@ interface ServerProviderEntry {
   apiKey: string;
   baseUrl?: string;
   models?: string[];
+  model?: string; // For TTS: specific model ID (e.g., 'gpt-4o-mini-tts')
   proxy?: string;
 }
 
@@ -147,12 +148,14 @@ function loadEnvSection(
           .map((m) => m.trim())
           .filter(Boolean)
       : undefined;
+    const envModel = process.env[`${prefix}_MODEL`] || undefined;
 
     if (result[providerId]) {
       // YAML entry exists — env vars override individual fields
       if (envApiKey) result[providerId].apiKey = envApiKey;
       if (envBaseUrl) result[providerId].baseUrl = envBaseUrl;
       if (envModels) result[providerId].models = envModels;
+      if (envModel) result[providerId].model = envModel;
       continue;
     }
 
@@ -271,6 +274,12 @@ export function resolveTTSApiKey(providerId: string, clientKey?: string): string
 export function resolveTTSBaseUrl(providerId: string, clientBaseUrl?: string): string | undefined {
   if (clientBaseUrl) return clientBaseUrl;
   return getConfig().tts[providerId]?.baseUrl;
+}
+
+/** Resolve TTS model: client model > server model > undefined (use provider default) */
+export function resolveTTSModel(providerId: string, clientModel?: string): string | undefined {
+  if (clientModel) return clientModel;
+  return getConfig().tts[providerId]?.model;
 }
 
 // ---------------------------------------------------------------------------
