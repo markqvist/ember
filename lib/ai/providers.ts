@@ -40,6 +40,12 @@ import { createLogger } from '@/lib/logger';
 // settings.ts. The thinking context is read from globalThis instead
 // (set by thinking-context.ts at module load time on the server).
 
+// Extend globalThis for timeout logging flag
+declare global {
+  // eslint-disable-next-line no-var
+  var __llmTimeoutLogged: boolean | undefined;
+}
+
 const log = createLogger('AIProviders');
 
 // Re-export types for backward compatibility
@@ -966,27 +972,73 @@ export function getModel(config: ModelConfig): ModelWithInfo {
       // wrapper that injects vendor-specific thinking params into the HTTP
       // body. The thinking config is read from AsyncLocalStorage, set by
       // callLLM / streamLLM at call time.
-      if (config.providerId !== 'openai') {
-        const providerId = config.providerId;
+      //
+      // Also configure extended timeouts for local/self-hosted inference
+      // where large models may take significant time to generate responses.
+      const providerId = config.providerId;
+      const isLocalInference =
+        config.baseUrl?.includes('localhost') ||
+        config.baseUrl?.includes('127.0.0.1') ||
+        config.baseUrl?.startsWith('http://192.168.') ||
+        config.baseUrl?.startsWith('http://10.') ||
+        process.env.LLM_EXTENDED_TIMEOUT === 'true';
+
+      // Parse timeout values from environment (in seconds, default to 0 = disabled/no timeout)
+      const connectTimeoutSec = parseInt(process.env.LLM_CONNECT_TIMEOUT_SEC || '0', 10);
+      const headersTimeoutSec = parseInt(process.env.LLM_HEADERS_TIMEOUT_SEC || '0', 10);
+      const bodyTimeoutSec = parseInt(process.env.LLM_BODY_TIMEOUT_SEC || '0', 10);
+      const useExtendedTimeouts = isLocalInference || connectTimeoutSec > 0 || headersTimeoutSec > 0 || bodyTimeoutSec > 0;
+
+      if (config.providerId !== 'openai' || useExtendedTimeouts) {
         openaiOptions.fetch = async (url: RequestInfo | URL, init?: RequestInit) => {
           // Read thinking config from globalThis (set by thinking-context.ts)
           const thinkingCtx = (globalThis as Record<string, unknown>).__thinkingContext as
             | { getStore?: () => unknown }
             | undefined;
           const thinking = thinkingCtx?.getStore?.() as ThinkingConfig | undefined;
-          if (thinking && init?.body && typeof init.body === 'string') {
+          let modifiedInit = init;
+          if (thinking && modifiedInit?.body && typeof modifiedInit.body === 'string') {
             const extra = getCompatThinkingBodyParams(providerId, thinking);
             if (extra) {
               try {
-                const body = JSON.parse(init.body);
+                const body = JSON.parse(modifiedInit.body);
                 Object.assign(body, extra);
-                init = { ...init, body: JSON.stringify(body) };
+                modifiedInit = { ...modifiedInit, body: JSON.stringify(body) };
               } catch {
                 /* leave body as-is */
               }
             }
           }
-          return globalThis.fetch(url, init);
+
+          // Use undici with extended timeouts for local inference or when explicitly configured
+          if (useExtendedTimeouts) {
+            // Dynamic import to avoid bundling issues on client side
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const { fetch: undiciFetch, Agent } = require('undici');
+
+            // Build dispatcher options with configured timeouts (0 = disabled/no timeout)
+            const dispatcherOptions: Record<string, number> = {};
+            if (connectTimeoutSec > 0) dispatcherOptions.connectTimeout = connectTimeoutSec * 1000;
+            if (headersTimeoutSec > 0) dispatcherOptions.headersTimeout = headersTimeoutSec * 1000;
+            if (bodyTimeoutSec > 0) dispatcherOptions.bodyTimeout = bodyTimeoutSec * 1000;
+
+            // Log timeout configuration once for visibility
+            if (!globalThis.__llmTimeoutLogged) {
+              log.info(
+                `[LLM Timeout] Using extended timeouts for ${providerId}: connect=${connectTimeoutSec}s, headers=${headersTimeoutSec}s, body=${bodyTimeoutSec}s (0=disabled)`
+              );
+              (globalThis as Record<string, unknown>).__llmTimeoutLogged = true;
+            }
+
+            return undiciFetch(url as string, {
+              ...(modifiedInit as Record<string, unknown>),
+              ...(Object.keys(dispatcherOptions).length > 0
+                ? { dispatcher: new Agent(dispatcherOptions) }
+                : {}),
+            }) as Promise<Response>;
+          }
+
+          return globalThis.fetch(url, modifiedInit);
         };
       }
 
