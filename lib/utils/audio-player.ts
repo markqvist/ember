@@ -28,31 +28,36 @@ export class AudioPlayer {
    * @returns true if audio started playing, false if no audio (TTS disabled or not generated)
    */
   public async play(audioId: string, audioUrl?: string): Promise<boolean> {
+    log.info("Audio play call for: ", audioId);
     try {
-      // 1. Try audioUrl first (server-generated TTS)
-      if (audioUrl) {
-        this.stop();
-        this.audio = new Audio();
-        this.audio.src = audioUrl;
-        if (this.muted) this.audio.volume = 0;
-        else this.audio.volume = this.volume;
-        this.audio.defaultPlaybackRate = this.playbackRate;
-        this.audio.playbackRate = this.playbackRate;
-        this.audio.addEventListener('ended', () => {
-          this.onEndedCallback?.();
-        });
-        await this.audio.play();
-        this.audio.playbackRate = this.playbackRate;
-        return true;
-      }
-
-      // 2. Fall back to IndexedDB (client-generated TTS)
       const audioRecord = await db.audioFiles.get(audioId);
-
       if (!audioRecord) {
         // Pre-generated audio does not exist (generation failed), skip silently
+        log.error("No local audio available for:", audioId);
+        log.error("Attempting play from server")
+
+        if (audioUrl) {
+          log.info("Playing audio from: ", audioUrl);
+          this.stop();
+          this.audio = new Audio();
+          this.audio.src = audioUrl;
+          if (this.muted) this.audio.volume = 0;
+          else this.audio.volume = this.volume;
+          this.audio.defaultPlaybackRate = this.playbackRate;
+          this.audio.playbackRate = this.playbackRate;
+          this.audio.addEventListener('ended', () => {
+            this.onEndedCallback?.();
+          });
+          await this.audio.play();
+          log.info("URL-sourced audio playback awaited and done");
+          this.audio.playbackRate = this.playbackRate;
+          return true;
+        } else {
+          log.error("No audio URL available, can't play from server");
+        }
+
         return false;
-      }
+      } else { log.info("Resolved audio from IndexedDB: ", audioId); }
 
       // Stop current playback
       this.stop();
@@ -82,8 +87,13 @@ export class AudioPlayer {
       this.audio.playbackRate = this.playbackRate;
       return true;
     } catch (error) {
-      log.error('Failed to play audio:', error);
-      throw error;
+      if (error.name === 'AbortError') { 
+        log.info("Ignoring AbortError", error);
+        throw error;
+      } else {
+        log.error('Failed to play audio:', error);
+        throw error;
+      }
     }
   }
 

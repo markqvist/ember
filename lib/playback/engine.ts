@@ -444,6 +444,7 @@ export class PlaybackEngine {
         // Non-CJK text: ~240ms/word (≈250 WPM).
         // Min 2s. Cancelled on pause; resume() calls processNext directly.
         const scheduleReadingTimer = () => {
+          log.info("Schedule reading timer triggered");
           const text = speechAction.text;
           const cjkCount = (
             text.match(/[\u4e00-\u9fff\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/g) || []
@@ -483,8 +484,12 @@ export class PlaybackEngine {
             }
           })
           .catch((err) => {
-            log.error('TTS error:', err);
-            scheduleReadingTimer();
+            if (err.name === 'AbortError') {
+              log.info("Ignored player AbortError:", err);
+            } else {
+              log.error('TTS error:', err);
+              scheduleReadingTimer();
+            }
           });
         break;
       }
