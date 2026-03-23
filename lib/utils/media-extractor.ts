@@ -189,8 +189,6 @@ export async function collectAllMediaForClassroom(
 export async function storeAudioFilesToIndexedDB(
   files: ExtractedAudioFile[]
 ): Promise<void> {
-  log.info("AF STORE!!!!!!!!!!");
-  console.log("AF STORE!!!!!!!!!!");
   const { base64ToBlob } = await import('./base64');
 
   for (const file of files) {
@@ -198,7 +196,6 @@ export async function storeAudioFilesToIndexedDB(
 
       const existing = await db.audioFiles.get(file.id);
       if (!existing) {
-        log.info("INSERTING NON-EXISTING");
         const blob = base64ToBlob(file.base64, file.mimeType);
         await db.audioFiles.put({
           id: file.id,
@@ -207,8 +204,6 @@ export async function storeAudioFilesToIndexedDB(
           createdAt: Date.now(),
         });
         log.info(`Stored audio file to IndexedDB: ${file.id}`);
-      } else {
-        log.info("SKIP EXISTING");
       }
     } catch (error) {
       log.error(`Failed to store audio file ${file.id} to IndexedDB:`, error);
