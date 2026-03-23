@@ -2,10 +2,11 @@
 
 - [x] Make timeouts configurable
 - [x] Add proper TTS config
-- [ ] Fix media files not stored (only in IndexedDB)
+- [x] Fix media files not stored (only in IndexedDB)
 - [ ] Ensure STT works locally
 - [ ] Add keyboard navigation and play/pause
-- [x] Add classroom export/import
+- [x] Add classroom persistence
+- [ ] Add classroom export/import with complete data structure to local file
 - [ ] Add settings export/import
 - [ ] Extend user profile size limit
 - [ ] Add local search and webpage fetch from our API
