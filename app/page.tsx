@@ -526,7 +526,7 @@ function HomePage() {
         )}
       >
         {/* ── Logo ── */}
-        <motion.img
+        {/*<motion.img
           src="/logo-horizontal.png"
           alt="OpenMAIC"
           initial={{ opacity: 0, scale: 0.9 }}
@@ -538,17 +538,17 @@ function HomePage() {
             damping: 20,
           }}
           className="h-12 md:h-16 mb-2 -ml-2 md:-ml-3"
-        />
+        />*/}
 
         {/* ── Slogan ── */}
-        <motion.p
+        {/*<motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.25 }}
           className="text-sm text-muted-foreground/60 mb-8"
         >
           {t('home.slogan')}
-        </motion.p>
+        </motion.p>*/}
 
         {/* ── Unified input area ── */}
         <motion.div
@@ -719,9 +719,9 @@ function HomePage() {
       )}
 
       {/* Footer — flows with content, at the very end */}
-      <div className="mt-auto pt-12 pb-4 text-center text-xs text-muted-foreground/40">
+      {/*<div className="mt-auto pt-12 pb-4 text-center text-xs text-muted-foreground/40">
         OpenMAIC Open Source Project
-      </div>
+      </div>*/}
     </div>
   );
 }

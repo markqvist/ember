@@ -1,6 +1,7 @@
 # OpenMAIC Local Inference Optimization Tasks
 
 - [x] Add proper TTS config
+- [ ] Fix media files not stored (only in IndexedDB)
 - [ ] Ensure STT works locally
 - [ ] Add keyboard navigation and play/pause
 - [x] Add classroom export/import
