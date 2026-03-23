@@ -56,6 +56,9 @@ interface MediaGenerationState {
   // Restore from IndexedDB on page load
   restoreFromDB: (stageId: string) => Promise<void>;
 
+  // Add restored tasks directly (used when loading from server)
+  addRestoredTasks: (stageId: string, elementId: string, blob: Blob, posterBlob?: Blob) => void;
+
   // Cleanup
   clearStage: (stageId: string) => void;
   revokeObjectUrls: () => void;
@@ -203,6 +206,36 @@ export const useMediaGenerationStore = create<MediaGenerationState>()((set, get)
     } catch (err) {
       log.error('Failed to restore from DB:', err);
     }
+  },
+
+  /**
+   * Add media tasks directly from blobs (used when restoring from server)
+   */
+  addRestoredTasks: (stageId: string, elementId: string, blob: Blob, posterBlob?: Blob) => {
+    set((s) => {
+      // Skip if already tracked
+      if (s.tasks[elementId]) return s;
+
+      const objectUrl = URL.createObjectURL(blob);
+      const poster = posterBlob ? URL.createObjectURL(posterBlob) : undefined;
+
+      return {
+        tasks: {
+          ...s.tasks,
+          [elementId]: {
+            elementId,
+            type: blob.type.startsWith('video/') ? 'video' : 'image',
+            status: 'done',
+            prompt: '',
+            params: {},
+            objectUrl,
+            poster,
+            retryCount: 0,
+            stageId,
+          },
+        },
+      };
+    });
   },
 
   clearStage: (stageId) =>

@@ -6,12 +6,16 @@ import {
   isValidClassroomId,
   persistClassroom,
   readClassroom,
+  readClassroomAudioFiles,
+  readClassroomMediaFiles,
+  type AudioFileData,
+  type MediaFileData,
 } from '@/lib/server/classroom-storage';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { stage, scenes } = body;
+    const { stage, scenes, audioFiles, mediaFiles } = body;
 
     if (!stage || !scenes) {
       return apiError(
@@ -24,7 +28,16 @@ export async function POST(request: NextRequest) {
     const id = stage.id || randomUUID();
     const baseUrl = buildRequestOrigin(request);
 
-    const persisted = await persistClassroom({ id, stage: { ...stage, id }, scenes }, baseUrl);
+    const persisted = await persistClassroom(
+      {
+        id,
+        stage: { ...stage, id },
+        scenes,
+        audioFiles: audioFiles as AudioFileData[] | undefined,
+        mediaFiles: mediaFiles as MediaFileData[] | undefined,
+      },
+      baseUrl,
+    );
 
     return apiSuccess({ id: persisted.id, url: persisted.url }, 201);
   } catch (error) {
@@ -40,6 +53,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const id = request.nextUrl.searchParams.get('id');
+    const includeMedia = request.nextUrl.searchParams.get('includeMedia') === 'true';
 
     if (!id) {
       return apiError(
@@ -58,7 +72,22 @@ export async function GET(request: NextRequest) {
       return apiError(API_ERROR_CODES.INVALID_REQUEST, 404, 'Classroom not found');
     }
 
-    return apiSuccess({ classroom });
+    // If includeMedia is true, also return audio and media files as base64
+    // This allows clients to restore IndexedDB when loading on a new computer
+    let audioFiles: AudioFileData[] | undefined;
+    let mediaFiles: MediaFileData[] | undefined;
+
+    if (includeMedia) {
+      [audioFiles, mediaFiles] = await Promise.all([
+        readClassroomAudioFiles(id),
+        readClassroomMediaFiles(id),
+      ]);
+    }
+
+    return apiSuccess({
+      classroom,
+      ...(includeMedia && { audioFiles, mediaFiles }),
+    });
   } catch (error) {
     return apiError(
       API_ERROR_CODES.INTERNAL_ERROR,

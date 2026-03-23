@@ -40,7 +40,10 @@ export default function ClassroomDetailPage() {
       if (!useStageStore.getState().stage) {
         log.info('No IndexedDB data, trying server-side storage for:', classroomId);
         try {
-          const res = await fetch(`/api/classroom?id=${encodeURIComponent(classroomId)}`);
+          // Include includeMedia=true to get audio and media files as base64
+          const res = await fetch(
+            `/api/classroom?id=${encodeURIComponent(classroomId)}&includeMedia=true`
+          );
           if (res.ok) {
             const json = await res.json();
             if (json.success && json.classroom) {
@@ -51,6 +54,26 @@ export default function ClassroomDetailPage() {
                 currentSceneId: scenes[0]?.id ?? null,
               });
               log.info('Loaded from server-side storage:', classroomId);
+
+              // Restore media files to IndexedDB if present
+              if (json.audioFiles?.length > 0 || json.mediaFiles?.length > 0) {
+                log.info('Restoring media files to IndexedDB:', {
+                  audioFiles: json.audioFiles?.length || 0,
+                  mediaFiles: json.mediaFiles?.length || 0,
+                });
+                const {
+                  storeAudioFilesToIndexedDB,
+                  storeMediaFilesToIndexedDB,
+                } = await import('@/lib/utils/media-extractor');
+
+                if (json.audioFiles?.length > 0) {
+                  await storeAudioFilesToIndexedDB(json.audioFiles);
+                }
+                if (json.mediaFiles?.length > 0) {
+                  await storeMediaFilesToIndexedDB(classroomId, json.mediaFiles);
+                }
+                log.info('Media files restored to IndexedDB');
+              }
             }
           }
         } catch (fetchErr) {

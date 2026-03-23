@@ -200,6 +200,10 @@ function HomePage() {
         return;
       }
 
+      // Collect media files from IndexedDB to include in persistence
+      const { collectAllMediaForClassroom } = await import('@/lib/utils/media-extractor');
+      const { audioFiles, mediaFiles } = await collectAllMediaForClassroom(id, data.scenes);
+
       // POST to server
       const res = await fetch('/api/classroom', {
         method: 'POST',
@@ -207,6 +211,8 @@ function HomePage() {
         body: JSON.stringify({
           stage: data.stage,
           scenes: data.scenes,
+          audioFiles,
+          mediaFiles,
         }),
       });
 

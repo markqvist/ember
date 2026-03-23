@@ -411,12 +411,27 @@ export function useSceneGenerator(options: UseSceneGeneratorOptions = {}) {
             const finalStage = finalState.stage;
             const finalScenes = finalState.scenes;
             if (finalStage && finalScenes.length > 0) {
+              // Collect media files from IndexedDB to include in persistence
+              const { collectAllMediaForClassroom } = await import('@/lib/utils/media-extractor');
+              const { audioFiles, mediaFiles } = await collectAllMediaForClassroom(
+                finalStage.id,
+                finalScenes
+              );
+
               await fetch('/api/classroom', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ stage: finalStage, scenes: finalScenes }),
+                body: JSON.stringify({
+                  stage: finalStage,
+                  scenes: finalScenes,
+                  audioFiles,
+                  mediaFiles,
+                }),
               });
-              log.info('Classroom persisted to server disk:', finalStage.id);
+              log.info('Classroom persisted to server disk:', finalStage.id, {
+                audioFiles: audioFiles.length,
+                mediaFiles: mediaFiles.length,
+              });
             }
           } catch (persistErr) {
             // Non-fatal, generation is complete, disk write failure should not block the user
