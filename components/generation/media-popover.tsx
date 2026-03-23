@@ -132,6 +132,7 @@ export function MediaPopover({ onSettingsOpen }: MediaPopoverProps) {
   const ttsVoice = useSettingsStore((s) => s.ttsVoice);
   const ttsSpeed = useSettingsStore((s) => s.ttsSpeed);
   const ttsProvidersConfig = useSettingsStore((s) => s.ttsProvidersConfig);
+  const ttsFetchedVoices = useSettingsStore((s) => s.ttsFetchedVoices);
   const setTTSProvider = useSettingsStore((s) => s.setTTSProvider);
   const setTTSVoice = useSettingsStore((s) => s.setTTSVoice);
   const setTTSSpeed = useSettingsStore((s) => s.setTTSSpeed);
@@ -240,12 +241,17 @@ export function MediaPopover({ onSettingsOpen }: MediaPopoverProps) {
         continue;
       }
 
+      // Use cached fetched voices if available, otherwise fall back to static
+      const cachedVoices = ttsFetchedVoices[p.id];
+      const staticVoices = getTTSVoices(p.id);
+      const voicesToUse = cachedVoices && cachedVoices.length > 0 ? cachedVoices : staticVoices;
+      
       groups.push({
         groupId: p.id,
         groupName: providerName,
         groupIcon: p.icon,
         available: true,
-        items: getTTSVoices(p.id).map((v) => ({
+        items: voicesToUse.map((v) => ({
           id: v.id,
           name: getVoiceDisplayName(v.name, locale),
         })),
@@ -253,7 +259,7 @@ export function MediaPopover({ onSettingsOpen }: MediaPopoverProps) {
     }
 
     return groups;
-  }, [ttsProvidersConfig, locale, browserVoices, t]);
+  }, [ttsProvidersConfig, ttsFetchedVoices, locale, browserVoices, t]);
 
   // TTS preview
   const handlePreview = useCallback(async () => {
