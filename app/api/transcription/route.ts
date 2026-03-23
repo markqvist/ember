@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { transcribeAudio } from '@/lib/audio/asr-providers';
-import { resolveASRApiKey, resolveASRBaseUrl } from '@/lib/server/provider-config';
+import { resolveASRApiKey, resolveASRBaseUrl, resolveASRModel } from '@/lib/server/provider-config';
 import type { ASRProviderId } from '@/lib/audio/types';
 import { createLogger } from '@/lib/logger';
 import { apiError, apiSuccess } from '@/lib/server/api-response';
@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
     const language = formData.get('language') as string | null;
     const apiKey = formData.get('apiKey') as string | null;
     const baseUrl = formData.get('baseUrl') as string | null;
+    const model = formData.get('model') as string | null;
 
     if (!audioFile) {
       return apiError('MISSING_REQUIRED_FIELD', 400, 'Audio file is required');
@@ -42,6 +43,7 @@ export async function POST(req: NextRequest) {
       baseUrl: clientBaseUrl
         ? clientBaseUrl
         : resolveASRBaseUrl(effectiveProviderId, baseUrl || undefined),
+      model: model || resolveASRModel(effectiveProviderId, undefined),
     };
 
     // Convert audio file to buffer

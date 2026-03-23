@@ -306,6 +306,12 @@ export function resolveASRBaseUrl(providerId: string, clientBaseUrl?: string): s
   return getConfig().asr[providerId]?.baseUrl;
 }
 
+/** Resolve ASR model: client model > server model > undefined (use provider default) */
+export function resolveASRModel(providerId: string, clientModel?: string): string | undefined {
+  if (clientModel) return clientModel;
+  return getConfig().asr[providerId]?.model;
+}
+
 // ---------------------------------------------------------------------------
 // Public API — PDF
 // ---------------------------------------------------------------------------

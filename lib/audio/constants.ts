@@ -636,6 +636,8 @@ export const ASR_PROVIDERS: Record<ASRProviderId, ASRProviderConfig> = {
     name: 'OpenAI Whisper',
     requiresApiKey: true,
     defaultBaseUrl: 'https://api.openai.com/v1',
+    defaultModel: 'gpt-4o-mini-transcribe',
+    supportsCustomModels: true,
     icon: '/logos/openai.svg',
     supportedLanguages: [
       // OpenAI Whisper supports 58 languages (as of official docs)

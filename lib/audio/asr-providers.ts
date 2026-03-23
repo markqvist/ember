@@ -190,15 +190,36 @@ export async function transcribeAudio(
 }
 
 /**
- * OpenAI Whisper implementation (using Vercel AI SDK)
+ * OpenAI Whisper implementation
+ *
+ * Uses Vercel AI SDK for official OpenAI API, direct fetch for custom endpoints.
+ * This enables local/self-hosted STT backends (whisper.cpp, llama-swap, etc.)
+ * while maintaining SDK benefits for cloud usage.
  */
 async function transcribeOpenAIWhisper(
   config: ASRModelConfig,
   audioBuffer: Buffer | Blob,
 ): Promise<ASRTranscriptionResult> {
+  const baseUrl = (config.baseUrl || ASR_PROVIDERS['openai-whisper'].defaultBaseUrl) as string;
+  const modelValue = config.model || ASR_PROVIDERS['openai-whisper'].defaultModel || 'gpt-4o-mini-transcribe';
+  if (!modelValue) {
+    throw new Error('ASR model is required but not configured');
+  }
+  const model: string = modelValue;
+
+  // Use direct fetch for custom endpoints or custom models
+  // (Vercel SDK has specific expectations that may not match local endpoints)
+  const isCustomEndpoint = config.baseUrl !== undefined && config.baseUrl !== ASR_PROVIDERS['openai-whisper'].defaultBaseUrl;
+  const isCustomModel = config.model !== undefined;
+
+  if (isCustomEndpoint || isCustomModel) {
+    return await transcribeOpenAICompatibleDirect(config, audioBuffer, baseUrl, model);
+  }
+
+  // Use Vercel AI SDK for official OpenAI API
   const openai = createOpenAI({
     apiKey: config.apiKey!,
-    baseURL: config.baseUrl || ASR_PROVIDERS['openai-whisper'].defaultBaseUrl,
+    baseURL: baseUrl,
   });
 
   // Convert to Buffer or Uint8Array (which is required by the AI SDK)
@@ -214,7 +235,7 @@ async function transcribeOpenAIWhisper(
 
   try {
     const result = await transcribe({
-      model: openai.transcription('gpt-4o-mini-transcribe'),
+      model: openai.transcription(model),
       audio: audioData,
       providerOptions: {
         openai: {
@@ -229,6 +250,87 @@ async function transcribeOpenAIWhisper(
     const errMsg = error instanceof Error ? error.message : '';
     if (errMsg.includes('empty') || errMsg.includes('too short')) {
       return { text: '' };
+    }
+    throw error;
+  }
+}
+
+/**
+ * Direct fetch implementation for OpenAI-compatible STT endpoints.
+ *
+ * Compatible with whisper.cpp server, llama-swap, and other local STT backends.
+ * Uses multipart/form-data with standard OpenAI audio transcriptions API.
+ */
+async function transcribeOpenAICompatibleDirect(
+  config: ASRModelConfig,
+  audioBuffer: Buffer | Blob,
+  baseUrl: string,
+  model: string,
+): Promise<ASRTranscriptionResult> {
+  // Construct endpoint URL
+  // Handle various base URL formats:
+  // - http://host:port/v1/audio/transcriptions -> use as-is
+  // - http://host:port/v1 -> append /audio/transcriptions
+  // - http://host:port -> append /v1/audio/transcriptions
+  let endpoint: string;
+  if (baseUrl.endsWith('/v1/audio/transcriptions')) {
+    endpoint = baseUrl;
+  } else if (baseUrl.endsWith('/v1')) {
+    endpoint = `${baseUrl}/audio/transcriptions`;
+  } else {
+    endpoint = `${baseUrl}/v1/audio/transcriptions`;
+  }
+
+  // Convert audio to Blob for FormData
+  let audioBlob: Blob;
+  if (audioBuffer instanceof Buffer) {
+    audioBlob = new Blob([
+      audioBuffer.buffer.slice(
+        audioBuffer.byteOffset,
+        audioBuffer.byteOffset + audioBuffer.byteLength
+      ) as ArrayBuffer
+    ], { type: 'audio/webm' });
+  } else {
+    audioBlob = audioBuffer as Blob;
+  }
+
+  // Build multipart form data
+  const formData = new FormData();
+  formData.append('file', audioBlob, 'audio.webm');
+  formData.append('model', model);
+
+  // Add optional language parameter (only if not auto)
+  if (config.language && config.language !== 'auto') {
+    formData.append('language', config.language);
+  }
+
+  // Build headers
+  const headers: Record<string, string> = {};
+  if (config.apiKey) {
+    headers['Authorization'] = `Bearer ${config.apiKey}`;
+  }
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => response.statusText);
+      throw new Error(`STT API error (${response.status}): ${errorText}`);
+    }
+
+    const result = await response.json();
+
+    // Handle empty or silent audio gracefully
+    const text = result.text?.trim() || '';
+    return { text };
+  } catch (error: unknown) {
+    // Handle network/connection errors specifically
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error(`Failed to connect to STT endpoint: ${endpoint}. Ensure the server is running and accessible.`);
     }
     throw error;
   }

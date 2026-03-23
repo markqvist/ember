@@ -67,6 +67,7 @@ export interface SettingsState {
       enabled: boolean;
       isServerConfigured?: boolean;
       serverBaseUrl?: string;
+      model?: string; // Custom ASR model ID (e.g., 'gpt-4o-mini-transcribe', 'audio_stt_base')
     }
   >;
 
@@ -189,7 +190,7 @@ export interface SettingsState {
   ) => void;
   setASRProviderConfig: (
     providerId: ASRProviderId,
-    config: Partial<{ apiKey: string; baseUrl: string; enabled: boolean }>,
+    config: Partial<{ apiKey: string; baseUrl: string; enabled: boolean; model?: string }>,
   ) => void;
   setTTSEnabled: (enabled: boolean) => void;
   setASREnabled: (enabled: boolean) => void;

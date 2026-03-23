@@ -79,8 +79,7 @@ export const generationEnUS = {
   upload: {
     pdfSizeLimit: 'Supports PDF files up to 50MB',
     generateFailed: 'Failed to generate classroom, please try again',
-    requirementPlaceholder:
-      'Tell me anything you want to learn, e.g.\n"Teach me Python from scratch in 30 minutes"\n"Explain Fourier Transform on the whiteboard"\n"How to play the board game Avalon"',
+    requirementPlaceholder: 'Describe what you want to learn about',
     requirementRequired: 'Please enter course requirements',
     fileTooLarge: 'File too large. Please select a PDF file smaller than 50MB',
   },

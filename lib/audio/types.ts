@@ -163,6 +163,8 @@ export interface ASRProviderConfig {
   icon?: string;
   supportedLanguages: string[];
   supportedFormats: string[];
+  defaultModel?: string; // Default ASR model for this provider (e.g., 'gpt-4o-mini-transcribe')
+  supportsCustomModels?: boolean; // Whether user can configure custom model ID
 }
 
 /**
@@ -173,4 +175,5 @@ export interface ASRModelConfig {
   apiKey?: string;
   baseUrl?: string;
   language?: string;
+  model?: string; // Custom model ID override (e.g., 'gpt-4o-mini-transcribe', 'audio_stt_base', etc.)
 }

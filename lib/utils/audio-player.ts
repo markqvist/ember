@@ -86,8 +86,9 @@ export class AudioPlayer {
       // Re-apply after play() — some browsers reset during load
       this.audio.playbackRate = this.playbackRate;
       return true;
-    } catch (error) {
-      if (error.name === 'AbortError') { 
+    } catch (error: unknown) {
+      const errorName = error instanceof Error ? error.name : '';
+      if (errorName === 'AbortError') { 
         log.info("Ignoring AbortError", error);
         throw error;
       } else {

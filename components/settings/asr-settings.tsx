@@ -67,7 +67,7 @@ export function ASRSettings({ selectedProviderId }: ASRSettingsProps) {
         }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Vendor-prefixed API without standard typings
         const recognition = new (SpeechRecognitionCtor as new () => any)();
-        recognition.lang = asrLanguage || 'zh-CN';
+        recognition.lang = asrLanguage || 'en-US';
         recognition.onresult = (event: {
           results: {
             [index: number]: { [index: number]: { transcript: string } };
@@ -109,6 +109,8 @@ export function ASRSettings({ selectedProviderId }: ASRSettingsProps) {
             if (apiKeyValue?.trim()) formData.append('apiKey', apiKeyValue);
             const baseUrlValue = asrProvidersConfig[selectedProviderId]?.baseUrl;
             if (baseUrlValue?.trim()) formData.append('baseUrl', baseUrlValue);
+            const modelValue = asrProvidersConfig[selectedProviderId]?.model;
+            if (modelValue?.trim()) formData.append('model', modelValue);
 
             try {
               const response = await fetch('/api/transcription', {
@@ -206,6 +208,32 @@ export function ASRSettings({ selectedProviderId }: ASRSettingsProps) {
               />
             </div>
           </div>
+
+          {/* Model Configuration (for providers that support custom models) */}
+          {asrProvider.supportsCustomModels && (
+            <div className="space-y-2">
+              <Label className="text-sm">Model</Label>
+              <Input
+                name={`asr-model-${selectedProviderId}`}
+                autoComplete="off"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                placeholder={asrProvider.defaultModel || 'gpt-4o-mini-transcribe'}
+                value={asrProvidersConfig[selectedProviderId]?.model || ''}
+                onChange={(e) =>
+                  setASRProviderConfig(selectedProviderId, {
+                    model: e.target.value,
+                  })
+                }
+                className="font-mono text-sm"
+              />
+              <p className="text-xs text-muted-foreground">
+                Custom model ID (e.g., gpt-4o-mini-transcribe, audio_stt_base). Leave empty to use provider default.
+              </p>
+            </div>
+          )}
+
           {/* Request URL Preview */}
           {(() => {
             const effectiveBaseUrl =
