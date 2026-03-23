@@ -1,5 +1,6 @@
 # OpenMAIC Local Inference Optimization Tasks
 
+- [x] Make timeouts configurable
 - [x] Add proper TTS config
 - [ ] Fix media files not stored (only in IndexedDB)
 - [ ] Ensure STT works locally
