@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -14,12 +14,11 @@ import {
 import { useI18n } from '@/lib/hooks/use-i18n';
 import { useSettingsStore } from '@/lib/store/settings';
 import { TTS_PROVIDERS, DEFAULT_TTS_VOICES, getTTSVoices } from '@/lib/audio/constants';
-import type { TTSProviderId } from '@/lib/audio/types';
+import type { TTSProviderId, TTSVoiceInfo } from '@/lib/audio/types';
 import { Volume2, Loader2, CheckCircle2, XCircle, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createLogger } from '@/lib/logger';
 import { useTTSPreview } from '@/lib/audio/use-tts-preview';
-import { useVoices } from '@/lib/audio/use-voices';
 
 const log = createLogger('TTSSettings');
 
@@ -36,6 +35,7 @@ export function TTSSettings({ selectedProviderId }: TTSSettingsProps) {
   const setTTSProviderConfig = useSettingsStore((state) => state.setTTSProviderConfig);
   const setTTSVoice = useSettingsStore((state) => state.setTTSVoice);
   const setTTSFetchedVoices = useSettingsStore((state) => state.setTTSFetchedVoices);
+  const cachedVoices = useSettingsStore((state) => state.ttsFetchedVoices[selectedProviderId]);
   const activeProviderId = useSettingsStore((state) => state.ttsProviderId);
 
   // When testing a non-active provider, use that provider's default voice
@@ -54,37 +54,76 @@ export function TTSSettings({ selectedProviderId }: TTSSettingsProps) {
   const [testMessage, setTestMessage] = useState('');
   const { previewing: testingTTS, startPreview, stopPreview } = useTTSPreview();
 
-  // Voice fetching for providers that support it
-  const {
-    voices: fetchedVoices,
-    isLoading: fetchingVoices,
-    error: voicesError,
-    fetchVoices,
-  } = useVoices({
-    providerId: selectedProviderId,
-    apiKey: ttsProvidersConfig[selectedProviderId]?.apiKey,
-    baseUrl: ttsProvidersConfig[selectedProviderId]?.baseUrl || ttsProvider.defaultBaseUrl,
-    model: ttsProvidersConfig[selectedProviderId]?.model,
-  });
+  // Voice fetching state
+  const [fetchedVoices, setFetchedVoices] = useState<TTSVoiceInfo[]>([]);
+  const [fetchingVoices, setFetchingVoices] = useState(false);
+  const [voicesError, setVoicesError] = useState<string | null>(null);
+  const hasFetchedRef = useRef(false);
 
-  // Use fetched voices if available, otherwise fall back to static
+  const fetchVoices = useCallback(async () => {
+    if (!ttsProvider.supportsVoiceFetching) return;
+    
+    const baseUrl = ttsProvidersConfig[selectedProviderId]?.baseUrl || ttsProvider.defaultBaseUrl;
+    if (!baseUrl) {
+      setVoicesError('Base URL required');
+      return;
+    }
+
+    setFetchingVoices(true);
+    setVoicesError(null);
+
+    try {
+      const response = await fetch('/api/voices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiKey: ttsProvidersConfig[selectedProviderId]?.apiKey,
+          baseUrl,
+          model: ttsProvidersConfig[selectedProviderId]?.model,
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch voices');
+      }
+
+      const voices = data.voices || [];
+      setFetchedVoices(voices);
+      // Save to store cache
+      setTTSFetchedVoices(selectedProviderId, voices);
+    } catch (err) {
+      setVoicesError(err instanceof Error ? err.message : 'Unknown error');
+      setFetchedVoices([]);
+    } finally {
+      setFetchingVoices(false);
+    }
+  }, [selectedProviderId, ttsProvider, ttsProvidersConfig, setTTSFetchedVoices]);
+
+  // Use fetched voices if available, otherwise cached, otherwise fall back to static
   const supportsVoiceFetching = ttsProvider.supportsVoiceFetching;
   const staticVoices = getTTSVoices(selectedProviderId);
-  const availableVoices = fetchedVoices.length > 0 ? fetchedVoices : staticVoices;
+  const availableVoices = fetchedVoices.length > 0 
+    ? fetchedVoices 
+    : (cachedVoices && cachedVoices.length > 0 ? cachedVoices : staticVoices);
 
-  // Auto-fetch voices when provider changes and supports fetching
+  // Auto-fetch voices when provider changes and supports fetching (only once, if no cache)
   useEffect(() => {
-    if (supportsVoiceFetching) {
-      fetchVoices();
+    if (supportsVoiceFetching && !hasFetchedRef.current) {
+      const hasCache = cachedVoices && cachedVoices.length > 0;
+      if (!hasCache) {
+        fetchVoices();
+      }
+      hasFetchedRef.current = true;
     }
-  }, [selectedProviderId, supportsVoiceFetching]);
+  }, [selectedProviderId, supportsVoiceFetching, cachedVoices, fetchVoices]);
 
-  // Save fetched voices to store cache when they change
+  // Reset fetch flag when provider changes
   useEffect(() => {
-    if (fetchedVoices.length > 0) {
-      setTTSFetchedVoices(selectedProviderId, fetchedVoices);
-    }
-  }, [fetchedVoices, selectedProviderId, setTTSFetchedVoices]);
+    hasFetchedRef.current = false;
+    setFetchedVoices([]);
+  }, [selectedProviderId]);
 
   // Update test text when language changes
   useEffect(() => {
