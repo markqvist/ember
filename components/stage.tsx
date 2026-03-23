@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { AlertTriangle } from 'lucide-react';
 import { VisuallyHidden } from 'radix-ui';
+import { KEYS } from '@/configs/hotkey';
 
 /**
  * Stage Component
@@ -626,6 +627,46 @@ export function Stage({
       setCurrentSceneId(PENDING_SCENE_ID);
     }
   };
+
+  // Keyboard shortcuts for classroom navigation and playback
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Skip when user is typing in an input, textarea, or contentEditable
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      switch (e.key) {
+        case KEYS.SPACE:
+          // Spacebar for play/pause during lecture playback
+          // Skip if in live flow (discussion/QA) — roundtable handles that
+          if (!playbackView.isInLiveFlow) {
+            e.preventDefault();
+            handlePlayPause();
+          }
+          break;
+        case KEYS.LEFT:
+        case KEYS.UP:
+          e.preventDefault();
+          handlePreviousScene();
+          break;
+        case KEYS.RIGHT:
+        case KEYS.DOWN:
+        case KEYS.ENTER:
+          e.preventDefault();
+          handleNextScene();
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handlePlayPause, handlePreviousScene, handleNextScene, playbackView.isInLiveFlow]);
 
   // get scene information
   const isPendingScene = currentSceneId === PENDING_SCENE_ID;
