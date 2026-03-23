@@ -41,7 +41,13 @@ export function TtsConfigPopover() {
   const ttsProvidersConfig = useSettingsStore((s) => s.ttsProvidersConfig);
   const setTTSVoice = useSettingsStore((s) => s.setTTSVoice);
 
-  const voices = getTTSVoices(ttsProviderId);
+  const ttsFetchedVoices = useSettingsStore((s) => s.ttsFetchedVoices);
+  
+  // Use cached fetched voices if available, otherwise fall back to static
+  const cachedVoices = ttsFetchedVoices[ttsProviderId];
+  const staticVoices = getTTSVoices(ttsProviderId);
+  const voices = cachedVoices && cachedVoices.length > 0 ? cachedVoices : staticVoices;
+  
   const localizedVoices = useMemo(
     () =>
       voices.map((v) => ({

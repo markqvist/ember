@@ -35,6 +35,7 @@ export function TTSSettings({ selectedProviderId }: TTSSettingsProps) {
   const ttsProvidersConfig = useSettingsStore((state) => state.ttsProvidersConfig);
   const setTTSProviderConfig = useSettingsStore((state) => state.setTTSProviderConfig);
   const setTTSVoice = useSettingsStore((state) => state.setTTSVoice);
+  const setTTSFetchedVoices = useSettingsStore((state) => state.setTTSFetchedVoices);
   const activeProviderId = useSettingsStore((state) => state.ttsProviderId);
 
   // When testing a non-active provider, use that provider's default voice
@@ -77,6 +78,13 @@ export function TTSSettings({ selectedProviderId }: TTSSettingsProps) {
       fetchVoices();
     }
   }, [selectedProviderId, supportsVoiceFetching]);
+
+  // Save fetched voices to store cache when they change
+  useEffect(() => {
+    if (fetchedVoices.length > 0) {
+      setTTSFetchedVoices(selectedProviderId, fetchedVoices);
+    }
+  }, [fetchedVoices, selectedProviderId, setTTSFetchedVoices]);
 
   // Update test text when language changes
   useEffect(() => {

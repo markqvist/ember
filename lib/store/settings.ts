@@ -56,6 +56,9 @@ export interface SettingsState {
     }
   >;
 
+  // Cached fetched voices per provider (to share between settings and popover)
+  ttsFetchedVoices: Record<TTSProviderId, { id: string; name: string; language?: string; gender?: string; description?: string }[]>;
+
   asrProvidersConfig: Record<
     ASRProviderId,
     {
@@ -180,6 +183,10 @@ export interface SettingsState {
     providerId: TTSProviderId,
     config: Partial<{ apiKey: string; baseUrl: string; enabled: boolean; model?: string }>,
   ) => void;
+  setTTSFetchedVoices: (
+    providerId: TTSProviderId,
+    voices: { id: string; name: string; language?: string; gender?: string; description?: string }[],
+  ) => void;
   setASRProviderConfig: (
     providerId: ASRProviderId,
     config: Partial<{ apiKey: string; baseUrl: string; enabled: boolean }>,
@@ -274,6 +281,13 @@ const getDefaultAudioConfig = () => ({
     'browser-native': { apiKey: '', baseUrl: '', enabled: true },
     'qwen-asr': { apiKey: '', baseUrl: '', enabled: false },
   } as Record<ASRProviderId, { apiKey: string; baseUrl: string; enabled: boolean }>,
+  ttsFetchedVoices: {
+    'openai-tts': [],
+    'azure-tts': [],
+    'glm-tts': [],
+    'qwen-tts': [],
+    'browser-native-tts': [],
+  } as Record<TTSProviderId, { id: string; name: string; language?: string; gender?: string; description?: string }[]>,
 });
 
 // Initialize default PDF config
@@ -597,6 +611,14 @@ export const useSettingsStore = create<SettingsState>()(
                 ...state.ttsProvidersConfig[providerId],
                 ...config,
               },
+            },
+          })),
+
+        setTTSFetchedVoices: (providerId, voices) =>
+          set((state) => ({
+            ttsFetchedVoices: {
+              ...state.ttsFetchedVoices,
+              [providerId]: voices,
             },
           })),
 
