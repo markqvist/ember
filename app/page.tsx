@@ -11,6 +11,7 @@ import {
   Copy,
   ImagePlus,
   Pencil,
+  Save,
   Trash2,
   Settings,
   Sun,
@@ -37,6 +38,7 @@ import {
   StageListItem,
   listStages,
   deleteStageData,
+  loadStageData,
   getFirstSlideByStages,
 } from '@/lib/utils/stage-storage';
 import { ThumbnailSlide } from '@/components/slide-renderer/components/ThumbnailSlide';
@@ -186,6 +188,37 @@ function HomePage() {
     } catch (err) {
       log.error('Failed to delete classroom:', err);
       toast.error('Failed to delete classroom');
+    }
+  };
+
+  const handlePersist = async (id: string) => {
+    try {
+      // Load full data from IndexedDB
+      const data = await loadStageData(id);
+      if (!data) {
+        toast.error('Classroom not found in browser storage');
+        return;
+      }
+
+      // POST to server
+      const res = await fetch('/api/classroom', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          stage: data.stage,
+          scenes: data.scenes,
+        }),
+      });
+
+      if (res.ok) {
+        toast.success('Classroom saved to server disk');
+      } else {
+        const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
+        toast.error(errorData.error || 'Failed to save classroom');
+      }
+    } catch (err) {
+      log.error('Failed to persist classroom:', err);
+      toast.error('Failed to save classroom');
     }
   };
 
@@ -670,6 +703,7 @@ function HomePage() {
                         slide={thumbnails[classroom.id]}
                         formatDate={formatDate}
                         onDelete={handleDelete}
+                        onPersist={handlePersist}
                         confirmingDelete={pendingDeleteId === classroom.id}
                         onConfirmDelete={() => confirmDelete(classroom.id)}
                         onCancelDelete={() => setPendingDeleteId(null)}
@@ -988,6 +1022,7 @@ function ClassroomCard({
   slide,
   formatDate,
   onDelete,
+  onPersist,
   confirmingDelete,
   onConfirmDelete,
   onCancelDelete,
@@ -997,6 +1032,7 @@ function ClassroomCard({
   slide?: Slide;
   formatDate: (ts: number) => string;
   onDelete: (id: string, e: React.MouseEvent) => void;
+  onPersist: (id: string) => void;
   confirmingDelete: boolean;
   onConfirmDelete: () => void;
   onCancelDelete: () => void;
@@ -1037,6 +1073,31 @@ function ClassroomCard({
             </div>
           </div>
         ) : null}
+
+        {/* Save — top-right, left of delete, only on hover */}
+        <AnimatePresence>
+          {!confirmingDelete && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="absolute top-2 right-11"
+            >
+              <Button
+                size="icon"
+                variant="ghost"
+                className="size-7 opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 hover:bg-emerald-500/80 text-white hover:text-white backdrop-blur-sm rounded-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPersist(classroom.id);
+                }}
+              >
+                <Save className="size-3.5" />
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Delete — top-right, only on hover */}
         <AnimatePresence>
