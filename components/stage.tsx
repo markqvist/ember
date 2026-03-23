@@ -641,7 +641,10 @@ export function Stage({
         return;
       }
 
-      switch (e.key) {
+      // Use e.key with case-insensitive comparison (e.key is TitleCase, KEYS enum is UPPERCASE)
+      const key = e.key.toUpperCase();
+
+      switch (key) {
         case KEYS.SPACE:
           // Spacebar for play/pause during lecture playback
           // Skip if in live flow (discussion/QA) — roundtable handles that
