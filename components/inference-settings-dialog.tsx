@@ -59,9 +59,42 @@ export function InferenceSettingsDialog({
   const inferenceConfig = useStageStore((s) => s.inferenceConfig);
   const setInferenceConfig = useStageStore((s) => s.setInferenceConfig);
   const providersConfig = useSettingsStore((s) => s.providersConfig);
+  const selectedAgentIds = useSettingsStore((s) => s.selectedAgentIds);
   // Use agents record directly to avoid infinite loop from listAgents() returning new array
   const agentsRecord = useAgentRegistry((s) => s.agents);
-  const agents = useMemo(() => Object.values(agentsRecord), [agentsRecord]);
+  const stageId = stage?.id;
+
+  // Filter to relevant agents only:
+  // - Default agents (always available)
+  // - Generated agents bound to this specific classroom/stage
+  // - Agents currently selected in settings
+  const relevantAgentIds = useMemo(() => {
+    const ids = new Set<string>();
+
+    for (const [id, agent] of Object.entries(agentsRecord)) {
+      // Include default agents
+      if (agent.isDefault) {
+        ids.add(id);
+        continue;
+      }
+      // Include generated agents bound to this stage
+      if (agent.isGenerated && agent.boundStageId === stageId) {
+        ids.add(id);
+        continue;
+      }
+      // Include agents that are currently selected
+      if (selectedAgentIds.includes(id)) {
+        ids.add(id);
+      }
+    }
+
+    return ids;
+  }, [agentsRecord, stageId, selectedAgentIds]);
+
+  const agents = useMemo(
+    () => Object.values(agentsRecord).filter((a) => relevantAgentIds.has(a.id)),
+    [agentsRecord, relevantAgentIds],
+  );
 
   // Local state for editing
   const [defaultRuntimeModel, setDefaultRuntimeModel] = useState<
