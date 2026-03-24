@@ -450,6 +450,22 @@ export function useChatSessions(options: UseChatSessionsOptions = {}) {
             }
           : undefined;
 
+        // Build classroom default runtime model with credentials (falls back to generation model)
+        const classroomDefaultConfig = inferenceConfig?.defaultRuntimeModel || inferenceConfig?.generationModel;
+        const classroomDefaultModel = classroomDefaultConfig
+          ? {
+              providerId: classroomDefaultConfig.providerId,
+              modelId: classroomDefaultConfig.modelId,
+              providerType: classroomDefaultConfig.providerType,
+              requiresApiKey: classroomDefaultConfig.requiresApiKey,
+              apiKey: providersConfig[classroomDefaultConfig.providerId]?.apiKey || '',
+              baseUrl:
+                providersConfig[classroomDefaultConfig.providerId]?.baseUrl ||
+                providersConfig[classroomDefaultConfig.providerId]?.defaultBaseUrl ||
+                '',
+            }
+          : undefined;
+
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -460,6 +476,7 @@ export function useChatSessions(options: UseChatSessionsOptions = {}) {
             directorState,
             agentModels: Object.keys(agentModels).length > 0 ? agentModels : undefined,
             directorModel,
+            classroomDefaultModel,
           }),
           signal: controller.signal,
         });

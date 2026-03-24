@@ -303,6 +303,16 @@ export interface StatelessChatRequest {
     apiKey: string;
     baseUrl?: string;
   };
+
+  /** Classroom default runtime model with credentials (overrides global default) */
+  classroomDefaultModel?: {
+    providerId: string;
+    modelId: string;
+    providerType?: 'openai' | 'anthropic' | 'google';
+    requiresApiKey?: boolean;
+    apiKey: string;
+    baseUrl?: string;
+  };
 }
 
 /**

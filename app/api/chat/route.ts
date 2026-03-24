@@ -61,11 +61,15 @@ export async function POST(req: NextRequest) {
       return apiError('MISSING_REQUIRED_FIELD', 400, 'Missing required field: config.agentIds');
     }
 
-    // Resolve API key: client > server > empty
-    const modelString = body.model || 'gpt-4o-mini';
+    // Resolve model: classroom default -> global default -> fallback
+    const defaultModelConfig = body.classroomDefaultModel;
+    const modelString = defaultModelConfig
+      ? `${defaultModelConfig.providerId}:${defaultModelConfig.modelId}`
+      : body.model || 'gpt-4o-mini';
     const { providerId, modelId } = parseModelString(modelString);
 
-    const clientBaseUrl = body.baseUrl || undefined;
+    // Use classroom default credentials if available, otherwise fall back to global
+    const clientBaseUrl = defaultModelConfig?.baseUrl || body.baseUrl || undefined;
     if (clientBaseUrl && process.env.NODE_ENV === 'production') {
       const ssrfError = validateUrlForSSRF(clientBaseUrl);
       if (ssrfError) {
@@ -74,11 +78,11 @@ export async function POST(req: NextRequest) {
     }
 
     const effectiveApiKey = clientBaseUrl
-      ? body.apiKey || ''
-      : resolveApiKey(providerId, body.apiKey);
+      ? (defaultModelConfig?.apiKey || body.apiKey || '')
+      : resolveApiKey(providerId, defaultModelConfig?.apiKey || body.apiKey);
     const effectiveBaseUrl = clientBaseUrl
       ? clientBaseUrl
-      : resolveBaseUrl(providerId, body.baseUrl);
+      : resolveBaseUrl(providerId, defaultModelConfig?.baseUrl || body.baseUrl);
     const proxy = resolveProxy(providerId);
 
     if (!effectiveApiKey) {
@@ -89,6 +93,9 @@ export async function POST(req: NextRequest) {
     log.info(
       `Agents: ${body.config.agentIds.join(', ')}, Messages: ${body.messages.length}, Turn: ${body.directorState?.turnCount ?? 0}`,
     );
+    if (defaultModelConfig) {
+      log.info(`Using classroom default model: ${modelString}`);
+    }
 
     // Create LanguageModel via the unified provider system
     const { model: languageModel } = getModel({
@@ -97,8 +104,8 @@ export async function POST(req: NextRequest) {
       apiKey: effectiveApiKey,
       baseUrl: effectiveBaseUrl,
       proxy,
-      providerType: body.providerType,
-      requiresApiKey: body.requiresApiKey,
+      providerType: defaultModelConfig?.providerType || body.providerType,
+      requiresApiKey: defaultModelConfig?.requiresApiKey ?? body.requiresApiKey,
     });
 
     // Use the native request signal for abort propagation
