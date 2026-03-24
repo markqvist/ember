@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Brain, X, RotateCcw, Sparkles, Users, Bot, Check, Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -102,10 +102,56 @@ export function InferenceSettingsDialog({
   // TTS configuration for voice selection
   const ttsProviderId = useSettingsStore((s) => s.ttsProviderId);
   const ttsVoice = useSettingsStore((s) => s.ttsVoice);
+  const ttsFetchedVoices = useSettingsStore((s) => s.ttsFetchedVoices[ttsProviderId]);
+  const ttsProvidersConfig = useSettingsStore((s) => s.ttsProvidersConfig);
+  const setTTSFetchedVoices = useSettingsStore((s) => s.setTTSFetchedVoices);
   const ttsProvider = TTS_PROVIDERS[ttsProviderId];
-  const availableVoices = useMemo(() => {
+  
+  // Use fetched voices if available, otherwise fall back to static voices
+  const staticVoices = useMemo(() => {
     return getTTSVoices(ttsProviderId).map((v) => ({ id: v.id, name: v.name }));
   }, [ttsProviderId]);
+  
+  const availableVoices = useMemo(() => {
+    // Prefer fetched voices over static ones
+    if (ttsFetchedVoices && ttsFetchedVoices.length > 0) {
+      return ttsFetchedVoices.map((v) => ({ id: v.id, name: v.name }));
+    }
+    return staticVoices;
+  }, [ttsFetchedVoices, staticVoices]);
+  
+  // Fetch voices if provider supports it and none are cached
+  useEffect(() => {
+    if (ttsProvider.supportsVoiceFetching && !ttsFetchedVoices?.length && open) {
+      const fetchVoices = async () => {
+        const baseUrl = ttsProvidersConfig[ttsProviderId]?.baseUrl || ttsProvider.defaultBaseUrl;
+        if (!baseUrl) return;
+        
+        try {
+          const response = await fetch('/api/voices', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              apiKey: ttsProvidersConfig[ttsProviderId]?.apiKey,
+              baseUrl,
+              model: ttsProvidersConfig[ttsProviderId]?.model || ttsProvider.defaultModel,
+            }),
+          });
+          
+          if (!response.ok) throw new Error('Failed to fetch voices');
+          
+          const data = await response.json();
+          const voices = data.voices || [];
+          setTTSFetchedVoices(ttsProviderId, voices);
+        } catch (error) {
+          console.error('Failed to fetch voices:', error);
+          // Fall back to static voices (already in availableVoices)
+        }
+      };
+      
+      fetchVoices();
+    }
+  }, [ttsProviderId, ttsProvider, ttsProvidersConfig, ttsFetchedVoices, open, setTTSFetchedVoices]);
 
   // Local state for editing
   const [defaultRuntimeModel, setDefaultRuntimeModel] = useState<
@@ -120,19 +166,21 @@ export function InferenceSettingsDialog({
   const [agentModels, setAgentModels] = useState<
     Record<string, InferenceModelConfig | null>
   >(inferenceConfig?.agentModels || {});
-  const [agentVoices, setAgentVoices] = useState<Record<string, string | null>>(
-    () => {
-      // Initialize from agent registry voiceId
+  const [agentVoices, setAgentVoices] = useState<Record<string, string | null>>({});
+  const [showAllAgents, setShowAllAgents] = useState(false);
+
+  // Sync agentVoices with agentsRecord when dialog is open and agents change
+  useEffect(() => {
+    if (open) {
       const voices: Record<string, string | null> = {};
       for (const agent of Object.values(agentsRecord)) {
         if (agent.voiceId) {
           voices[agent.id] = agent.voiceId;
         }
       }
-      return voices;
+      setAgentVoices(voices);
     }
-  );
-  const [showAllAgents, setShowAllAgents] = useState(false);
+  }, [open, agentsRecord]);
 
   // Reset state when dialog opens
   const handleOpenChange = useCallback(
