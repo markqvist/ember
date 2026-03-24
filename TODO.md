@@ -11,6 +11,7 @@
 - [x] Add settings export/import
 - [x] Extend user profile size limit
 - [ ] Add local search and webpage fetch from our API
+- [ ] Clean up prompts
 - [ ] Add basic classrom editing capabilities (name, model, etc.)
 - [ ] Add per-slide editing capabilities (raw JSON editor OK)
 - [ ] Add classroom export/import with complete data structure to local file
