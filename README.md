@@ -2,6 +2,12 @@
 
 Create lessons for learning anything. Fully offline, running locally on your own hardware. No cloud providers, no APIs, no data theft or surveillance.
 
+- **One-click lesson generation** — Describe a topic or attach your materials; the AI builds a full lesson in minutes
+- **Multi-agent classroom** — AI teachers and peers lecture, discuss, and interact with you in real time
+- **Rich scene types** — Slides, quizzes, interactive HTML simulations, and project-based learning (PBL)
+- **Whiteboard & TTS** — Agents draw diagrams, write formulas, and explain out loud
+- **Export anywhere** — Download editable `.pptx` slides or interactive `.html` pages
+
 Ember is a fork of the [OpenMAIC](https://github.com/THU-MAIC/OpenMAIC) project optimized for truly offline and sovereign inference and self-owned hosting. The original OpenMAIC project is conceptually a fantastic idea, but severely broken for actual local use. The goal of Ember is to fix that.
 
 It already supports all required functionality for full classroom generation, text-to-speech, speech-to-text, interactive discussions, agent orchestration, etc., while running completely offline using local `llama.cpp`-based backends.
@@ -9,16 +15,6 @@ It already supports all required functionality for full classroom generation, te
 Ember also includes many useful features not found in the original OpenMAIC project:
 
 TODO: Feature comparison
-
-## Overview
-
-TODO: Intro section
-
-- **One-click lesson generation** — Describe a topic or attach your materials; the AI builds a full lesson in minutes
-- **Multi-agent classroom** — AI teachers and peers lecture, discuss, and interact with you in real time
-- **Rich scene types** — Slides, quizzes, interactive HTML simulations, and project-based learning (PBL)
-- **Whiteboard & TTS** — Agents draw diagrams, write formulas, and explain out loud
-- **Export anywhere** — Download editable `.pptx` slides or interactive `.html` pages
 
 ## Quick Start
 
