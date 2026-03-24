@@ -14,11 +14,12 @@
 - [x] Add multi-PDF upload capability
 - [x] Fix models getting confused about media generation instructions even when it's disabled
 - [x] Add generation introspection by logging all prompts to disk
-- [x] Fix runtime model resolution for discussions, etc.
 - [x] Clean up prompts
-- [ ] Add local search and webpage fetch from our API
+- [x] Fix runtime model resolution for discussions, etc.
+- [ ] Add per-classroom runtime inference configuration
 - [ ] Add basic classrom editing capabilities (name, model, etc.)
 - [ ] Add per-slide editing capabilities (raw JSON editor OK)
+- [ ] Add local search and webpage fetch from our API
 - [ ] Add classroom export/import with complete data structure to local file
 - [ ] Add some way to include previous courses as "completed context"
 
