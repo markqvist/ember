@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Stage, Scene, StageMode } from '@/lib/types/stage';
+import type { Stage, Scene, StageMode, ClassroomInferenceConfig } from '@/lib/types/stage';
 import { createSelectors } from '@/lib/utils/create-selectors';
 import type { ChatSession } from '@/lib/types/chat';
 import type { SceneOutline } from '@/lib/types/generation';
@@ -65,6 +65,9 @@ interface StageState {
   currentGeneratingOrder: number;
   failedOutlines: SceneOutline[];
 
+  // Inference configuration (persisted)
+  inferenceConfig: ClassroomInferenceConfig | null;
+
   // Actions
   setStage: (stage: Stage) => void;
   setScenes: (scenes: Scene[]) => void;
@@ -83,6 +86,7 @@ interface StageState {
   addFailedOutline: (outline: SceneOutline) => void;
   clearFailedOutlines: () => void;
   retryFailedOutline: (outlineId: string) => void;
+  setInferenceConfig: (config: ClassroomInferenceConfig | null) => void;
 
   // Getters
   getCurrentScene: () => Scene | null;
@@ -109,6 +113,7 @@ const useStageStoreBase = create<StageState>()((set, get) => ({
   generationStatus: 'idle' as const,
   currentGeneratingOrder: -1,
   failedOutlines: [],
+  inferenceConfig: null,
 
   // Actions
   setStage: (stage) => {
@@ -231,6 +236,11 @@ const useStageStoreBase = create<StageState>()((set, get) => ({
     });
   },
 
+  setInferenceConfig: (config) => {
+    set({ inferenceConfig: config });
+    debouncedSave();
+  },
+
   // Getters
   getCurrentScene: () => {
     const { scenes, currentSceneId } = get();
@@ -248,7 +258,7 @@ const useStageStoreBase = create<StageState>()((set, get) => ({
 
   // Storage methods
   saveToStorage: async () => {
-    const { stage, scenes, currentSceneId, chats } = get();
+    const { stage, scenes, currentSceneId, chats, inferenceConfig } = get();
     if (!stage?.id) {
       log.warn('Cannot save: stage.id is required');
       return;
@@ -261,6 +271,7 @@ const useStageStoreBase = create<StageState>()((set, get) => ({
         scenes,
         currentSceneId,
         chats,
+        inferenceConfig,
       });
     } catch (error) {
       log.error('Failed to save to storage:', error);
@@ -292,6 +303,7 @@ const useStageStoreBase = create<StageState>()((set, get) => ({
           currentSceneId: data.currentSceneId,
           chats: data.chats,
           outlines,
+          inferenceConfig: data.inferenceConfig || null,
           // Compute generatingOutlines from persisted outlines minus completed scenes
           generatingOutlines: outlines.filter((o) => !data.scenes.some((s) => s.order === o.order)),
         });

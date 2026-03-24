@@ -121,3 +121,33 @@ export type {
   GenerationProgress,
   UploadedDocument,
 } from './generation';
+
+// ==================== Inference Configuration Types ====================
+
+import type { ProviderId, ProviderType } from './provider';
+
+/**
+ * Model configuration for inference (runtime or generation)
+ * Captures all necessary information to instantiate a model
+ */
+export interface InferenceModelConfig {
+  providerId: ProviderId;
+  modelId: string;
+  providerType?: ProviderType;
+  requiresApiKey?: boolean;
+}
+
+/**
+ * Extended classroom data with inference configuration
+ * Stored in classroom JSON and persisted to disk
+ */
+export interface ClassroomInferenceConfig {
+  /** Model used to originally generate this classroom */
+  generationModel?: InferenceModelConfig;
+  /** Default model for runtime inference (falls back to generationModel) */
+  defaultRuntimeModel?: InferenceModelConfig;
+  /** Optional separate model for director orchestration */
+  directorModel?: InferenceModelConfig;
+  /** Per-agent model overrides: agentId -> model config */
+  agentModels?: Record<string, InferenceModelConfig>;
+}

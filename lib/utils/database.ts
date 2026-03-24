@@ -47,6 +47,7 @@ export interface StageRecord {
   language?: string;
   style?: string;
   currentSceneId?: string;
+  inferenceConfig?: import('../types/stage').ClassroomInferenceConfig;
 }
 
 /**

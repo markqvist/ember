@@ -5,7 +5,7 @@
  * Each stage has its own storage key based on stageId
  */
 
-import { Stage, Scene } from '../types/stage';
+import { Stage, Scene, ClassroomInferenceConfig } from '../types/stage';
 import { ChatSession } from '../types/chat';
 import { db } from './database';
 import { saveChatSessions, loadChatSessions, deleteChatSessions } from './chat-storage';
@@ -19,6 +19,7 @@ export interface StageStoreData {
   scenes: Scene[];
   currentSceneId: string | null;
   chats: ChatSession[];
+  inferenceConfig?: ClassroomInferenceConfig;
 }
 
 export interface StageListItem {
@@ -47,6 +48,7 @@ export async function saveStageData(stageId: string, data: StageStoreData): Prom
       language: data.stage.language,
       style: data.stage.style,
       currentSceneId: data.currentSceneId || undefined,
+      inferenceConfig: data.inferenceConfig,
     });
 
     // Delete old scenes first to avoid orphaned data
@@ -102,6 +104,7 @@ export async function loadStageData(stageId: string): Promise<StageStoreData | n
       scenes,
       currentSceneId: stage.currentSceneId || scenes[0]?.id || null,
       chats,
+      inferenceConfig: stage.inferenceConfig,
     };
   } catch (error) {
     log.error('Failed to load stage:', error);

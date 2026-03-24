@@ -283,6 +283,26 @@ export interface StatelessChatRequest {
   providerType?: 'openai' | 'anthropic' | 'google';
   /** Whether the provider requires an API key */
   requiresApiKey?: boolean;
+
+  /** Per-agent model configurations: agentId -> model config with credentials */
+  agentModels?: Record<string, {
+    providerId: string;
+    modelId: string;
+    providerType?: 'openai' | 'anthropic' | 'google';
+    requiresApiKey?: boolean;
+    apiKey: string;
+    baseUrl?: string;
+  }>;
+
+  /** Optional director model override with credentials */
+  directorModel?: {
+    providerId: string;
+    modelId: string;
+    providerType?: 'openai' | 'anthropic' | 'google';
+    requiresApiKey?: boolean;
+    apiKey: string;
+    baseUrl?: string;
+  };
 }
 
 /**

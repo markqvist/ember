@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import type { NextRequest } from 'next/server';
-import type { Scene, Stage } from '@/lib/types/stage';
+import type { Scene, Stage, ClassroomInferenceConfig } from '@/lib/types/stage';
 
 export const CLASSROOMS_DIR = path.join(process.cwd(), 'data', 'classrooms');
 export const CLASSROOM_JOBS_DIR = path.join(process.cwd(), 'data', 'classroom-jobs');
@@ -39,6 +39,8 @@ export interface PersistedClassroomData {
   stage: Stage;
   scenes: Scene[];
   createdAt: string;
+  /** Inference configuration for this classroom */
+  inferenceConfig?: ClassroomInferenceConfig;
 }
 
 export interface AudioFileData {
