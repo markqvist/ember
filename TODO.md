@@ -6,7 +6,7 @@
 - [x] Add keyboard navigation and play/pause
 - [x] Add classroom persistence
 - [x] Add audio fetch from server and cache in browser storage
-- [ ] Add local STT functionality
+- [x] Add local STT functionality
 - [ ] Add settings export/import
 - [ ] Add classroom export/import with complete data structure to local file
 - [ ] Extend user profile size limit
