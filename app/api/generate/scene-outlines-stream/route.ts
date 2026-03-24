@@ -156,20 +156,19 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Build media generation policy based on enabled flags
+    // Build AI-generated media instructions based on enabled flags
+    // Only include the relevant snippet if at least one media type is enabled
     const imageGenerationEnabled = req.headers.get('x-image-generation-enabled') === 'true';
     const videoGenerationEnabled = req.headers.get('x-video-generation-enabled') === 'true';
-    let mediaGenerationPolicy = '';
-    if (!imageGenerationEnabled && !videoGenerationEnabled) {
-      mediaGenerationPolicy =
-        '**IMPORTANT: Do NOT include any mediaGenerations in the outlines. Both image and video generation are disabled.**';
-    } else if (!imageGenerationEnabled) {
-      mediaGenerationPolicy =
-        '**IMPORTANT: Do NOT include any image mediaGenerations (type: "image") in the outlines. Image generation is disabled. Video generation is allowed.**';
-    } else if (!videoGenerationEnabled) {
-      mediaGenerationPolicy =
-        '**IMPORTANT: Do NOT include any video mediaGenerations (type: "video") in the outlines. Video generation is disabled. Image generation is allowed.**';
+    let aiGeneratedMediaInstructions = '';
+    if (imageGenerationEnabled && videoGenerationEnabled) {
+      aiGeneratedMediaInstructions = '{{snippet:ai-media-both}}';
+    } else if (imageGenerationEnabled) {
+      aiGeneratedMediaInstructions = '{{snippet:ai-media-image-only}}';
+    } else if (videoGenerationEnabled) {
+      aiGeneratedMediaInstructions = '{{snippet:ai-media-video-only}}';
     }
+    // If neither is enabled, aiGeneratedMediaInstructions remains empty - the model never learns about the capability
 
     // Build teacher context from agents (if available)
     const teacherContext = formatTeacherPersonaForPrompt(agents);
@@ -184,7 +183,7 @@ export async function POST(req: NextRequest) {
           : 'None',
       availableImages: availableImagesText,
       researchContext: researchContext || (requirements.language === 'zh-CN' ? '无' : 'None'),
-      mediaGenerationPolicy,
+      aiGeneratedMediaInstructions,
       teacherContext,
     });
 
