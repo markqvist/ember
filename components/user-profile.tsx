@@ -221,9 +221,8 @@ export function UserProfileCard() {
         value={bio}
         onChange={(e) => setBio(e.target.value)}
         placeholder={t('profile.bioPlaceholder')}
-        maxLength={200}
-        rows={3}
-        className="mt-3 resize-none bg-background/50 min-h-[80px]"
+        rows={5}
+        className="mt-3 resize-none bg-background/50 min-h-[120px]"
       />
     </Card>
   );
