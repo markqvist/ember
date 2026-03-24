@@ -23,6 +23,7 @@ import type { LangGraphRunnableConfig } from '@langchain/langgraph';
 import type { LanguageModel } from 'ai';
 
 import { AISdkLangGraphAdapter } from './ai-sdk-adapter';
+import { getModel } from '@/lib/ai/providers';
 import type { StatelessEvent } from '@/lib/types/chat';
 import type { StatelessChatRequest } from '@/lib/types/chat';
 import type { ThinkingConfig } from '@/lib/types/provider';
@@ -59,6 +60,24 @@ const OrchestratorState = Annotation.Root({
   userProfile: Annotation<{ nickname?: string; bio?: string } | null>,
   /** Request-scoped agent configs for generated agents (not in the default registry) */
   agentConfigOverrides: Annotation<Record<string, AgentConfig>>,
+  /** Per-agent model configurations with credentials */
+  agentModels: Annotation<Record<string, {
+    providerId: string;
+    modelId: string;
+    providerType?: 'openai' | 'anthropic' | 'google';
+    requiresApiKey?: boolean;
+    apiKey: string;
+    baseUrl?: string;
+  }>>,
+  /** Optional director model override with credentials */
+  directorModel: Annotation<{
+    providerId: string;
+    modelId: string;
+    providerType?: 'openai' | 'anthropic' | 'google';
+    requiresApiKey?: boolean;
+    apiKey: string;
+    baseUrl?: string;
+  } | null>,
 
   // Mutable (updated by nodes)
   currentAgentId: Annotation<string | null>,
@@ -178,7 +197,20 @@ async function directorNode(
     state.storeState.whiteboardOpen,
   );
 
-  const adapter = new AISdkLangGraphAdapter(state.languageModel, state.thinkingConfig ?? undefined);
+  // Resolve director model: director config -> default languageModel
+  const directorModelConfig = state.directorModel;
+  const directorLanguageModel = directorModelConfig
+    ? getModel({
+        providerId: directorModelConfig.providerId as import('@/lib/types/provider').ProviderId,
+        modelId: directorModelConfig.modelId,
+        apiKey: directorModelConfig.apiKey,
+        baseUrl: directorModelConfig.baseUrl,
+        providerType: directorModelConfig.providerType,
+        requiresApiKey: directorModelConfig.requiresApiKey,
+      }).model
+    : state.languageModel;
+
+  const adapter = new AISdkLangGraphAdapter(directorLanguageModel, state.thinkingConfig ?? undefined);
 
   try {
     const result = await adapter._generate(
@@ -290,7 +322,21 @@ async function runAgentGeneration(
     state.agentResponses,
   );
   const openaiMessages = convertMessagesToOpenAI(state.messages, agentId);
-  const adapter = new AISdkLangGraphAdapter(state.languageModel, state.thinkingConfig ?? undefined);
+
+  // Resolve model for this agent: per-agent config -> default languageModel
+  const agentModelConfig = state.agentModels?.[agentId];
+  const effectiveLanguageModel = agentModelConfig
+    ? getModel({
+        providerId: agentModelConfig.providerId as import('@/lib/types/provider').ProviderId,
+        modelId: agentModelConfig.modelId,
+        apiKey: agentModelConfig.apiKey,
+        baseUrl: agentModelConfig.baseUrl,
+        providerType: agentModelConfig.providerType,
+        requiresApiKey: agentModelConfig.requiresApiKey,
+      }).model
+    : state.languageModel;
+
+  const adapter = new AISdkLangGraphAdapter(effectiveLanguageModel, state.thinkingConfig ?? undefined);
 
   const lcMessages = [
     new SystemMessage(systemPrompt),
@@ -539,6 +585,8 @@ export function buildInitialState(
     triggerAgentId: request.config.triggerAgentId || null,
     userProfile: request.userProfile || null,
     agentConfigOverrides,
+    agentModels: request.agentModels ?? {},
+    directorModel: request.directorModel ?? null,
     currentAgentId: null,
     turnCount,
     agentResponses: incoming?.agentResponses ?? [],

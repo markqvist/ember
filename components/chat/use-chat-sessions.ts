@@ -410,6 +410,46 @@ export function useChatSessions(options: UseChatSessionsOptions = {}) {
           whiteboardOpen: useCanvasStore.getState().whiteboardOpen,
         };
 
+        // Build per-agent model configurations from classroom inference settings
+        const inferenceConfig = freshState.inferenceConfig;
+        const providersConfig = settingsState.providersConfig;
+
+        // Build agentModels map with credentials
+        const agentModels: Record<string, {
+          providerId: string;
+          modelId: string;
+          providerType?: 'openai' | 'anthropic' | 'google';
+          requiresApiKey?: boolean;
+          apiKey: string;
+          baseUrl?: string;
+        }> = {};
+
+        if (inferenceConfig?.agentModels) {
+          for (const [agentId, modelConfig] of Object.entries(inferenceConfig.agentModels)) {
+            if (modelConfig) {
+              const providerConfig = providersConfig[modelConfig.providerId];
+              agentModels[agentId] = {
+                ...modelConfig,
+                apiKey: providerConfig?.apiKey || '',
+                baseUrl: providerConfig?.baseUrl || providerConfig?.defaultBaseUrl || '',
+              };
+            }
+          }
+        }
+
+        // Build director model with credentials if configured
+        const directorModelConfig = inferenceConfig?.directorModel;
+        const directorModel = directorModelConfig
+          ? {
+              ...directorModelConfig,
+              apiKey: providersConfig[directorModelConfig.providerId]?.apiKey || '',
+              baseUrl:
+                providersConfig[directorModelConfig.providerId]?.baseUrl ||
+                providersConfig[directorModelConfig.providerId]?.defaultBaseUrl ||
+                '',
+            }
+          : undefined;
+
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -418,6 +458,8 @@ export function useChatSessions(options: UseChatSessionsOptions = {}) {
             messages: currentMessages,
             storeState: freshStoreState,
             directorState,
+            agentModels: Object.keys(agentModels).length > 0 ? agentModels : undefined,
+            directorModel,
           }),
           signal: controller.signal,
         });
