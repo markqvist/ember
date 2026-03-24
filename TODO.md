@@ -7,13 +7,13 @@
 - [x] Add classroom persistence
 - [x] Add audio fetch from server and cache in browser storage
 - [x] Add local STT functionality
+- [x] Ensure PDF import works
 - [ ] Add settings export/import
-- [ ] Add classroom export/import with complete data structure to local file
 - [ ] Extend user profile size limit
 - [ ] Add local search and webpage fetch from our API
-- [ ] Ensure PDF import works
 - [ ] Add basic classrom editing capabilities (name, model, etc.)
 - [ ] Add per-slide editing capabilities (raw JSON editor OK)
+- [ ] Add classroom export/import with complete data structure to local file
 - [ ] Add some way to include previous courses as "completed context"
 
 ## PRs
