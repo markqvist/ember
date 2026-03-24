@@ -1,4 +1,4 @@
-# Ember - Full Local Generative Learning Environment.
+# Ember - Truly Local Generative Learning Environment.
 
 Create lessons for learning anything. Fully offline, running locally on your own hardware. No cloud providers, no APIs, no data theft or surveillance.
 
