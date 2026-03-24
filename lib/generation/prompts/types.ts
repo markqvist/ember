@@ -25,7 +25,9 @@ export type SnippetId =
   | 'action-types'
   | 'ai-media-both'
   | 'ai-media-image-only'
-  | 'ai-media-video-only';
+  | 'ai-media-video-only'
+  | 'output-format-media'
+  | 'output-format-no-media';
 
 /**
  * Loaded prompt template

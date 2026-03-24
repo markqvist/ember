@@ -156,17 +156,29 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Build user profile text for personalization
+    const userProfileText =
+      requirements.userNickname || requirements.userBio
+        ? `## Student Profile\n\nName: ${requirements.userNickname || 'Unknown'}\nProvided Information:${requirements.userBio ? ` — ${requirements.userBio}` : ''}\n\nConsider this student's background when designing the course. Adapt difficulty, examples, and teaching approach accordingly.\n\n---`
+        : '';
+
     // Build AI-generated media instructions based on enabled flags
     // Only include the relevant snippet if at least one media type is enabled
     const imageGenerationEnabled = req.headers.get('x-image-generation-enabled') === 'true';
     const videoGenerationEnabled = req.headers.get('x-video-generation-enabled') === 'true';
     let aiGeneratedMediaInstructions = '';
+    let outputFormatInstructions = '';
     if (imageGenerationEnabled && videoGenerationEnabled) {
       aiGeneratedMediaInstructions = '{{snippet:ai-media-both}}';
+      outputFormatInstructions = '{{snippet:output-format-media}}';
     } else if (imageGenerationEnabled) {
       aiGeneratedMediaInstructions = '{{snippet:ai-media-image-only}}';
+      outputFormatInstructions = '{{snippet:output-format-media}}';
     } else if (videoGenerationEnabled) {
       aiGeneratedMediaInstructions = '{{snippet:ai-media-video-only}}';
+      outputFormatInstructions = '{{snippet:output-format-media}}';
+    } else {
+      outputFormatInstructions = '{{snippet:output-format-no-media}}';
     }
     // If neither is enabled, aiGeneratedMediaInstructions remains empty - the model never learns about the capability
 
@@ -182,8 +194,10 @@ export async function POST(req: NextRequest) {
           ? '无'
           : 'None',
       availableImages: availableImagesText,
+      userProfile: userProfileText,
       researchContext: researchContext || (requirements.language === 'zh-CN' ? '无' : 'None'),
       aiGeneratedMediaInstructions,
+      outputFormatInstructions,
       teacherContext,
     });
 
