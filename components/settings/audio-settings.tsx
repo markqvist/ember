@@ -480,6 +480,10 @@ export function AudioSettings({ onSave }: AudioSettingsProps = {}) {
             if (baseUrlValue && baseUrlValue.trim()) {
               formData.append('baseUrl', baseUrlValue);
             }
+            const modelValue = asrProvidersConfig[asrProviderId]?.model;
+            if (modelValue && modelValue.trim()) {
+              formData.append('model', modelValue);
+            }
 
             try {
               const response = await fetch('/api/transcription', {

@@ -49,13 +49,16 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}) {
           formData.append('providerId', asrProviderId);
           formData.append('language', asrLanguage);
 
-          // Append API key and base URL if configured
+          // Append API key, base URL, and model if configured
           const providerConfig = asrProvidersConfig?.[asrProviderId];
           if (providerConfig?.apiKey?.trim()) {
             formData.append('apiKey', providerConfig.apiKey);
           }
           if (providerConfig?.baseUrl?.trim()) {
             formData.append('baseUrl', providerConfig.baseUrl);
+          }
+          if (providerConfig?.model?.trim()) {
+            formData.append('model', providerConfig.model);
           }
         }
 
