@@ -8,7 +8,7 @@
 - [x] Add audio fetch from server and cache in browser storage
 - [x] Add local STT functionality
 - [x] Ensure PDF import works
-- [ ] Add settings export/import
+- [x] Add settings export/import
 - [ ] Extend user profile size limit
 - [ ] Add local search and webpage fetch from our API
 - [ ] Add basic classrom editing capabilities (name, model, etc.)
