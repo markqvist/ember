@@ -14,7 +14,7 @@ Please generate scene outlines based on the following course requirements.
 
 **Required language**: {{language}}
 
-(If language is zh-CN, all content must be in Chinese; if en-US, all content must be in English)
+(All content must be in the specified language)
 
 ---
 
@@ -74,7 +74,6 @@ Then output a JSON array containing all scene outlines. Each scene must include:
 4. **Scene count**: Based on inferred duration, typically 1-2 scenes per minute
 5. **Quiz placement**: Recommend inserting a quiz every 3-5 slides for assessment
 6. **Language**: Strictly output all content in the specified course language
-7. **If no suitable PDF images exist** for a slide scene that would benefit from visuals, add `mediaGenerations` array with image generation prompts. Write prompts in English. Use `elementId` format like "gen_img_1", "gen_img_2" — IDs must be **globally unique across all scenes** (do NOT restart numbering per scene). To reuse a generated image in a different scene, reference the same elementId without re-declaring it in mediaGenerations. Each generated image should be visually distinct — avoid near-identical media across slides.
-8. **If web search results are provided**, reference specific findings and sources in scene descriptions and keyPoints. The search results provide up-to-date information — incorporate it to make the course content current and accurate.
+7. **If web search results are provided**, reference specific findings and sources in scene descriptions and keyPoints. The search results provide up-to-date information — incorporate it to make the course content current and accurate.
 
-Please output JSON array directly without additional explanatory text.
+Output the final JSON array directly without additional explanatory text.

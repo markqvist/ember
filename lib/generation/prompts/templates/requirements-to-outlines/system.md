@@ -154,7 +154,7 @@ Use `pbl` type when the course involves complex, multi-step project work that be
   "projectDescription": "Brief description of what students will build/accomplish",
   "targetSkills": ["Skill 1", "Skill 2", "Skill 3"],
   "issueCount": 3,
-  "language": "zh-CN"
+  "language": "en-US"
 }
 ```
 

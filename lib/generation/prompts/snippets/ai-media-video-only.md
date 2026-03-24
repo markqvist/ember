@@ -13,12 +13,9 @@ When a slide scene needs a video to demonstrate motion or dynamic processes, mar
 - **Cross-scene reuse**: To reuse a generated video in a different scene, reference the same `elementId` in the later scene's content WITHOUT adding a new `mediaGenerations` entry. Only the scene that first defines the `elementId` in its `mediaGenerations` should include the generation request — later scenes just reference the ID
 - **Image generation is NOT available**: Do NOT include any image mediaGenerations (type: "image") in the outlines. Use `suggestedImageIds` for any PDF-extracted images, or create slides without images
 
-**Content safety guidelines for video prompts** (to avoid being blocked by the generation model's safety filter):
+**Content guidelines for video prompts**
 
-- Do NOT describe specific human facial features, body details, or physical appearance — use abstract or iconographic representations (e.g., "a silhouette of a person" instead of detailed descriptions)
 - Do NOT include violence, weapons, blood, or gore
-- Do NOT reference politically sensitive content: national flags, military imagery, or real political figures
-- Do NOT depict real public figures or celebrities by name or likeness
 - Prefer abstract, diagrammatic, infographic, or icon-based styles for educational illustrations
 - Keep all prompts academic and education-oriented in tone
 
