@@ -65,24 +65,18 @@ export function InferenceSettingsDialog({
   const stageId = stage?.id;
 
   // Filter to relevant agents only:
-  // - Default agents (always available)
+  // - Selected agents (whether default or custom)
   // - Generated agents bound to this specific classroom/stage
-  // - Agents currently selected in settings
   const relevantAgentIds = useMemo(() => {
     const ids = new Set<string>();
 
     for (const [id, agent] of Object.entries(agentsRecord)) {
-      // Include default agents
-      if (agent.isDefault) {
-        ids.add(id);
-        continue;
-      }
-      // Include generated agents bound to this stage
+      // Include generated agents bound to this stage (classroom-specific generated agents)
       if (agent.isGenerated && agent.boundStageId === stageId) {
         ids.add(id);
         continue;
       }
-      // Include agents that are currently selected
+      // Include agents that are currently selected for this classroom
       if (selectedAgentIds.includes(id)) {
         ids.add(id);
       }
