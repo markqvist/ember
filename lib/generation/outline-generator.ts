@@ -86,12 +86,18 @@ export async function generateSceneOutlinesFromRequirements(
   const imageEnabled = options?.imageGenerationEnabled ?? false;
   const videoEnabled = options?.videoGenerationEnabled ?? false;
   let aiGeneratedMediaInstructions = '';
+  let outputFormatInstructions = '';
   if (imageEnabled && videoEnabled) {
     aiGeneratedMediaInstructions = '{{snippet:ai-media-both}}';
+    outputFormatInstructions = '{{snippet:output-format-media}}';
   } else if (imageEnabled) {
     aiGeneratedMediaInstructions = '{{snippet:ai-media-image-only}}';
+    outputFormatInstructions = '{{snippet:output-format-media}}';
   } else if (videoEnabled) {
     aiGeneratedMediaInstructions = '{{snippet:ai-media-video-only}}';
+    outputFormatInstructions = '{{snippet:output-format-media}}';
+  } else {
+    outputFormatInstructions = '{{snippet:output-format-no-media}}';
   }
   // If neither is enabled, aiGeneratedMediaInstructions remains empty - the model never learns about the capability
 
@@ -108,6 +114,7 @@ export async function generateSceneOutlinesFromRequirements(
     availableImages: availableImagesText,
     userProfile: userProfileText,
     aiGeneratedMediaInstructions,
+    outputFormatInstructions,
     researchContext:
       options?.researchContext || (requirements.language === 'zh-CN' ? '无' : 'None'),
     // Server-side generation populates this via options; client-side populates via formatTeacherPersonaForPrompt

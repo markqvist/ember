@@ -6,10 +6,13 @@
  * - Snippet inclusion via {{snippet:name}} syntax
  * - Variable interpolation via {{variable}} syntax
  * - Caching for performance
+ * - Introspection logging of resolved prompts
  */
 
 import fs from 'fs';
+import { promises as fsPromises } from 'fs';
 import path from 'path';
+import { nanoid } from 'nanoid';
 import type { PromptId, LoadedPrompt, SnippetId } from './types';
 import { createLogger } from '@/lib/logger';
 const log = createLogger('PromptLoader');
@@ -19,11 +22,55 @@ const promptCache = new Map<string, LoadedPrompt>();
 const snippetCache = new Map<string, string>();
 
 /**
+ * Directory for introspection logs of resolved prompts
+ */
+export const INTROSPECTION_DIR = path.join(process.cwd(), 'data', 'introspection', 'prompts');
+
+/**
  * Get the prompts directory path
  */
 function getPromptsDir(): string {
   // In Next.js, use process.cwd() for the project root
   return path.join(process.cwd(), 'lib', 'generation', 'prompts');
+}
+
+/**
+ * Ensure the introspection directory exists
+ * Silently fails if directory cannot be created (permissions, etc.)
+ */
+async function ensureIntrospectionDir(): Promise<void> {
+  try {
+    await fsPromises.mkdir(INTROSPECTION_DIR, { recursive: true });
+  } catch {
+    // Silently fail - introspection is best-effort
+  }
+}
+
+/**
+ * Log a resolved prompt to the introspection directory
+ * Writes prompts with structured filenames for observability
+ */
+async function logResolvedPrompt(
+  promptId: PromptId,
+  promptType: 'system' | 'user',
+  content: string,
+): Promise<void> {
+  try {
+    await ensureIntrospectionDir();
+
+    const now = new Date();
+    const timestamp = `${now.getFullYear()}_${String(now.getMonth() + 1).padStart(2, '0')}_${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}_${String(now.getMinutes()).padStart(2, '0')}`;
+    const uniqueId = nanoid(8);
+    const filename = `${timestamp}_${promptType}_${promptId}_${uniqueId}.md`;
+    const filepath = path.join(INTROSPECTION_DIR, filename);
+
+    const header = `<!--\n  Prompt ID: ${promptId}\n  Type: ${promptType}\n  Generated: ${now.toISOString()}\n-->\n\n`;
+
+    await fsPromises.writeFile(filepath, header + content, 'utf-8');
+  } catch (error) {
+    // Log warning but don't fail the generation flow
+    log.warn('Failed to write introspection log:', error instanceof Error ? error.message : String(error));
+  }
 }
 
 /**
@@ -109,6 +156,7 @@ export function interpolateVariables(template: string, variables: Record<string,
 
 /**
  * Build a complete prompt with variables
+ * Also logs resolved prompts to introspection directory for observability
  */
 export function buildPrompt(
   promptId: PromptId,
@@ -117,10 +165,14 @@ export function buildPrompt(
   const prompt = loadPrompt(promptId);
   if (!prompt) return null;
 
-  return {
-    system: interpolateVariables(prompt.systemPrompt, variables),
-    user: interpolateVariables(prompt.userPromptTemplate, variables),
-  };
+  const system = interpolateVariables(prompt.systemPrompt, variables);
+  const user = interpolateVariables(prompt.userPromptTemplate, variables);
+
+  // Fire-and-forget introspection logging - don't await, don't block
+  void logResolvedPrompt(promptId, 'system', system);
+  void logResolvedPrompt(promptId, 'user', user);
+
+  return { system, user };
 }
 
 /**
