@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
     // Build user profile text for personalization
     const userProfileText =
       requirements.userNickname || requirements.userBio
-        ? `## Student Profile\n\nName: ${requirements.userNickname || 'Unknown'}\nProvided Information:${requirements.userBio ? ` — ${requirements.userBio}` : ''}\n\nConsider this student's background when designing the course. Adapt difficulty, examples, and teaching approach accordingly.\n\n---`
+        ? `## Student Profile\n\nName: ${requirements.userNickname || 'Unknown'}\nProvided Information: ${requirements.userBio ? `${requirements.userBio}` : ''}\n\nConsider this student's background when designing the course. Adapt difficulty, examples, and teaching approach accordingly.\n\n---`
         : '';
 
     // Build AI-generated media instructions based on enabled flags

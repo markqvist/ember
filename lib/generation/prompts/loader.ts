@@ -165,8 +165,13 @@ export function buildPrompt(
   const prompt = loadPrompt(promptId);
   if (!prompt) return null;
 
-  const system = interpolateVariables(prompt.systemPrompt, variables);
-  const user = interpolateVariables(prompt.userPromptTemplate, variables);
+  let system = interpolateVariables(prompt.systemPrompt, variables);
+  let user = interpolateVariables(prompt.userPromptTemplate, variables);
+
+  // Process snippets that were dynamically included via variables
+  // This allows variables to contain {{snippet:name}} placeholders
+  system = processSnippets(system);
+  user = processSnippets(user);
 
   // Fire-and-forget introspection logging - don't await, don't block
   void logResolvedPrompt(promptId, 'system', system);
