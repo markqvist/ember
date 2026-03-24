@@ -271,7 +271,7 @@ const useStageStoreBase = create<StageState>()((set, get) => ({
         scenes,
         currentSceneId,
         chats,
-        inferenceConfig,
+        inferenceConfig: inferenceConfig ?? undefined,
       });
     } catch (error) {
       log.error('Failed to save to storage:', error);

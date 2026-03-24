@@ -10,12 +10,14 @@ import {
   Download,
   FileDown,
   Package,
+  Brain,
 } from 'lucide-react';
 import { useI18n } from '@/lib/hooks/use-i18n';
 import { useTheme } from '@/lib/hooks/use-theme';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { SettingsDialog } from './settings';
+import { InferenceSettingsDialog } from './inference-settings-dialog';
 import { cn } from '@/lib/utils';
 import { useSettingsStore } from '@/lib/store/settings';
 import { useStageStore } from '@/lib/store/stage';
@@ -31,6 +33,7 @@ export function Header({ currentSceneTitle }: HeaderProps) {
   const { theme, setTheme } = useTheme();
   const router = useRouter();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [inferenceSettingsOpen, setInferenceSettingsOpen] = useState(false);
   const [languageOpen, setLanguageOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
 
@@ -212,6 +215,19 @@ export function Header({ currentSceneTitle }: HeaderProps) {
 
           <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700" />
 
+          {/* Inference Settings Button */}
+          <div className="relative">
+            <button
+              onClick={() => setInferenceSettingsOpen(true)}
+              className="p-2 rounded-full text-gray-400 dark:text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200 hover:shadow-sm transition-all"
+              title={t('inferenceSettings.title') || 'Inference Configuration'}
+            >
+              <Brain className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700" />
+
           {/* Settings Button */}
           <div className="relative">
             <button
@@ -296,6 +312,7 @@ export function Header({ currentSceneTitle }: HeaderProps) {
         </div>
       </header>
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <InferenceSettingsDialog open={inferenceSettingsOpen} onOpenChange={setInferenceSettingsOpen} />
     </>
   );
 }
