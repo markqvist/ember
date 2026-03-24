@@ -97,6 +97,8 @@ export async function POST(req: NextRequest) {
       apiKey: effectiveApiKey,
       baseUrl: effectiveBaseUrl,
       proxy,
+      providerType: body.providerType,
+      requiresApiKey: body.requiresApiKey,
     });
 
     // Use the native request signal for abort propagation

@@ -279,6 +279,10 @@ export interface StatelessChatRequest {
   apiKey: string;
   baseUrl?: string;
   model?: string;
+  /** Provider type for custom providers (e.g., 'openai', 'anthropic', 'google') */
+  providerType?: 'openai' | 'anthropic' | 'google';
+  /** Whether the provider requires an API key */
+  requiresApiKey?: boolean;
 }
 
 /**
