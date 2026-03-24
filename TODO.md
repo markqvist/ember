@@ -1,4 +1,4 @@
-# OpenMAIC Local Inference Optimization Tasks
+# OpenMAIC Local Inference Optimization & Fixes Tasks
 
 - [x] Make timeouts configurable
 - [x] Add proper TTS config
@@ -9,10 +9,14 @@
 - [x] Add local STT functionality
 - [x] Ensure PDF import works
 - [x] Add settings export/import
-- [x] Extend user profile size limit
+- [x] Extend student profile size limit
+- [x] Fix student profile not actually appearing in prompts
 - [x] Add multi-PDF upload capability
+- [x] Fix models getting confused about media generation instructions even when it's disabled
+- [x] Add generation introspection by logging all prompts to disk
+- [x] Fix runtime model resolution for discussions, etc.
+- [x] Clean up prompts
 - [ ] Add local search and webpage fetch from our API
-- [ ] Clean up prompts
 - [ ] Add basic classrom editing capabilities (name, model, etc.)
 - [ ] Add per-slide editing capabilities (raw JSON editor OK)
 - [ ] Add classroom export/import with complete data structure to local file
