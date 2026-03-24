@@ -13,6 +13,9 @@ export interface AgentConfig {
   allowedActions: string[]; // Action types this agent can use
   priority: number; // Priority for director selection (1-10)
 
+  // TTS Configuration
+  voiceId?: string; // Per-agent TTS voice override (falls back to classroom default)
+
   // Metadata
   createdAt: Date;
   updatedAt: Date;
@@ -32,6 +35,9 @@ export interface AgentTemplate {
   color: string;
   allowedActions: string[];
   priority: number;
+
+  // TTS Configuration
+  voiceId?: string; // Per-agent TTS voice override (falls back to classroom default)
 
   // LLM-generated agent fields
   isGenerated?: boolean; // true for LLM-generated agents

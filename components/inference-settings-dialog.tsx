@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { Brain, X, RotateCcw, Sparkles, Users, Bot, Check } from 'lucide-react';
+import { Brain, X, RotateCcw, Sparkles, Users, Bot, Check, Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -11,6 +11,13 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/hooks/use-i18n';
 import { useStageStore } from '@/lib/store';
@@ -19,6 +26,8 @@ import { useAgentRegistry } from '@/lib/orchestration/registry/store';
 import type { ProviderId } from '@/lib/ai/providers';
 import type { InferenceModelConfig } from '@/lib/types/stage';
 import { CompactModelSelector } from './compact-model-selector';
+import { TTS_PROVIDERS, getTTSVoices } from '@/lib/audio/constants';
+import type { TTSProviderId } from '@/lib/audio/types';
 
 interface InferenceSettingsDialogProps {
   open: boolean;
@@ -90,6 +99,14 @@ export function InferenceSettingsDialog({
     [agentsRecord, relevantAgentIds],
   );
 
+  // TTS configuration for voice selection
+  const ttsProviderId = useSettingsStore((s) => s.ttsProviderId);
+  const ttsVoice = useSettingsStore((s) => s.ttsVoice);
+  const ttsProvider = TTS_PROVIDERS[ttsProviderId];
+  const availableVoices = useMemo(() => {
+    return getTTSVoices(ttsProviderId).map((v) => ({ id: v.id, name: v.name }));
+  }, [ttsProviderId]);
+
   // Local state for editing
   const [defaultRuntimeModel, setDefaultRuntimeModel] = useState<
     InferenceModelConfig | null | undefined
@@ -103,6 +120,18 @@ export function InferenceSettingsDialog({
   const [agentModels, setAgentModels] = useState<
     Record<string, InferenceModelConfig | null>
   >(inferenceConfig?.agentModels || {});
+  const [agentVoices, setAgentVoices] = useState<Record<string, string | null>>(
+    () => {
+      // Initialize from agent registry voiceId
+      const voices: Record<string, string | null> = {};
+      for (const agent of Object.values(agentsRecord)) {
+        if (agent.voiceId) {
+          voices[agent.id] = agent.voiceId;
+        }
+      }
+      return voices;
+    }
+  );
   const [showAllAgents, setShowAllAgents] = useState(false);
 
   // Reset state when dialog opens
@@ -113,10 +142,18 @@ export function InferenceSettingsDialog({
         setDirectorModel(inferenceConfig?.directorModel);
         setUseDefaultForDirector(!inferenceConfig?.directorModel);
         setAgentModels(inferenceConfig?.agentModels || {});
+        // Reset voice state from agent registry
+        const voices: Record<string, string | null> = {};
+        for (const agent of Object.values(agentsRecord)) {
+          if (agent.voiceId) {
+            voices[agent.id] = agent.voiceId;
+          }
+        }
+        setAgentVoices(voices);
       }
       onOpenChange(newOpen);
     },
-    [inferenceConfig, onOpenChange],
+    [inferenceConfig, onOpenChange, agentsRecord],
   );
 
   // Get generation model for fallback display
@@ -145,6 +182,7 @@ export function InferenceSettingsDialog({
       }
     }
 
+    // Save inference config
     setInferenceConfig({
       ...inferenceConfig,
       generationModel: inferenceConfig?.generationModel || generationModel,
@@ -152,6 +190,21 @@ export function InferenceSettingsDialog({
       directorModel: useDefaultForDirector ? undefined : directorModel || undefined,
       agentModels: Object.keys(filteredAgentModels).length > 0 ? filteredAgentModels : undefined,
     });
+
+    // Save agent voices to registry
+    const registry = useAgentRegistry.getState();
+    for (const [agentId, voiceId] of Object.entries(agentVoices)) {
+      if (voiceId) {
+        registry.updateAgent(agentId, { voiceId });
+      } else {
+        // Clear voiceId if null
+        const agent = registry.getAgent(agentId);
+        if (agent?.voiceId) {
+          registry.updateAgent(agentId, { voiceId: undefined });
+        }
+      }
+    }
+
     onOpenChange(false);
   };
 
@@ -160,6 +213,7 @@ export function InferenceSettingsDialog({
     setDirectorModel(undefined);
     setUseDefaultForDirector(true);
     setAgentModels({});
+    setAgentVoices({});
   };
 
   const handleAgentModelChange = (agentId: string, providerId: ProviderId, modelId: string) => {
@@ -183,12 +237,39 @@ export function InferenceSettingsDialog({
     });
   };
 
+  const handleAgentVoiceChange = (agentId: string, voiceId: string) => {
+    setAgentVoices((prev) => ({
+      ...prev,
+      [agentId]: voiceId,
+    }));
+  };
+
+  const handleClearAgentVoice = (agentId: string) => {
+    setAgentVoices((prev) => {
+      const next = { ...prev };
+      delete next[agentId];
+      return next;
+    });
+  };
+
+  // Build current agent voices from registry for comparison
+  const currentAgentVoices = useMemo(() => {
+    const voices: Record<string, string> = {};
+    for (const agent of Object.values(agentsRecord)) {
+      if (agent.voiceId) {
+        voices[agent.id] = agent.voiceId;
+      }
+    }
+    return voices;
+  }, [agentsRecord]);
+
   const hasChanges =
     defaultRuntimeModel !== inferenceConfig?.defaultRuntimeModel ||
     (useDefaultForDirector
       ? inferenceConfig?.directorModel !== undefined
       : directorModel !== inferenceConfig?.directorModel) ||
-    JSON.stringify(agentModels) !== JSON.stringify(inferenceConfig?.agentModels || {});
+    JSON.stringify(agentModels) !== JSON.stringify(inferenceConfig?.agentModels || {}) ||
+    JSON.stringify(agentVoices) !== JSON.stringify(currentAgentVoices);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -278,66 +359,102 @@ export function InferenceSettingsDialog({
             )}
           </div>
 
-          {/* Per-Agent Models */}
+          {/* Per-Agent Models & Voices */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-primary" />
               <h3 className="font-medium">
-                {t('settings.inferenceSettings.perAgentModels') || 'Per-Agent Model Overrides'}
+                {t('settings.inferenceSettings.perAgentModels') || 'Per-Agent Configuration'}
               </h3>
             </div>
             <p className="text-sm text-muted-foreground">
               {t('settings.inferenceSettings.perAgentModelsDesc') ||
-                'Override the default model for specific agents. Useful for running teacher on heavy model and students on lighter models.'}
+                'Override the default model and voice for specific agents. Useful for running teacher on heavy model and students on lighter models, with distinct voices for each.'}
             </p>
 
             <div className="space-y-2">
               {displayedAgents.map((agent) => {
                 const agentModel = agentModels[agent.id];
-                const isOverridden = !!agentModel;
+                const agentVoice = agentVoices[agent.id];
+                const isModelOverridden = !!agentModel;
+                const isVoiceOverridden = !!agentVoice;
 
                 return (
                   <div
                     key={agent.id}
                     className={cn(
-                      'flex items-center gap-3 p-3 rounded-lg border',
-                      isOverridden ? 'border-primary/50 bg-primary/5' : 'border-border',
+                      'flex flex-col gap-2 p-3 rounded-lg border',
+                      isModelOverridden || isVoiceOverridden ? 'border-primary/50 bg-primary/5' : 'border-border',
                     )}
                   >
-                    <img
-                      src={agent.avatar}
-                      alt=""
-                      className="w-8 h-8 rounded-full"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/avatars/teacher.png';
-                      }}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm">{agent.name}</div>
-                      <div className="text-xs text-muted-foreground capitalize">
-                        {agent.role}
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={agent.avatar}
+                        alt=""
+                        className="w-8 h-8 rounded-full"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/avatars/teacher.png';
+                        }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm">{agent.name}</div>
+                        <div className="text-xs text-muted-foreground capitalize">
+                          {agent.role}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {(isModelOverridden || isVoiceOverridden) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              handleClearAgentModel(agent.id);
+                              handleClearAgentVoice(agent.id);
+                            }}
+                            className="h-8 w-8 p-0"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <CompactModelSelector
-                        providerId={agentModel?.providerId || null}
-                        modelId={agentModel?.modelId || null}
-                        onModelChange={(pid, mid) => handleAgentModelChange(agent.id, pid, mid)}
-                        providersConfig={providersConfig}
-                        placeholder="Use default"
-                        className="h-8"
-                      />
+                    
+                    {/* Model Selector */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground w-12 shrink-0">Model:</span>
+                      <div className="flex-1 min-w-0">
+                        <CompactModelSelector
+                          providerId={agentModel?.providerId || null}
+                          modelId={agentModel?.modelId || null}
+                          onModelChange={(pid, mid) => handleAgentModelChange(agent.id, pid, mid)}
+                          providersConfig={providersConfig}
+                          placeholder="Use default"
+                          className="h-8"
+                        />
+                      </div>
                     </div>
-                    {isOverridden && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleClearAgentModel(agent.id)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    )}
+                    
+                    {/* Voice Selector */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground w-12 shrink-0">Voice:</span>
+                      <div className="flex-1 min-w-0">
+                        <Select
+                          value={agentVoice || ''}
+                          onValueChange={(value) => handleAgentVoiceChange(agent.id, value)}
+                        >
+                          <SelectTrigger className="h-8 text-sm">
+                            <SelectValue placeholder={`Default (${ttsProvider.name})`} />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-[200px]">
+                            {availableVoices.map((voice) => (
+                              <SelectItem key={voice.id} value={voice.id} className="text-sm">
+                                {voice.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                   </div>
                 );
               })}

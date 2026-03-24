@@ -14,6 +14,7 @@ import { PlaybackEngine, computePlaybackView } from '@/lib/playback';
 import type { EngineMode, TriggerEvent, Effect } from '@/lib/playback';
 import { ActionEngine } from '@/lib/action/engine';
 import { createAudioPlayer } from '@/lib/utils/audio-player';
+import { useDiscussionTTS } from '@/lib/hooks/use-discussion-tts';
 import type { Action, DiscussionAction, SpeechAction } from '@/lib/types/action';
 // Playback state persistence removed — refresh always starts from the beginning
 import { ChatArea, type ChatAreaRef } from '@/components/chat/chat-area';
@@ -108,6 +109,13 @@ export function Stage({
     [selectedAgentIds, t],
   );
 
+  // Discussion TTS hook
+  const ttsEnabled = useSettingsStore((s) => s.ttsEnabled);
+  const ttsMuted = useSettingsStore((s) => s.ttsMuted);
+  const discussionTTS = useDiscussionTTS({
+    enabled: ttsEnabled && !ttsMuted,
+  });
+
   // Pick a student agent for discussion trigger (prioritize student > non-teacher > fallback)
   const pickStudentAgent = useCallback((): string => {
     const registry = useAgentRegistry.getState();
@@ -201,7 +209,9 @@ export function Stage({
     setShowEndFlash(false);
     setActiveBubbleId(null);
     setDiscussionTrigger(null);
-  }, [resetLiveState]);
+    // Stop any in-flight discussion TTS audio on scene switch
+    discussionTTS.cleanup();
+  }, [resetLiveState, discussionTTS]);
 
   /**
    * Unified session cleanup — called by both roundtable stop button and chat area end button.
@@ -222,8 +232,11 @@ export function Stage({
       setTimeout(() => setShowEndFlash(false), 1800);
     }
 
+    // Stop any in-flight discussion TTS audio
+    discussionTTS.cleanup();
+
     resetLiveState();
-  }, [chatSessionType, resetLiveState]);
+  }, [chatSessionType, resetLiveState, discussionTTS]);
 
   // Shared stop-discussion handler (used by both Roundtable and Canvas toolbar)
   const handleStopDiscussion = useCallback(async () => {
@@ -442,7 +455,6 @@ export function Stage({
   }, []);
 
   // Sync mute state from settings store to audioPlayer
-  const ttsMuted = useSettingsStore((s) => s.ttsMuted);
   useEffect(() => {
     audioPlayerRef.current.setMuted(ttsMuted);
   }, [ttsMuted]);
@@ -934,6 +946,8 @@ export function Stage({
           setIsCueUser(true);
         }}
         onStopSession={doSessionCleanup}
+        onSegmentSealed={discussionTTS.handleSegmentSealed}
+        shouldHoldAfterReveal={discussionTTS.shouldHold}
       />
 
       {/* Scene switch confirmation dialog */}
