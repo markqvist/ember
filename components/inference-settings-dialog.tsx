@@ -202,7 +202,7 @@ export function InferenceSettingsDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Brain className="w-5 h-5" />
-            {t('inferenceSettings.title') || 'Inference Configuration'}
+            {t('settings.inferenceSettings.title') || 'Inference Configuration'}
           </DialogTitle>
         </DialogHeader>
 
@@ -212,11 +212,11 @@ export function InferenceSettingsDialog({
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-primary" />
               <h3 className="font-medium">
-                {t('inferenceSettings.defaultRuntimeModel') || 'Default Runtime Model'}
+                {t('settings.inferenceSettings.defaultRuntimeModel') || 'Default Runtime Model'}
               </h3>
             </div>
             <p className="text-sm text-muted-foreground">
-              {t('inferenceSettings.defaultRuntimeModelDesc') ||
+              {t('settings.inferenceSettings.defaultRuntimeModelDesc') ||
                 'Model used for agent inference. Falls back to generation model, then global settings.'}
             </p>
             <CompactModelSelector
@@ -252,7 +252,7 @@ export function InferenceSettingsDialog({
             <div className="flex items-center gap-2">
               <Bot className="w-4 h-4 text-primary" />
               <h3 className="font-medium">
-                {t('inferenceSettings.directorModel') || 'Director Model'}
+                {t('settings.inferenceSettings.directorModel') || 'Director Model'}
               </h3>
             </div>
             <div className="flex items-center gap-2 mb-2">
@@ -262,7 +262,7 @@ export function InferenceSettingsDialog({
                 onCheckedChange={setUseDefaultForDirector}
               />
               <Label htmlFor="use-default-director" className="text-sm cursor-pointer">
-                {t('inferenceSettings.useDefaultRuntime') || 'Use default runtime model'}
+                {t('settings.inferenceSettings.useDefaultRuntime') || 'Use default runtime model'}
               </Label>
             </div>
             {!useDefaultForDirector && (
@@ -289,11 +289,11 @@ export function InferenceSettingsDialog({
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-primary" />
               <h3 className="font-medium">
-                {t('inferenceSettings.perAgentModels') || 'Per-Agent Model Overrides'}
+                {t('settings.inferenceSettings.perAgentModels') || 'Per-Agent Model Overrides'}
               </h3>
             </div>
             <p className="text-sm text-muted-foreground">
-              {t('inferenceSettings.perAgentModelsDesc') ||
+              {t('settings.inferenceSettings.perAgentModelsDesc') ||
                 'Override the default model for specific agents. Useful for running teacher on heavy model and students on lighter models.'}
             </p>
 
@@ -357,8 +357,8 @@ export function InferenceSettingsDialog({
                 className="w-full"
               >
                 {showAllAgents
-                  ? t('inferenceSettings.showLess') || 'Show less'
-                  : `${t('inferenceSettings.showMore') || 'Show more'} (${relevantAgents.length - 3})`}
+                  ? t('settings.inferenceSettings.showLess') || 'Show less'
+                  : `${t('settings.inferenceSettings.showMore') || 'Show more'} (${relevantAgents.length - 3})`}
               </Button>
             )}
           </div>
@@ -373,7 +373,7 @@ export function InferenceSettingsDialog({
             className="text-muted-foreground"
           >
             <RotateCcw className="w-4 h-4 mr-2" />
-            {t('inferenceSettings.reset') || 'Reset to defaults'}
+            {t('settings.inferenceSettings.reset') || 'Reset to defaults'}
           </Button>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>

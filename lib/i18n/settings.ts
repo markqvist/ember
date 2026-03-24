@@ -570,6 +570,19 @@ export const settingsZhCN = {
     importing: '正在导入...',
     importSuccess: '设置导入成功',
     importFailed: '设置导入失败',
+    // Inference settings
+    inferenceSettings: {
+      title: '推理配置',
+      defaultRuntimeModel: '默认运行时模型',
+      defaultRuntimeModelDesc: '用于智能体推理的模型。将依次使用：此处配置 → 生成模型 → 全局设置。',
+      directorModel: '导演模型',
+      useDefaultRuntime: '使用默认运行时模型',
+      perAgentModels: '智能体模型覆盖',
+      perAgentModelsDesc: '为特定智能体覆盖默认模型。适用于教师使用大模型、学生使用轻量模型的场景。',
+      showLess: '收起',
+      showMore: '显示更多',
+      reset: '重置为默认',
+    },
   },
   profile: {
     title: '个人资料',
@@ -1181,6 +1194,19 @@ export const settingsEnUS = {
     importing: 'Importing...',
     importSuccess: 'Settings imported successfully',
     importFailed: 'Failed to import settings',
+    // Inference settings
+    inferenceSettings: {
+      title: 'Inference Configuration',
+      defaultRuntimeModel: 'Default Runtime Model',
+      defaultRuntimeModelDesc: 'Model used for agent inference. Falls back to: generation model → global settings.',
+      directorModel: 'Director Model',
+      useDefaultRuntime: 'Use default runtime model',
+      perAgentModels: 'Per-Agent Model Overrides',
+      perAgentModelsDesc: 'Override the default model for specific agents. Useful for running teacher on heavy model and students on lighter models.',
+      showLess: 'Show less',
+      showMore: 'Show more',
+      reset: 'Reset to defaults',
+    },
   },
   profile: {
     title: 'Profile',
