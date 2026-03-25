@@ -9,6 +9,7 @@ import {
   ChevronDown,
   Clock,
   Copy,
+  FileEdit,
   ImagePlus,
   Pencil,
   Save,
@@ -48,6 +49,8 @@ import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useDraftCache } from '@/lib/hooks/use-draft-cache';
 import { SpeechButton } from '@/components/audio/speech-button';
+import { ClassroomEditModal } from '@/components/editor/classroom-edit-modal';
+import type { Stage } from '@/lib/types/stage';
 
 const log = createLogger('Home');
 
@@ -134,6 +137,8 @@ function HomePage() {
   const [classrooms, setClassrooms] = useState<StageListItem[]>([]);
   const [thumbnails, setThumbnails] = useState<Record<string, Slide>>({});
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [editingClassroomId, setEditingClassroomId] = useState<string | null>(null);
+  const [editingClassroomData, setEditingClassroomData] = useState<Stage | null>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const pdfFileMapRef = useRef<Record<string, File>>({});
@@ -226,6 +231,62 @@ function HomePage() {
     } catch (err) {
       log.error('Failed to persist classroom:', err);
       toast.error('Failed to save classroom');
+    }
+  };
+
+  const handleEdit = async (id: string) => {
+    try {
+      const data = await loadStageData(id);
+      if (!data) {
+        toast.error('Classroom not found');
+        return;
+      }
+      setEditingClassroomId(id);
+      setEditingClassroomData(data.stage);
+    } catch (err) {
+      log.error('Failed to load classroom for editing:', err);
+      toast.error('Failed to load classroom');
+    }
+  };
+
+  const handleSaveEdit = async (updates: { name: string; description?: string }) => {
+    if (!editingClassroomId || !editingClassroomData) return;
+
+    try {
+      // Load full data
+      const data = await loadStageData(editingClassroomId);
+      if (!data) {
+        toast.error('Classroom not found');
+        return;
+      }
+
+      // Update stage with new metadata
+      const updatedStage: Stage = {
+        ...data.stage,
+        name: updates.name,
+        description: updates.description,
+        updatedAt: Date.now(),
+      };
+
+      // Save back to IndexedDB
+      const { saveStageData } = await import('@/lib/utils/stage-storage');
+      await saveStageData(editingClassroomId, {
+        stage: updatedStage,
+        scenes: data.scenes,
+        currentSceneId: data.currentSceneId,
+        chats: data.chats,
+        inferenceConfig: data.inferenceConfig,
+      });
+
+      // Refresh the classroom list
+      await loadClassrooms();
+      toast.success('Classroom updated');
+    } catch (err) {
+      log.error('Failed to update classroom:', err);
+      toast.error('Failed to update classroom');
+    } finally {
+      setEditingClassroomId(null);
+      setEditingClassroomData(null);
     }
   };
 
@@ -774,6 +835,7 @@ function HomePage() {
                         formatDate={formatDate}
                         onDelete={handleDelete}
                         onPersist={handlePersist}
+                        onEdit={handleEdit}
                         confirmingDelete={pendingDeleteId === classroom.id}
                         onConfirmDelete={() => confirmDelete(classroom.id)}
                         onCancelDelete={() => setPendingDeleteId(null)}
@@ -792,6 +854,19 @@ function HomePage() {
       {/*<div className="mt-auto pt-12 pb-4 text-center text-xs text-muted-foreground/40">
         OpenMAIC Open Source Project
       </div>*/}
+
+      {/* Classroom Edit Modal */}
+      <ClassroomEditModal
+        open={!!editingClassroomId}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingClassroomId(null);
+            setEditingClassroomData(null);
+          }
+        }}
+        classroom={editingClassroomData}
+        onSave={handleSaveEdit}
+      />
     </div>
   );
 }
@@ -1092,6 +1167,7 @@ function ClassroomCard({
   formatDate,
   onDelete,
   onPersist,
+  onEdit,
   confirmingDelete,
   onConfirmDelete,
   onCancelDelete,
@@ -1102,6 +1178,7 @@ function ClassroomCard({
   formatDate: (ts: number) => string;
   onDelete: (id: string, e: React.MouseEvent) => void;
   onPersist: (id: string) => void;
+  onEdit: (id: string) => void;
   confirmingDelete: boolean;
   onConfirmDelete: () => void;
   onCancelDelete: () => void;
@@ -1142,6 +1219,31 @@ function ClassroomCard({
             </div>
           </div>
         ) : null}
+
+        {/* Edit — top-right, left of save, only on hover */}
+        <AnimatePresence>
+          {!confirmingDelete && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="absolute top-2 right-20"
+            >
+              <Button
+                size="icon"
+                variant="ghost"
+                className="size-7 opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 hover:bg-blue-500/80 text-white hover:text-white backdrop-blur-sm rounded-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(classroom.id);
+                }}
+              >
+                <FileEdit className="size-3.5" />
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Save — top-right, left of delete, only on hover */}
         <AnimatePresence>

@@ -18,8 +18,8 @@
 - [x] Fix runtime model resolution for discussions, etc.
 - [x] Add per-classroom runtime inference configuration
 - [x] Add discussion TTS and per-agent voices
-- [ ] Add basic classrom editing capabilities (at least just name, potentially others)
-- [ ] Add per-slide editing capabilities (raw JSON editor OK)
+- [x] Add basic classrom editing capabilities (at least just name, potentially others)
+- [x] Add per-slide editing capabilities (raw JSON editor OK)
 - [ ] Add generative / agentic classroom and slide modification abilities
 - [ ] Add local search and webpage fetch from our API
 - [ ] Add classroom export/import with complete data structure to local file
