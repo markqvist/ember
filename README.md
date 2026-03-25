@@ -166,11 +166,8 @@ If you value education, please help support the continued development of this op
 | Lesson generation (outline → scenes) | ✅ Complete | Optimized for local model capabilities |
 | Slide lectures with TTS | ✅ Complete | Per-agent voice configuration |
 | Interactive quizzes | ✅ Complete | Local inference for grading/feedback |
-| HTML simulations | ✅ Complete | Self-contained, no external deps |
-| Project-based learning | ✅ Complete | Multi-agent collaboration |
-| Multi-agent discussion | ✅ Complete | Per-agent voices, fixed resolution |
+| Multi-agent discussion | ✅ Complete | Per-agent voices, per-agent inference config |
 | Roundtable debate | ✅ Complete | TTS for all participants |
-| Whiteboard drawing | ✅ Complete | Real-time SVG rendering |
 | Speech recognition | ✅ Complete | Local Whisper integration |
 | Classroom persistence | ✅ Complete | Server-side media storage |
 | Keyboard navigation | ✅ Complete | Full playback control |
@@ -179,6 +176,7 @@ If you value education, please help support the continued development of this op
 | Generation introspection | ✅ Complete | Prompt logging to disk |
 | Per-classroom inference config | ✅ Complete | Model/voice overrides per lesson |
 | Per-agent model/voice config | ✅ Complete | Heterogeneous inference |
+| HTML simulations | 🔄 In Progress | Self-contained, no external deps |
 | Quick classroom export/import | 🔄 In Progress | Complete data portability |
 | Per-slide editing | 🔄 In Progress | Raw JSON editor implemented |
 | Local web search | 🔄 In Progress | Via local search API |
