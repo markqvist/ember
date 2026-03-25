@@ -511,7 +511,7 @@ export function InferenceSettingsDialog({
             </Button>
             <Button onClick={handleSave} disabled={!hasChanges}>
               <Check className="w-4 h-4 mr-2" />
-              {t('common.save') || 'Save'}
+              {t('settings.save') || 'Save'}
             </Button>
           </div>
         </div>
