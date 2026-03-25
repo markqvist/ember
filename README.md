@@ -15,7 +15,7 @@ Ember corrects this.
 
 ### Depth Over Dilution
 
-Many educational systems, both virtual and traditional, treat the learner as a consumer to be managed rather than an intellect to be engaged. They optimize for throughput: pre-digesting complexity into consumable units, smoothing away difficulty to maintain engagement curves, replacing the friction of genuine understanding with the feedback loops of gamification. Ember inverts this logic entirely.
+Most contemporary educational systems, both virtual and traditional, treat the learner as a consumer to be managed rather than an intellect to be engaged. They optimize for throughput: pre-digesting complexity into consumable units, smoothing away difficulty to maintain engagement curves, replacing the friction of genuine understanding with the feedback loops of gamification. Ember inverts this logic entirely.
 
 With Ember, it is my goal to architect the semantic scaffolding to produce **generative friction** — learning that resists easy consumption. The system should treat you as an intellectual peer *capable of navigating ambiguity*, not a user profile to be optimized. When a concept demands complexity, the agents must follow it there; when truth is uncertain, they must acknowledge the limits rather than performing false confidence. The simulated debates should contradict each other when the material supports multiple valid positions. Quiz questions have no single correct answer when the subject doesn't provide one. The slides do not flatten ideas to fit attention spans; they expand the context to fit the ideas.
 
