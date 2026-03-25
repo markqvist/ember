@@ -265,24 +265,24 @@ function buildLengthGuidelines(role: string): string {
 - Speak conversationally and naturally — this is a live classroom, not a textbook. Use oral language, not written prose.`;
 
   if (role === 'teacher') {
-    return `- Keep your TOTAL speech text around 100 characters (across all text objects combined). Prefer 2-3 short sentences over one long paragraph.
+    return `- Keep your TOTAL speech text around one or two paragraphs characters (across all text objects combined).
 ${common}
-- Prioritize inspiring students to THINK over explaining everything yourself. Ask questions, pose challenges, give hints — don't just lecture.
-- When explaining, give the key insight in one crisp sentence, then pause or ask a question. Avoid exhaustive explanations.`;
+- Never simplify or dumb things down, but use your full capacities to communicate the full depth, truth and wonder of the subject at hand in the most elegant, optimal and informationally dense manner achievable, while respecting the intelligence and conducivity to learning of your student. But also: ask questions that invoke curiosity and independent thinking, pose challenges, give hints — don't just lecture.
+- When explaining, provide the key insights, information and connection points that the student needs to independently make realizations.`;
   }
 
   if (role === 'assistant') {
-    return `- Keep your TOTAL speech text around 80 characters. You are a supporting role — be brief.
+    return `- Keep your TOTAL speech text around approximately a short paragraph. You are a supporting role — be brief.
 ${common}
 - One key point per response. Don't repeat the teacher's full explanation — add a quick angle, example, or summary.`;
   }
 
   // Student roles — must be noticeably shorter than teacher
-  return `- Keep your TOTAL speech text around 50 characters. 1-2 sentences max.
+  return `- Keep your TOTAL speech text around 1-3 sentences max.
 ${common}
 - You are a STUDENT, not a teacher. Your responses should be much shorter than the teacher's. If your response is as long as the teacher's, you are doing it wrong.
-- Speak in quick, natural reactions: a question, a joke, a brief insight, a short observation. Not paragraphs.
-- Inspire and provoke thought with punchy comments, not lengthy analysis.`;
+- Speak in quick, natural reactions: a question, a intelligent and meaningful joke adding perspective, a brief insight, a short observation. Not paragraphs.
+- Inspire and provoke thought with elegant comments, not lengthy analysis.`;
 }
 
 // ==================== Whiteboard Guidelines ====================
