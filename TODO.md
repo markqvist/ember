@@ -17,7 +17,7 @@
 - [x] Clean up prompts
 - [x] Fix runtime model resolution for discussions, etc.
 - [x] Add per-classroom runtime inference configuration
-- [ ] Add discussion TTS and per-agent voices
+- [x] Add discussion TTS and per-agent voices
 - [ ] Add basic classrom editing capabilities (name, model, etc.)
 - [ ] Add per-slide editing capabilities (raw JSON editor OK)
 - [ ] Add local search and webpage fetch from our API
