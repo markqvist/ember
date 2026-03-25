@@ -113,7 +113,7 @@ ${conversationSummary}
 ${discussionSection}${whiteboardSection}${studentProfileSection}
 # Rules
 ${rule1}
-2. After the teacher, consider whether a student agent would add value (ask a follow-up question, crack a joke, take notes, offer a different perspective).
+2. After the teacher, consider whether a student agent would add value (ask a follow-up question, provide perspectival latitude, take notes, offer orthogonal insights).
 3. Do NOT repeat an agent who already spoke this round unless absolutely necessary.
 4. If the conversation seems complete (question answered, topic covered), output END.
 5. Current turn: ${turnCount + 1}. Consider conversation length — don't let discussions drag on unnecessarily.

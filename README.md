@@ -11,7 +11,17 @@ Every mainstream "AI education" platform operates on the same extractive model: 
 
 Ember corrects this.
 
-## What Ember Does Differently
+## What Ember Does Differently  
+
+### Depth Over Dilution
+
+Many educational systems, both virtual and traditional, treat the learner as a consumer to be managed rather than an intellect to be engaged. They optimize for throughput: pre-digesting complexity into consumable units, smoothing away difficulty to maintain engagement curves, replacing the friction of genuine understanding with the feedback loops of gamification. Ember inverts this logic entirely.
+
+It is my goal to architect the semantic scaffolding to produce **generative friction** — learning that resists easy consumption. The system should treat you as an intellectual peer *capable of navigating ambiguity*, not a user profile to be optimized. When a concept demands complexity, the agents must follow it there; when truth is uncertain, they must acknowledge the limits rather than performing false confidence. The simulated debates should contradict each other when the material supports multiple valid positions. Quiz questions have no single correct answer when the subject doesn't provide one. The slides do not flatten ideas to fit attention spans; they expand the context to fit the ideas.
+
+The golden thread here is education as **transformative capacity**, not transactional delivery. You are not accumulating information to be assessed; you are developing tools to think with. The generated classrooms persist not as static content libraries but as reusable intellectual equipment — simulations you can break, rebuild and expand yourself, arguments you can stress-test from new angles, concepts that remain tethered to the specific documents you brought rather than replaced by generic explanation. Learning compounds here because it remains yours to recombine.
+
+Mainstream platforms assume that difficulty is a bug to be engineered out, that knowledge must be bite-sized to be digestible, that retention requires extrinsic reward. Ember assumes that **understanding requires work**, and that the work itself *is* the point. The goal is to sharpen the system for this specific labor: sustaining extended inquiry, preserving nuance across long-form discussion, allowing ideas to maintain their proper edges. This is **not** entertainment dressed as education. It is *craft* — precise, demanding, and entirely yours to direct.
 
 ### Local-First Inference Architecture
 
@@ -140,7 +150,8 @@ pnpm build && pnpm start
 | **Keyboard control** | None | Complete navigation |
 | **Settings portability** | Manual env configuration | Export/import UI |
 | **Multi-PDF upload** | Single file only | Multiple documents |
-| **Agent profile injection** | Broken (not in prompts) | Fixed |
+| **User profile injection** | Broken (not in prompts) | Fixed |
+| **Meaningful Context** | Arbitrarily small limits | Can provide meaningful context |
 
 ## Support Ember
 If you value education, please help support the continued development of this open, free and locally viable learning tool via one of the following channels:

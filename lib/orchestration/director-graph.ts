@@ -473,7 +473,7 @@ async function runAgentGeneration(
   });
 
   return {
-    contentPreview: fullText.slice(0, 300),
+    contentPreview: fullText.slice(0, 1200),
     actionCount,
     whiteboardActions,
   };
