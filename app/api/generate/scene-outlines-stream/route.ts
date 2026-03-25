@@ -94,6 +94,7 @@ function extractNewOutlines(buffer: string, alreadyParsed: number): SceneOutline
     }
   }
 
+  // log.info(`Extracted ${results.length} outlines`);
   return results;
 }
 
@@ -201,13 +202,9 @@ export async function POST(req: NextRequest) {
       teacherContext,
     });
 
-    if (!prompts) {
-      return apiError('INTERNAL_ERROR', 500, 'Prompt template not found');
-    }
+    if (!prompts) { return apiError('INTERNAL_ERROR', 500, 'Prompt template not found'); }
 
-    log.info(
-      `Generating outlines: "${requirements.requirement.substring(0, 50)}" [model=${modelString}]`,
-    );
+    log.info(`Generating course outlines: "${requirements.requirement}" [model=${modelString}]`);
 
     // Create SSE stream with heartbeat to prevent connection timeout
     const encoder = new TextEncoder();
@@ -267,8 +264,13 @@ export async function POST(req: NextRequest) {
               let fullText = '';
               parsedOutlines = [];
 
+              log.info("Awaiting response...");
               for await (const chunk of result.textStream) {
                 fullText += chunk;
+
+                // TODO: Stream thinking/progress to UI instead
+                // of terminal logging. Will do for now, though.
+                // process.stdout.write(chunk);
 
                 // Try to extract new outlines from the accumulated text
                 const newOutlines = extractNewOutlines(fullText, parsedOutlines.length);
@@ -289,6 +291,8 @@ export async function POST(req: NextRequest) {
                   controller.enqueue(encoder.encode(`data: ${event}\n\n`));
                 }
               }
+              
+              log.info(`Attempt ${attempt} got ${parsedOutlines.length} outlines`);
 
               // Validate: got outlines?
               if (parsedOutlines.length > 0) break;
@@ -299,9 +303,7 @@ export async function POST(req: NextRequest) {
                 : 'LLM returned empty response';
 
               if (attempt <= MAX_STREAM_RETRIES) {
-                log.warn(
-                  `Empty outlines (attempt ${attempt}/${MAX_STREAM_RETRIES + 1}), retrying...`,
-                );
+                log.warn(`Empty outlines (attempt ${attempt}/${MAX_STREAM_RETRIES + 1}), retrying...`);
                 // Notify client a retry is happening
                 const retryEvent = JSON.stringify({
                   type: 'retry',

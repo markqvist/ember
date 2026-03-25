@@ -468,10 +468,10 @@ async function generateSlideContent(
   generatedMediaMapping?: ImageMapping,
   agents?: AgentInfo[],
 ): Promise<GeneratedSlideContent | null> {
-  const lang = outline.language || 'zh-CN';
+  const lang = outline.language || 'en-US';
 
   // Build assigned images description for the prompt
-  let assignedImagesText = '无可用图片，禁止插入任何 image 元素';
+  let assignedImagesText = 'No images available; do not insert any image elements.';
   let visionImages: Array<{ id: string; src: string }> | undefined;
 
   if (assignedImages && assignedImages.length > 0) {
@@ -541,7 +541,7 @@ async function generateSlideContent(
     title: outline.title,
     description: outline.description,
     keyPoints: (outline.keyPoints || []).map((p, i) => `${i + 1}. ${p}`).join('\n'),
-    elements: '（根据要点自动生成）',
+    elements: ' (Automatically generated based on key points) ',
     assignedImages: assignedImagesText,
     canvas_width: canvasWidth,
     canvas_height: canvasHeight,
@@ -553,12 +553,8 @@ async function generateSlideContent(
   }
 
   log.debug(`Generating slide content for: ${outline.title}`);
-  if (assignedImages && assignedImages.length > 0) {
-    log.debug(`Assigned images: ${assignedImages.map((img) => img.id).join(', ')}`);
-  }
-  if (visionImages && visionImages.length > 0) {
-    log.debug(`Vision images: ${visionImages.map((img) => img.id).join(', ')}`);
-  }
+  if (assignedImages && assignedImages.length > 0) { log.debug(`Assigned images: ${assignedImages.map((img) => img.id).join(', ')}`); }
+  if (visionImages && visionImages.length > 0) {     log.debug(`Vision images: ${visionImages.map((img) => img.id).join(', ')}`); }
 
   const response = await aiCall(prompts.system, prompts.user, visionImages);
   const generatedData = parseJsonResponse<GeneratedSlideData>(response);
@@ -654,7 +650,7 @@ async function generateQuizContent(
     return null;
   }
 
-  log.debug(`Generating quiz content for: ${outline.title}`);
+  log.info(`Generating quiz content for: ${outline.title}`);
   const response = await aiCall(prompts.system, prompts.user);
   const generatedQuestions = parseJsonResponse<QuizQuestion[]>(response);
 
@@ -690,12 +686,11 @@ function normalizeQuizOptions(
 ): { value: string; label: string }[] | undefined {
   if (!options || !Array.isArray(options)) return undefined;
 
+  log.info(`Normalizing quiz options...`);
   return options.map((opt, index) => {
     const letter = String.fromCharCode(65 + index); // A, B, C, D...
 
-    if (typeof opt === 'string') {
-      return { value: letter, label: opt };
-    }
+    if (typeof opt === 'string') { return { value: letter, label: opt }; }
 
     if (typeof opt === 'object' && opt !== null) {
       const obj = opt as Record<string, unknown>;
@@ -715,6 +710,7 @@ function normalizeQuizOptions(
  * This normalizes to string[] format matching option values.
  */
 function normalizeQuizAnswer(question: Record<string, unknown>): string[] | undefined {
+  log.info(`Normalizing quiz answers...`);
   // AI might use "correctAnswer", "answer", or "correct_answer"
   const raw =
     question.answer ??
@@ -741,6 +737,7 @@ async function generateInteractiveContent(
 ): Promise<GeneratedInteractiveContent | null> {
   const config = outline.interactiveConfig!;
 
+  log.info(`Generating interactive content...`);
   // Step 1: Scientific modeling (with fallback on failure)
   let scientificModel: ScientificModel | undefined;
   try {
@@ -763,26 +760,16 @@ async function generateInteractiveContent(
         );
       }
     }
-  } catch (error) {
-    log.warn(`Scientific modeling failed, continuing without: ${error}`);
-  }
+  } catch (error) { log.warn(`Scientific modeling failed, continuing without: ${error}`); }
 
   // Format scientific constraints for HTML generation prompt
   let scientificConstraints = 'No specific scientific constraints available.';
   if (scientificModel) {
     const lines: string[] = [];
-    if (scientificModel.core_formulas?.length) {
-      lines.push(`Core Formulas: ${scientificModel.core_formulas.join('; ')}`);
-    }
-    if (scientificModel.mechanism?.length) {
-      lines.push(`Mechanisms: ${scientificModel.mechanism.join('; ')}`);
-    }
-    if (scientificModel.constraints?.length) {
-      lines.push(`Must Obey: ${scientificModel.constraints.join('; ')}`);
-    }
-    if (scientificModel.forbidden_errors?.length) {
-      lines.push(`Forbidden Errors: ${scientificModel.forbidden_errors.join('; ')}`);
-    }
+    if (scientificModel.core_formulas?.length) { lines.push(`Core Formulas: ${scientificModel.core_formulas.join('; ')}`); }
+    if (scientificModel.mechanism?.length) { lines.push(`Mechanisms: ${scientificModel.mechanism.join('; ')}`); }
+    if (scientificModel.constraints?.length) { lines.push(`Must Obey: ${scientificModel.constraints.join('; ')}`); }
+    if (scientificModel.forbidden_errors?.length) { lines.push(`Forbidden Errors: ${scientificModel.forbidden_errors.join('; ')}`); }
     scientificConstraints = lines.join('\n');
   }
 
@@ -872,6 +859,7 @@ async function generatePBLSceneContent(
  * Tries to find <!DOCTYPE html>...</html> first, then falls back to code block extraction.
  */
 function extractHtml(response: string): string | null {
+  log.info(`Extracting HTML...`);
   // Strategy 1: Find complete HTML document
   const doctypeStart = response.indexOf('<!DOCTYPE html>');
   const htmlTagStart = response.indexOf('<html');
@@ -920,6 +908,7 @@ export async function generateSceneActions(
   userProfile?: string,
 ): Promise<Action[]> {
   const agentsText = formatAgentsForPrompt(agents);
+  log.info(`Generating scene actions...`);
 
   if (outline.type === 'slide' && 'elements' in content) {
     // Format element list for AI to select from
@@ -935,9 +924,7 @@ export async function generateSceneActions(
       userProfile: userProfile || '',
     });
 
-    if (!prompts) {
-      return generateDefaultSlideActions(outline, content.elements);
-    }
+    if (!prompts) { return generateDefaultSlideActions(outline, content.elements); }
 
     const response = await aiCall(prompts.system, prompts.user);
     const actions = parseActionsFromStructuredOutput(response, outline.type);
@@ -1042,8 +1029,8 @@ function generateDefaultPBLActions(_outline: SceneOutline): Action[] {
     {
       id: `action_${nanoid(8)}`,
       type: 'speech',
-      title: 'PBL 项目介绍',
-      text: '现在让我们开始一个项目式学习活动。请选择你的角色，查看任务看板，开始协作完成项目。',
+      title: 'PBL Project Introduction',
+      text: 'Let\'s begin a project-based learning activity. Please select your role, view the task board, and start collaborating to complete the project.',
     },
   ];
 }
@@ -1143,6 +1130,7 @@ function processActions(actions: Action[], elements: PPTElement[], agents?: Agen
  */
 function generateDefaultSlideActions(outline: SceneOutline, elements: PPTElement[]): Action[] {
   const actions: Action[] = [];
+  log.info(`Generating default slide actions...`);
 
   // Add spotlight for text elements
   const textElements = elements.filter((el) => el.type === 'text');
@@ -1150,7 +1138,7 @@ function generateDefaultSlideActions(outline: SceneOutline, elements: PPTElement
     actions.push({
       id: `action_${nanoid(8)}`,
       type: 'spotlight',
-      title: '聚焦重点',
+      title: 'Focus on key points',
       elementId: textElements[0].id,
     });
   }
@@ -1162,7 +1150,7 @@ function generateDefaultSlideActions(outline: SceneOutline, elements: PPTElement
   actions.push({
     id: `action_${nanoid(8)}`,
     type: 'speech',
-    title: '场景讲解',
+    title: 'Scene explanation',
     text: speechText,
   });
 
@@ -1177,8 +1165,8 @@ function generateDefaultQuizActions(_outline: SceneOutline): Action[] {
     {
       id: `action_${nanoid(8)}`,
       type: 'speech',
-      title: '测验引导',
-      text: '现在让我们来做一个小测验，检验一下学习成果。',
+      title: 'Quiz Guidance',
+      text: 'Now let\'s take a short quiz to test our learning outcomes.',
     },
   ];
 }
@@ -1191,8 +1179,8 @@ function generateDefaultInteractiveActions(_outline: SceneOutline): Action[] {
     {
       id: `action_${nanoid(8)}`,
       type: 'speech',
-      title: '交互引导',
-      text: '现在让我们通过交互式可视化来探索这个概念。请尝试操作页面中的元素，观察变化。',
+      title: 'Interactive guidance',
+      text: 'Now let\'s explore this concept through interactive visualization. Try interacting with the elements on the page and observe the changes.',
     },
   ];
 }
