@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useI18n } from '@/lib/hooks/use-i18n';
 import { SceneJsonEditor } from './scene-json-editor';
 import { InteractiveEditor } from './interactive-editor';
+import { ActionsEditor } from './actions-editor';
 import type { Scene, InteractiveContent } from '@/lib/types/stage';
 
 interface SceneEditorModalProps {
@@ -43,10 +44,21 @@ export function SceneEditorModal({ open, onOpenChange, scene, onSave }: SceneEdi
     onOpenChange(false);
   }, [scene, onSave, onOpenChange]);
 
+  const handleActionsSave = useCallback((updatedActions: import('@/lib/types/action').Action[]) => {
+    if (!scene) return;
+    const updatedScene: Scene = {
+      ...scene,
+      actions: updatedActions,
+    };
+    onSave(updatedScene);
+    onOpenChange(false);
+  }, [scene, onSave, onOpenChange]);
+
   if (!scene) return null;
 
   // Determine available tabs based on scene type
   const hasInteractiveEditor = scene.type === 'interactive' && scene.content.type === 'interactive';
+  const hasActionsEditor = scene.actions && scene.actions.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -64,6 +76,11 @@ export function SceneEditorModal({ open, onOpenChange, scene, onSave }: SceneEdi
                   {t('stage.interactiveTab')}
                 </TabsTrigger>
               )}
+              {hasActionsEditor && (
+                <TabsTrigger value="actions" className="text-xs">
+                  {t('stage.actionsTab')}
+                </TabsTrigger>
+              )}
               <TabsTrigger value="json" className="text-xs">
                 JSON
               </TabsTrigger>
@@ -75,6 +92,15 @@ export function SceneEditorModal({ open, onOpenChange, scene, onSave }: SceneEdi
                   <InteractiveEditor
                     content={scene.content as InteractiveContent}
                     onSave={handleInteractiveSave}
+                    onRevert={handleRevert}
+                  />
+                </TabsContent>
+              )}
+              {hasActionsEditor && (
+                <TabsContent value="actions" className="h-full mt-0">
+                  <ActionsEditor
+                    actions={scene.actions || []}
+                    onSave={handleActionsSave}
                     onRevert={handleRevert}
                   />
                 </TabsContent>
