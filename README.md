@@ -104,6 +104,12 @@ cp .env.example .env.local
 For local `llama.cpp` inference:
 
 ```env
+# Enable extended timeouts, unless you have some
+# kind of supercomputer.
+LLM_EXTENDED_TIMEOUT=true
+LLM_HEADERS_TIMEOUT_SEC=7200
+LLM_BODY_TIMEOUT_SEC=10800
+
 # Example: local llama-server for LLM inference
 OPENAI_BASE_URL=http://localhost:8080/v1
 OPENAI_API_KEY=sk-dummy-key-required-by-openai-format
