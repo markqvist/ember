@@ -123,6 +123,42 @@ pnpm build && pnpm start
 
 ---
 
+## Comparison: Ember vs. OpenMAIC
+
+| Aspect | OpenMAIC | Ember |
+|--------|----------|-------|
+| **Primary target** | Cloud API users | Local/offline inference |
+| **Local LLM support** | Broken (hardcoded timeouts, bad prompts) | First-class, optimized |
+| **Local TTS/ASR** | Non-functional | Fully supported |
+| **Media persistence** | IndexedDB only (ephemeral) | Server-side filesystem + browser cache |
+| **Per-agent config** | None | Per-classroom, per-agent model/voice |
+| **Runtime resolution** | Fails on local endpoints | Proper fallback chains |
+| **Timeout handling** | Fixed at 300s | Configurable for your hardware |
+| **Prompt debugging** | None | Full introspection logging |
+| **Keyboard control** | None | Complete navigation |
+| **Settings portability** | Manual env configuration | Export/import UI |
+| **Multi-PDF upload** | Single file only | Multiple documents |
+| **Agent profile injection** | Broken (not in prompts) | Fixed |
+
+## Support Ember
+You can help support the continued development of this open, free and locally viable learning tool via one of the following channels:
+
+- Monero:
+  ```
+  84FpY1QbxHcgdseePYNmhTHcrgMX4nFfBYtz2GKYToqHVVhJp8Eaw1Z1EedRnKD19b3B8NiLCGVxzKV17UMmmeEsCrPyA5w
+  ```
+- Bitcoin
+  ```
+  bc1pgqgu8h8xvj4jtafslq396v7ju7hkgymyrzyqft4llfslz5vp99psqfk3a6
+  ```
+- Ethereum
+  ```
+  0x91C421DdfB8a30a49A71d63447ddb54cEBe3465E
+  ```
+- Liberapay: https://liberapay.com/Reticulum/
+
+- Ko-Fi: https://ko-fi.com/markqvist
+
 ## Feature Status
 
 | Feature | Status | Notes |
@@ -148,22 +184,6 @@ pnpm build && pnpm start
 | Local web search | 🔄 In Progress | Via local search API |
 | Course prerequisite chains | 📋 Planned | Include previous courses as context |
 
-
-## Comparison: Ember vs. OpenMAIC
-
-| Aspect | OpenMAIC | Ember |
-|--------|----------|-------|
-| **Primary target** | Cloud API users | Local/offline inference |
-| **Local LLM support** | Broken (hardcoded timeouts, bad prompts) | First-class, optimized |
-| **Local TTS/ASR** | Non-functional | Fully supported |
-| **Media persistence** | IndexedDB only (ephemeral) | Server-side filesystem + browser cache |
-| **Per-agent config** | None | Per-classroom, per-agent model/voice |
-| **Runtime resolution** | Fails on local endpoints | Proper fallback chains |
-| **Timeout handling** | Fixed at 300s | Configurable for your hardware |
-| **Prompt debugging** | None | Full introspection logging |
-| **Keyboard control** | None | Complete navigation |
-| **Settings portability** | Manual env configuration | Export/import UI |
-| **Multi-PDF upload** | Single file only | Multiple documents |
-| **Agent profile injection** | Broken (not in prompts) | Fixed |
+---
 
 **Ember** — *A fire that is yours to keep and nurture*
