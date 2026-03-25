@@ -24,11 +24,3 @@
 - [ ] Add classroom export/import with complete data structure to local file
 - [ ] Add some way to include previous courses as "completed context"
 
-## Investigate PRs
-
-- [x] [Classroom persist on complete](https://github.com/THU-MAIC/OpenMAIC/pull/213)
-- [x] [Multiple PDF uploads](https://github.com/THU-MAIC/OpenMAIC/pull/160)
-- [x] [Discussion TTS](https://github.com/THU-MAIC/OpenMAIC/pull/211)
-
-## Track
-- [ ] [Show disk-persisted classrooms](https://github.com/THU-MAIC/OpenMAIC/issues/214)
