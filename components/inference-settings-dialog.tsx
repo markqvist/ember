@@ -72,13 +72,6 @@ export function InferenceSettingsDialog({
   // Use agents record directly to avoid infinite loop from listAgents() returning new array
   // Use agents record directly to avoid infinite loop from listAgents() returning new array
   const agentsRecord = useAgentRegistry((s) => s.agents);
-  // Get a stable string representation for triggering sync
-  const agentsVoiceHash = useMemo(() => {
-    return Object.values(agentsRecord)
-      .map((a) => `${a.id}:${a.voiceId || ''}`)
-      .sort()
-      .join('|');
-  }, [agentsRecord]);
   const stageId = stage?.id;
 
   // Filter to relevant agents only:
@@ -174,44 +167,33 @@ export function InferenceSettingsDialog({
   const [agentModels, setAgentModels] = useState<
     Record<string, InferenceModelConfig | null>
   >(inferenceConfig?.agentModels || {});
-  const [agentVoices, setAgentVoices] = useState<Record<string, string | null>>({});
   const [showAllAgents, setShowAllAgents] = useState(false);
+  // Track voice changes to enable Save button
+  const [voiceChangesMade, setVoiceChangesMade] = useState(false);
+  // Force re-render key when dialog opens
+  const [dialogKey, setDialogKey] = useState(0);
 
-  // Sync agentVoices with agentsRecord when dialog is open and agent voices change
+  // Reset state when dialog opens - useEffect runs when `open` prop changes
   useEffect(() => {
     if (open) {
-      const voices: Record<string, string | null> = {};
-      for (const agent of Object.values(agentsRecord)) {
-        if (agent.voiceId) {
-          voices[agent.id] = agent.voiceId;
-        }
-      }
-      setAgentVoices(voices);
+      setDefaultRuntimeModel(inferenceConfig?.defaultRuntimeModel);
+      setDirectorModel(inferenceConfig?.directorModel);
+      setUseDefaultForDirector(!inferenceConfig?.directorModel);
+      setAgentModels(inferenceConfig?.agentModels || {});
+      setVoiceChangesMade(false);
+      // Force re-render after a short delay to ensure registry data is loaded
+      setTimeout(() => {
+        setDialogKey((prev) => prev + 1);
+      }, 100);
     }
-    // Use agentsVoiceHash to detect actual voice changes without causing infinite loops
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, agentsVoiceHash]);
+  }, [open, inferenceConfig]);
 
-  // Reset state when dialog opens
+  // Handle dialog close from internal interactions (X button, backdrop, etc.)
   const handleOpenChange = useCallback(
     (newOpen: boolean) => {
-      if (newOpen) {
-        setDefaultRuntimeModel(inferenceConfig?.defaultRuntimeModel);
-        setDirectorModel(inferenceConfig?.directorModel);
-        setUseDefaultForDirector(!inferenceConfig?.directorModel);
-        setAgentModels(inferenceConfig?.agentModels || {});
-        // Reset voice state from agent registry
-        const voices: Record<string, string | null> = {};
-        for (const agent of Object.values(agentsRecord)) {
-          if (agent.voiceId) {
-            voices[agent.id] = agent.voiceId;
-          }
-        }
-        setAgentVoices(voices);
-      }
       onOpenChange(newOpen);
     },
-    [inferenceConfig, onOpenChange, agentsRecord],
+    [onOpenChange],
   );
 
   // Get generation model for fallback display
@@ -249,20 +231,8 @@ export function InferenceSettingsDialog({
       agentModels: Object.keys(filteredAgentModels).length > 0 ? filteredAgentModels : undefined,
     });
 
-    // Save agent voices to registry
-    const registry = useAgentRegistry.getState();
-    for (const [agentId, voiceId] of Object.entries(agentVoices)) {
-      if (voiceId) {
-        registry.updateAgent(agentId, { voiceId });
-      } else {
-        // Clear voiceId if null
-        const agent = registry.getAgent(agentId);
-        if (agent?.voiceId) {
-          registry.updateAgent(agentId, { voiceId: undefined });
-        }
-      }
-    }
-
+    // Reset voice changes tracking
+    setVoiceChangesMade(false);
     onOpenChange(false);
   };
 
@@ -271,7 +241,7 @@ export function InferenceSettingsDialog({
     setDirectorModel(undefined);
     setUseDefaultForDirector(true);
     setAgentModels({});
-    setAgentVoices({});
+    // Note: Voice changes are saved immediately, so reset doesn't revert them
   };
 
   const handleAgentModelChange = (agentId: string, providerId: ProviderId, modelId: string) => {
@@ -296,30 +266,20 @@ export function InferenceSettingsDialog({
   };
 
   const handleAgentVoiceChange = (agentId: string, voiceId: string) => {
-    setAgentVoices((prev) => ({
-      ...prev,
-      [agentId]: voiceId,
-    }));
+    // Save immediately to registry so UI reflects change
+    const registry = useAgentRegistry.getState();
+    registry.updateAgent(agentId, { voiceId });
+    // Track that voice changes were made
+    setVoiceChangesMade(true);
   };
 
   const handleClearAgentVoice = (agentId: string) => {
-    setAgentVoices((prev) => {
-      const next = { ...prev };
-      delete next[agentId];
-      return next;
-    });
+    // Clear immediately in registry
+    const registry = useAgentRegistry.getState();
+    registry.updateAgent(agentId, { voiceId: undefined });
+    // Track that voice changes were made
+    setVoiceChangesMade(true);
   };
-
-  // Build current agent voices from registry for comparison
-  const currentAgentVoices = useMemo(() => {
-    const voices: Record<string, string> = {};
-    for (const agent of Object.values(agentsRecord)) {
-      if (agent.voiceId) {
-        voices[agent.id] = agent.voiceId;
-      }
-    }
-    return voices;
-  }, [agentsRecord]);
 
   const hasChanges =
     defaultRuntimeModel !== inferenceConfig?.defaultRuntimeModel ||
@@ -327,7 +287,7 @@ export function InferenceSettingsDialog({
       ? inferenceConfig?.directorModel !== undefined
       : directorModel !== inferenceConfig?.directorModel) ||
     JSON.stringify(agentModels) !== JSON.stringify(inferenceConfig?.agentModels || {}) ||
-    JSON.stringify(agentVoices) !== JSON.stringify(currentAgentVoices);
+    voiceChangesMade;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -339,7 +299,7 @@ export function InferenceSettingsDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div key={dialogKey} className="space-y-6 py-4">
           {/* Default Runtime Model */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
@@ -433,7 +393,8 @@ export function InferenceSettingsDialog({
             <div className="space-y-2">
               {displayedAgents.map((agent) => {
                 const agentModel = agentModels[agent.id];
-                const agentVoice = agentVoices[agent.id];
+                // Read voice directly from agent object (source of truth from registry)
+                const agentVoice = agent.voiceId || null;
                 const isModelOverridden = !!agentModel;
                 const isVoiceOverridden = !!agentVoice;
 
