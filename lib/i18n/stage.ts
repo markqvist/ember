@@ -198,7 +198,7 @@ export const stageEnUS = {
     stageIdImmutable: 'Classroom ID cannot be changed',
     editHelpText: 'Changes are saved to browser local storage. Use the "Save" button on the main page to persist to server.',
     closeShortcut: 'Ctrl+E to close',
-    interactiveTab: 'Interactive',
+    interactiveTab: 'HTML',
     editingInteractive: 'Editing Interactive Content',
     interactiveUrl: 'URL',
     interactiveUrlHint: 'The iframe source URL. HTML content takes precedence if provided.',

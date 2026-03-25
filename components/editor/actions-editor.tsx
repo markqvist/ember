@@ -326,6 +326,7 @@ export function ActionsEditor({ actions, onSave, onRevert }: ActionsEditorProps)
 
       // Generate TTS
       toast.info('Generating audio...');
+      console.log(`Regenerating action audio with voice "${voice}"...`);
       const result = await generateTTS(ttsConfig, action.text);
 
       // Determine format from provider or default to mp3
@@ -350,8 +351,8 @@ export function ActionsEditor({ actions, onSave, onRevert }: ActionsEditorProps)
         ...action,
         audioId,
         audioUrl: undefined, // Clear server URL - will be set on next server save
-        voice,
-        speed,
+        // voice,
+        // speed,
       };
 
       // Update local actions
