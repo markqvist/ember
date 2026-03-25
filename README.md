@@ -5,7 +5,7 @@ Describe a topic. Attach your documents. Ember constructs a complete interactive
 
 ![Screenshot](./docs/screen_1.webp)
 
-Ember is a comprehensive fork and optimization of the [OpenMAIC](https://github.com/THU-MAIC/OpenMAIC) research project, reimagined for sovereign, offline inference. The original OpenMAIC presents an elegant conceptual architecture for multi-agent educational orchestration, but its implementation assumes hyperscaler API dependency at every layer, making it practically nonfunctional for actual local deployment.
+Ember is a comprehensive fork and optimization of the [OpenMAIC](https://github.com/THU-MAIC/OpenMAIC) research project, reimagined for sovereign, offline inference. The original OpenMAIC project presents an elegant conceptual architecture for multi-agent educational orchestration, but its implementation assumes hyperscaler API dependency at every layer, making it practically nonfunctional for actual local deployment.
 
 Every mainstream "AI education" platform operates on the same extractive model: Your learning materials, your conversations, your intellectual development is piped to remote infrastructure for analysis, profiling, and monetization. The pedagogical relationship becomes mediated by entities with interests fundamentally misaligned with your own.
 
