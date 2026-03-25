@@ -1,6 +1,4 @@
 # Ember
-*Bring the fire down from the mountain.*
-
 **A truly local, offline-first generative learning environment.**
 
 Describe a topic. Attach your documents. Ember constructs a complete interactive classroom—slides, quizzes, simulations, project-based learning—delivered by synthesized instructors and peers who speak, draw, debate, and respond in real time. All running on your hardware. No API keys. No cloud dependencies. No data extraction.
