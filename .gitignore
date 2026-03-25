@@ -64,6 +64,5 @@ next-env.d.ts
 /logs
 
 # docs
-/docs
 /extracted
 /reference
