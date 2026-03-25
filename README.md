@@ -141,7 +141,7 @@ pnpm build && pnpm start
 | **Agent profile injection** | Broken (not in prompts) | Fixed |
 
 ## Support Ember
-You can help support the continued development of this open, free and locally viable learning tool via one of the following channels:
+If you value education, please help support the continued development of this open, free and locally viable learning tool via one of the following channels:
 
 - Monero:
   ```
