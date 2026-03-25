@@ -190,7 +190,7 @@ If you value education, please help support the continued development of this op
 | Per-classroom inference config | ✅ Complete | Model/voice overrides per lesson |
 | Per-agent model/voice config | ✅ Complete | Heterogeneous inference |
 | Zero-dependency HTML simulations | 🔄 In Progress | Self-contained, no external deps |
-| Quick classroom export/import | 🔄 In Progress | Complete data portability |
+| Quick classroom ZIP export/import | 🔄 In Progress | Complete data portability |
 | Per-slide editing | 🔄 In Progress | Raw JSON editor implemented |
 | Local web search | 🔄 In Progress | Via local search API |
 | Course prerequisite chains | 📋 Planned | Include previous courses as context |
