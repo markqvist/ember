@@ -70,7 +70,15 @@ export function InferenceSettingsDialog({
   const providersConfig = useSettingsStore((s) => s.providersConfig);
   const selectedAgentIds = useSettingsStore((s) => s.selectedAgentIds);
   // Use agents record directly to avoid infinite loop from listAgents() returning new array
+  // Use agents record directly to avoid infinite loop from listAgents() returning new array
   const agentsRecord = useAgentRegistry((s) => s.agents);
+  // Get a stable string representation for triggering sync
+  const agentsVoiceHash = useMemo(() => {
+    return Object.values(agentsRecord)
+      .map((a) => `${a.id}:${a.voiceId || ''}`)
+      .sort()
+      .join('|');
+  }, [agentsRecord]);
   const stageId = stage?.id;
 
   // Filter to relevant agents only:
@@ -169,7 +177,7 @@ export function InferenceSettingsDialog({
   const [agentVoices, setAgentVoices] = useState<Record<string, string | null>>({});
   const [showAllAgents, setShowAllAgents] = useState(false);
 
-  // Sync agentVoices with agentsRecord when dialog is open and agents change
+  // Sync agentVoices with agentsRecord when dialog is open and agent voices change
   useEffect(() => {
     if (open) {
       const voices: Record<string, string | null> = {};
@@ -180,7 +188,9 @@ export function InferenceSettingsDialog({
       }
       setAgentVoices(voices);
     }
-  }, [open, agentsRecord]);
+    // Use agentsVoiceHash to detect actual voice changes without causing infinite loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, agentsVoiceHash]);
 
   // Reset state when dialog opens
   const handleOpenChange = useCallback(
