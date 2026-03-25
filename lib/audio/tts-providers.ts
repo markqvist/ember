@@ -140,17 +140,177 @@ export async function generateTTS(
   }
 }
 
+// TTS Text Sanitization Utilities for OpenAI TTS Generation
+// Optimized for audio clarity and natural speech patterns
+
+/**
+ * Comprehensive text sanitization for TTS generation
+ * Addresses common pitfalls that degrade speech quality
+ */
+export function sanitizeTTSText(input: string): string {
+  let text = input;
+
+  // 1. Normalize em-dashes to sentence-ending punctuation with pause
+  // Em-dashes in writing often represent dramatic pauses or interruptions
+  // For TTS, a period creates a cleaner break
+  text = text.replace(/—/g, '. ');
+
+  // 2. Normalize en-dashes and hyphens used as dashes
+  text = text.replace(/–/g, ' to ');  // Range indicators like "10–20" → "10 to 20"
+
+  // Handle special chemical notation patterns more explicitly
+  // Common formulas that benefit from expansion:
+  const chemicalPatterns = [
+    { pattern: /H2O/gi, replacement: 'H two O' },
+    { pattern: /CO2/gi, replacement: 'C O two' },
+    { pattern: /O2/gi, replacement: 'O two' },
+    { pattern: /N2/gi, replacement: 'N two' },
+    { pattern: /CH4/gi, replacement: 'C H four' },
+  ];
+  
+  for (const { pattern, replacement } of chemicalPatterns) {
+    text = text.replace(pattern, replacement);
+  }
+
+  // 3. Break up letter-number composites for pronounceability
+  // Matches patterns like H2O, CO2, AI2, V10, C++, etc.
+  // Insert space between letters/words and numbers
+  text = text.replace(/([a-zA-Z])(\d)/g, '$1 $2');   // H2 → H 2
+  text = text.replace(/(\d)([a-zA-Z])/g, '$1 $2');   // 2H → 2 H
+
+  // 4. Normalize URLs and email addresses (TTS fails miserably on these)
+  const urlPattern = /https?:\/\/[^\s]+/gi;
+  text = text.replace(urlPattern, (match) => {
+    // Replace with descriptive placeholder or say "dot com" style
+    return match.replace(/\./g, ' dot ').replace(/\/\//g, ' slash slash ');
+  });
+
+  const emailPattern = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+  text = text.replace(emailPattern, (match) => {
+    return match.replace('@', ' at ').replace(/\./g, ' dot ');
+  });
+
+  // 5. Clean up excessive punctuation and whitespace
+  text = text.replace(/([!?\.])\s*\1+/g, '$1');           // !!! → !
+  text = text.replace(/\s{2,}/g, ' ');                    // Multiple spaces → single space
+  text = text.replace(/[^\S\r\n]+/g, ' ');                // Tabs and other whitespace
+  text = text.replace(/[\n\r]+/g, '\n');                  // Normalize line breaks
+
+  // 6. Remove emoji characters (TTS may try to read them)
+  const emojiRegex = /([\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F700}-\u{1F77F}]|[\u{1F780}-\u{1F7FF}]|[\u{1F800}-\u{1F8FF}]|[\u{1F900}-\u{1F9FF}]|[\u{1FA00}-\u{1FA6F}]|[\u{1FA70}-\u{1FAFF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}])/gu;
+  text = text.replace(emojiRegex, '');
+
+  // 7. Remove hashtags and @mentions (social media artifacts)
+  text = text.replace(/#[\w#]+/g, '').replace(/\s+/g, ' ');
+  text = text.replace(/@[\w_]+/g, '');
+
+  // 8. Handle quotation mark variations (TTS may read them oddly)
+  text = text.replace(/[„""]/g, '"');
+  text = text.replace(/[«»‹›]/g, '"');
+
+  // 9. Convert numbers to written form if they appear standalone without context
+  // This is advanced and depends on your use case - often better handled upstream
+  // For example: "3D" → "three D", but this requires context-aware logic
+  
+  // 10. Remove zero-width characters and other invisible Unicode that confuses TTS
+  const invisibleChars = /[\u200B-\u200F\uFEFF\u2060]/g;
+  text = text.replace(invisibleChars, '');
+
+  // 11. Strip HTML tags if present
+  text = text.replace(/<[^>]+>/g, '');
+
+  // 12. Trim and normalize leading/trailing whitespace
+  text = text.trim();
+
+  return text;
+}
+
+// Alternative: More aggressive sanitization for noisy input
+export function sanitizeTTSTextStrict(input: string): string {
+  let text = sanitizeTTSText(input);
+  
+  // Additional aggressive cleanup
+  text = text.replace(/[<>]/g, ' ').replace(/[%@#&]/g, '');
+  text = text.replace(/\s+([,.!?:;])/g, '$1');  // Remove space before punctuation
+  text = text.replace(/([,.!?:;])(?!\s|$)/g, '$1 ');  // Ensure space after punctuation
+  
+  return text.trim();
+}
+
+// Type definitions for configuration
+export interface TTS_SanitizerConfig {
+  handleChemicals?: boolean;     // Expand chemical formulas (H2O → H two O)
+  handleUrls?: boolean;          // Convert URLs to speakable format
+  removeEmojis?: boolean;        // Strip emoji entirely
+  aggressiveWhitespace?: boolean;// Extra whitespace normalization
+}
+
+// Configurable sanitizer function
+export function sanitizeTTSTextConfig(
+  input: string, 
+  config: TTS_SanitizerConfig = {}
+): string {
+  const {
+    handleChemicals = true,
+    handleUrls = true,
+    removeEmojis = true,
+    aggressiveWhitespace = false
+  } = config;
+  
+  let text = input;
+
+  // Base sanitization (always applied)
+  text = text.replace(/—/g, '. ').replace(/–/g, ' to ');
+  text = text.replace(/([a-zA-Z])(\d)/g, '$1 $2');
+  text = text.replace(/(\d)([a-zA-Z])/g, '$1 $2');
+
+  if (handleChemicals) {
+    const chemicals: Record<string, string> = {
+      'H2O': 'H two O', 'CO2': 'C O two', 'O2': 'O two',
+      'N2': 'N two', 'CH4': 'C H four'
+    };
+    for (const [formula, pronunciation] of Object.entries(chemicals)) {
+      text = text.replace(new RegExp(formula, 'gi'), pronunciation);
+    }
+  }
+
+  if (handleUrls) {
+    text = text.replace(/https?:\/\/[^\s]+/gi, (m) => 
+      m.replace(/\./g, ' dot ').replace(/\/\//g, ' slash slash ')
+    );
+  }
+
+  if (removeEmojis) {
+    const emojiRegex = /[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu;
+    text = text.replace(emojiRegex, '');
+  }
+
+  // Standard whitespace normalization
+  text = text.replace(/([!?\.])\s*\1+/g, '$1')
+             .replace(/\s{2,}/g, ' ')
+             .trim();
+
+  if (aggressiveWhitespace) {
+    text = text.replace(/\s+([,.!?:;])/g, '$1')
+               .replace(/([,.!?:;])(?!\s|$)/g, '$1 ');
+  }
+
+  return text.trim();
+}
+
 /**
  * OpenAI TTS implementation (direct API call with explicit UTF-8 encoding)
  */
-async function generateOpenAITTS(
-  config: TTSModelConfig,
-  text: string,
-): Promise<TTSGenerationResult> {
+async function generateOpenAITTS(config: TTSModelConfig, text: string): Promise<TTSGenerationResult> {
   const baseUrl = config.baseUrl || TTS_PROVIDERS['openai-tts'].defaultBaseUrl;
 
   // Use configured model, provider default, or fallback to gpt-4o-mini-tts
   const model = config.model || TTS_PROVIDERS['openai-tts'].defaultModel || 'gpt-4o-mini-tts';
+
+  // Sanitize input text
+  const sanitizedText = sanitizeTTSText(text);
+  // console.log(text);
+  // console.log(sanitizedText);
 
   const response = await fetch(`${baseUrl}/audio/speech`, {
     method: 'POST',
@@ -160,7 +320,7 @@ async function generateOpenAITTS(
     },
     body: JSON.stringify({
       model: model,
-      input: text,
+      input: sanitizedText,
       voice: config.voice,
       speed: config.speed || 1.0,
     }),

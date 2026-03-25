@@ -18,6 +18,7 @@
 - [x] Fix runtime model resolution for discussions, etc.
 - [x] Add per-classroom runtime inference configuration
 - [x] Add discussion TTS and per-agent voices
+- [x] Add TTS input text sanitization for better pronounciation
 - [x] Add basic classrom editing capabilities (at least just name, potentially others)
 - [x] Add per-slide editing capabilities (raw JSON editor first)
 - [x] Add interactive slide HTML editor
