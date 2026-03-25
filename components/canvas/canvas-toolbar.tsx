@@ -13,6 +13,7 @@ import {
   Volume2,
   VolumeX,
   Repeat,
+  FileEdit,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useStageStore } from '@/lib/store';
@@ -36,6 +37,8 @@ export interface CanvasToolbarProps {
   readonly showStopDiscussion?: boolean;
   readonly onStopDiscussion?: () => void;
   readonly className?: string;
+  // Scene editing
+  readonly onEditScene?: () => void;
   // Audio/playback controls
   readonly ttsEnabled?: boolean;
   readonly ttsMuted?: boolean;
@@ -93,6 +96,7 @@ export function CanvasToolbar({
   showStopDiscussion,
   onStopDiscussion,
   className,
+  onEditScene,
   ttsEnabled,
   ttsMuted,
   ttsVolume = 1,
@@ -156,6 +160,35 @@ export function CanvasToolbar({
           <span className="opacity-35 mx-px">/</span>
           {scenesCount}
         </span>
+
+        <CtrlDivider />
+
+        {/* Edit Scene */}
+        {onEditScene && (
+          <TooltipProvider delayDuration={0}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditScene();
+                  }}
+                  className={cn(
+                    ctrlBtn,
+                    'w-6 h-6 text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400',
+                  )}
+                  aria-label={t('stage.editScene')}
+                >
+                  <FileEdit className="w-3.5 h-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs">
+                {t('stage.editScene')} (Ctrl+E)
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+        
       </div>
 
       {/* ── Center: unified playback controls ── */}

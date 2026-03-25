@@ -10,6 +10,7 @@ import { SceneSidebar } from './stage/scene-sidebar';
 import { Header } from './header';
 import { CanvasArea } from '@/components/canvas/canvas-area';
 import { Roundtable } from '@/components/roundtable';
+import { SceneEditorModal } from '@/components/editor/scene-editor-modal';
 import { PlaybackEngine, computePlaybackView } from '@/lib/playback';
 import type { EngineMode, TriggerEvent, Effect } from '@/lib/playback';
 import { ActionEngine } from '@/lib/action/engine';
@@ -95,6 +96,9 @@ export function Stage({
 
   // Scene switch confirmation dialog state
   const [pendingSceneId, setPendingSceneId] = useState<string | null>(null);
+
+  // Scene editor modal state
+  const [editorOpen, setEditorOpen] = useState(false);
 
   // Whiteboard state (from canvas store so AI tools can open it)
   const whiteboardOpen = useCanvasStore.use.whiteboardOpen();
@@ -677,6 +681,14 @@ export function Stage({
           handleNextScene();
           break;
       }
+
+      // Ctrl+E to open scene editor
+      if ((e.metaKey || e.ctrlKey) && key === 'E') {
+        e.preventDefault();
+        if (currentScene && !isPendingScene) {
+          setEditorOpen(true);
+        }
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -698,6 +710,18 @@ export function Stage({
   const handleWhiteboardToggle = () => {
     setWhiteboardOpen(!whiteboardOpen);
   };
+
+  // scene editor handlers
+  const handleEditScene = useCallback(() => {
+    if (currentScene && !isPendingScene) {
+      setEditorOpen(true);
+    }
+  }, [currentScene, isPendingScene]);
+
+  const handleSceneUpdate = useCallback((updatedScene: import('@/lib/types/stage').Scene) => {
+    const { updateScene } = useStageStore.getState();
+    updateScene(updatedScene.id, updatedScene);
+  }, []);
 
   // Map engine mode to the CanvasArea's expected engine state
   const canvasEngineState = (() => {
@@ -788,6 +812,7 @@ export function Stage({
                 ? () => onRetryOutline(generatingOutlines[0].id)
                 : undefined
             }
+            onEditScene={handleEditScene}
           />
         </div>
 
@@ -892,6 +917,7 @@ export function Stage({
             onPrevSlide={handlePreviousScene}
             onNextSlide={handleNextScene}
             onWhiteboardClose={handleWhiteboardToggle}
+            onEditScene={handleEditScene}
           />
         )}
       </div>
@@ -992,6 +1018,14 @@ export function Stage({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Scene Editor Modal */}
+      <SceneEditorModal
+        open={editorOpen}
+        onOpenChange={setEditorOpen}
+        scene={currentScene}
+        onSave={handleSceneUpdate}
+      />
     </div>
   );
 }

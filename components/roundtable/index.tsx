@@ -77,6 +77,7 @@ interface RoundtableProps {
   readonly onPrevSlide?: () => void;
   readonly onNextSlide?: () => void;
   readonly onWhiteboardClose?: () => void;
+  readonly onEditScene?: () => void;
 }
 
 const DEFAULT_TEACHER_AVATAR = '/avatars/teacher.png';
@@ -137,6 +138,7 @@ export function Roundtable({
   onPrevSlide,
   onNextSlide,
   onWhiteboardClose,
+  onEditScene,
 }: RoundtableProps) {
   const { t } = useI18n();
   const ttsMuted = useSettingsStore((s) => s.ttsMuted);
@@ -462,6 +464,7 @@ export function Roundtable({
         onToggleAutoPlay={() => setAutoPlayLecture(!autoPlayLecture)}
         playbackSpeed={playbackSpeed}
         onCycleSpeed={handleCycleSpeed}
+        onEditScene={onEditScene}
       />
 
       {/* ── Interaction area — three-column layout ── */}
