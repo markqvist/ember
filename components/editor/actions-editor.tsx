@@ -2,12 +2,18 @@
 
 import { useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { AlertCircle, Check, RotateCcw, Plus, Trash2, Volume2 } from 'lucide-react';
+import { AlertCircle, Check, RotateCcw, Plus, Trash2, Volume2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useI18n } from '@/lib/hooks/use-i18n';
+import { useSettingsStore } from '@/lib/store/settings';
+import { generateTTS } from '@/lib/audio/tts-providers';
+import { TTS_PROVIDERS, DEFAULT_TTS_VOICES } from '@/lib/audio/constants';
+import { db } from '@/lib/utils/database';
+import { toast } from 'sonner';
 import type { Action, SpeechAction, SpotlightAction, LaserAction } from '@/lib/types/action';
+import type { TTSProviderId } from '@/lib/audio/types';
 
 interface ActionsEditorProps {
   actions: Action[];
@@ -57,10 +63,12 @@ function SpeechActionEditor({
   action,
   onChange,
   onRegenerateAudio,
+  isRegenerating,
 }: {
   action: SpeechAction;
   onChange: (updated: SpeechAction) => void;
   onRegenerateAudio: (action: SpeechAction) => void;
+  isRegenerating: boolean;
 }) {
   const { t } = useI18n();
 
@@ -89,11 +97,16 @@ function SpeechActionEditor({
             variant="outline"
             size="sm"
             onClick={() => onRegenerateAudio(action)}
+            disabled={isRegenerating}
             className="shrink-0"
             title={t('stage.regenerateAudio')}
           >
-            <Volume2 className="w-3.5 h-3.5 mr-1" />
-            {t('stage.regenerateAudio')}
+            {isRegenerating ? (
+              <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+            ) : (
+              <Volume2 className="w-3.5 h-3.5 mr-1" />
+            )}
+            {isRegenerating ? '...' : t('stage.regenerateAudio')}
           </Button>
         </div>
       </div>
@@ -154,6 +167,7 @@ function ActionCard({
   onRegenerateAudio,
   isExpanded,
   onToggle,
+  regeneratingId,
 }: {
   action: Action;
   index: number;
@@ -162,8 +176,10 @@ function ActionCard({
   onRegenerateAudio: (action: SpeechAction) => void;
   isExpanded: boolean;
   onToggle: () => void;
+  regeneratingId: string | null;
 }) {
   const { t } = useI18n();
+  const isRegenerating = action.type === 'speech' && regeneratingId === action.id;
 
   const renderEditor = () => {
     switch (action.type) {
@@ -173,6 +189,7 @@ function ActionCard({
             action={action as SpeechAction}
             onChange={(updated) => onChange(updated)}
             onRegenerateAudio={onRegenerateAudio}
+            isRegenerating={isRegenerating}
           />
         );
       case 'spotlight':
@@ -263,11 +280,94 @@ export function ActionsEditor({ actions, onSave, onRevert }: ActionsEditorProps)
     setExpandedIndex(localActions.length);
   }, [localActions.length]);
 
-  const handleRegenerateAudio = useCallback((action: SpeechAction) => {
-    // Placeholder for TTS regeneration
-    console.log('Regenerate audio for:', action.id);
-    alert('TTS regeneration will be implemented in a future update.');
-  }, []);
+  const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
+
+  const handleRegenerateAudio = useCallback(async (action: SpeechAction) => {
+    if (!action.text.trim()) {
+      toast.error('Speech text is empty');
+      return;
+    }
+
+    setRegeneratingId(action.id);
+
+    try {
+      // Get TTS configuration from settings store
+      const settings = useSettingsStore.getState();
+      const providerId = settings.ttsProviderId;
+
+      // Skip browser-native-tts as it can't be used for generation
+      if (providerId === 'browser-native-tts') {
+        toast.error('Please configure a server TTS provider in settings');
+        return;
+      }
+
+      // Get provider configuration
+      const providerConfig = settings.ttsProvidersConfig?.[providerId];
+      const provider = TTS_PROVIDERS[providerId];
+
+      if (!provider) {
+        toast.error(`Unknown TTS provider: ${providerId}`);
+        return;
+      }
+
+      // Resolve voice and speed (action > settings > default)
+      const voice = action.voice || settings.ttsVoice || DEFAULT_TTS_VOICES[providerId] || 'default';
+      const speed = action.speed || settings.ttsSpeed || provider.speedRange?.default || 1.0;
+
+      // Build TTS config
+      const ttsConfig = {
+        providerId: providerId as TTSProviderId,
+        apiKey: providerConfig?.apiKey,
+        baseUrl: providerConfig?.baseUrl,
+        voice,
+        speed,
+        model: providerConfig?.model,
+      };
+
+      // Generate TTS
+      toast.info('Generating audio...');
+      const result = await generateTTS(ttsConfig, action.text);
+
+      // Determine format from provider or default to mp3
+      const format = provider.supportedFormats?.[0] || 'mp3';
+
+      // Create audio ID (reuse existing or generate new)
+      const audioId = action.audioId || `tts_${action.id}`;
+
+      // Store in IndexedDB
+      const blob = new Blob([result.audio as unknown as BlobPart], { type: `audio/${format}` });
+      await db.audioFiles.put({
+        id: audioId,
+        blob,
+        format,
+        text: action.text,
+        voice,
+        createdAt: Date.now(),
+      });
+
+      // Update action with new audio reference (clear audioUrl as it's now local-only)
+      const updatedAction: SpeechAction = {
+        ...action,
+        audioId,
+        audioUrl: undefined, // Clear server URL - will be set on next server save
+        voice,
+        speed,
+      };
+
+      // Update local actions
+      const actionIndex = localActions.findIndex((a) => a.id === action.id);
+      if (actionIndex !== -1) {
+        handleActionChange(actionIndex, updatedAction);
+      }
+
+      toast.success('Audio regenerated successfully');
+    } catch (error) {
+      console.error('TTS regeneration failed:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to regenerate audio');
+    } finally {
+      setRegeneratingId(null);
+    }
+  }, [localActions, handleActionChange]);
 
   const handleSave = useCallback(() => {
     onSave(localActions);
@@ -316,6 +416,7 @@ export function ActionsEditor({ actions, onSave, onRevert }: ActionsEditorProps)
             onRegenerateAudio={handleRegenerateAudio}
             isExpanded={expandedIndex === index}
             onToggle={() => setExpandedIndex(expandedIndex === index ? null : index)}
+            regeneratingId={regeneratingId}
           />
         ))}
       </div>

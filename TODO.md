@@ -20,8 +20,9 @@
 - [x] Add discussion TTS and per-agent voices
 - [x] Add basic classrom editing capabilities (at least just name, potentially others)
 - [x] Add per-slide editing capabilities (raw JSON editor first)
-- [ ] Add interactive slide HTML editor
-- [ ] Add slide actions editor with audio re-generate button
+- [x] Add interactive slide HTML editor
+- [x] Add slide actions editor with audio re-generate button
+- [x] Implement per-action audio regeneration functionality
 - [ ] Add quiz editor
 - [ ] Add generative / agentic classroom and slide modification abilities
 - [ ] Add local search and webpage fetch from our API
