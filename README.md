@@ -1,7 +1,7 @@
 # Ember
 **A truly local, offline-first generative learning environment.**
 
-Describe a topic. Attach your documents. Ember constructs a complete interactive classroom—slides, quizzes, simulations, project-based learning—delivered by synthesized instructors and peers who speak, draw, debate, and respond in real time. All running on your hardware. No API keys. No cloud dependencies. No data extraction.
+Describe a topic. Attach your documents. Ember constructs a complete interactive classroom with slides, quizzes, simulations, project-based learning, and delivers it with synthesized instructors and peers who speak, draw, debate, and respond in real time. All running on your hardware. No API keys. No cloud dependencies. No data extraction.
 
 Ember is a comprehensive fork and optimization of the [OpenMAIC](https://github.com/THU-MAIC/OpenMAIC) project, reimagined for sovereign, offline inference. The original OpenMAIC presents an elegant conceptual architecture for multi-agent educational orchestration, but its implementation assumes hyperscaler API dependency at every layer, making it practically nonfunctional for actual local deployment.
 
