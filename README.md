@@ -19,7 +19,7 @@ Many educational systems, both virtual and traditional, treat the learner as a c
 
 With Ember, it is my goal to architect the semantic scaffolding to produce **generative friction** — learning that resists easy consumption. The system should treat you as an intellectual peer *capable of navigating ambiguity*, not a user profile to be optimized. When a concept demands complexity, the agents must follow it there; when truth is uncertain, they must acknowledge the limits rather than performing false confidence. The simulated debates should contradict each other when the material supports multiple valid positions. Quiz questions have no single correct answer when the subject doesn't provide one. The slides do not flatten ideas to fit attention spans; they expand the context to fit the ideas.
 
-The golden thread here is education as **transformative capacity**, not transactional delivery. You are not accumulating information to be assessed; you are developing tools to think with. The generated classrooms persist not as static content libraries but as reusable intellectual equipment — simulations you can break, rebuild and expand yourself, arguments you can stress-test from new angles, concepts that remain tethered to the specific documents you brought rather than replaced by generic explanation. Learning compounds here because it remains yours to recombine.
+The golden thread here is education as **transformative capacity**, not transactional delivery. You are not accumulating information to be passively observed and tallied; you are developing tools to think with. The generated classrooms persist not as static content libraries but as reusable intellectual equipment — simulations you can break, rebuild and expand yourself, arguments you can stress-test from new angles, concepts that remain tethered to the specific documents you brought rather than replaced by generic explanation. Learning can compound here, because it remains yours to recombine.
 
 Mainstream platforms assume that difficulty is a bug to be engineered out, that knowledge must be bite-sized to be digestible, that retention requires extrinsic reward. Ember assumes that **understanding requires work**, and that the work itself *is* the point. The goal is to sharpen the system for this specific labor: sustaining extended inquiry, preserving nuance across long-form discussion, allowing ideas to maintain their proper edges. This is **not** entertainment dressed as education. It is *craft* — precise, demanding, and entirely yours to direct.
 
@@ -189,7 +189,7 @@ If you value education, please help support the continued development of this op
 | Generation introspection | ✅ Complete | Prompt logging to disk |
 | Per-classroom inference config | ✅ Complete | Model/voice overrides per lesson |
 | Per-agent model/voice config | ✅ Complete | Heterogeneous inference |
-| HTML simulations | 🔄 In Progress | Self-contained, no external deps |
+| Zero-dependency HTML simulations | 🔄 In Progress | Self-contained, no external deps |
 | Quick classroom export/import | 🔄 In Progress | Complete data portability |
 | Per-slide editing | 🔄 In Progress | Raw JSON editor implemented |
 | Local web search | 🔄 In Progress | Via local search API |
