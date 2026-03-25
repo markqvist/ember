@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -21,9 +21,29 @@ interface SceneEditorModalProps {
   onSave: (updatedScene: Scene) => void;
 }
 
+function getDefaultTab(scene: Scene | null): string {
+  if (!scene) return 'json';
+  
+  // Priority: interactive > actions > json
+  const hasInteractiveEditor = scene.type === 'interactive' && scene.content.type === 'interactive';
+  const hasActionsEditor = scene.actions && scene.actions.length > 0;
+  
+  if (hasInteractiveEditor) return 'interactive';
+  if (hasActionsEditor) return 'actions';
+  return 'json';
+}
+
 export function SceneEditorModal({ open, onOpenChange, scene, onSave }: SceneEditorModalProps) {
   const { t } = useI18n();
-  const [activeTab, setActiveTab] = useState('json');
+  const defaultTab = useMemo(() => getDefaultTab(scene), [scene?.id, scene?.type]);
+  const [activeTab, setActiveTab] = useState(defaultTab);
+
+  // Reset to default tab when modal opens with a new scene
+  useEffect(() => {
+    if (open) {
+      setActiveTab(getDefaultTab(scene));
+    }
+  }, [open, scene?.id]);
 
   const handleRevert = useCallback(() => {
     // Revert is handled internally by editors
