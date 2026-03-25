@@ -38,6 +38,10 @@ export const stageZhCN = {
     regenerateAudio: '重新生成音频',
     addAction: '添加动作',
     removeAction: '删除',
+    playPreview: '播放预览',
+    stopPreview: '停止预览',
+    noAudioAvailable: '没有可用的音频',
+    audioPreviewFailed: '播放音频预览失败',
   },
   whiteboard: {
     title: '互动白板',
@@ -217,6 +221,10 @@ export const stageEnUS = {
     regenerateAudio: 'Regenerate Audio',
     addAction: 'Add Action',
     removeAction: 'Remove',
+    playPreview: 'Play Preview',
+    stopPreview: 'Stop Preview',
+    noAudioAvailable: 'No audio available',
+    audioPreviewFailed: 'Failed to play audio preview',
   },
   whiteboard: {
     title: 'Interactive Whiteboard',

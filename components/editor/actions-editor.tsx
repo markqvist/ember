@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { AlertCircle, Check, RotateCcw, Plus, Trash2, Volume2, Loader2 } from 'lucide-react';
+import { AlertCircle, Check, RotateCcw, Plus, Trash2, Volume2, Loader2, Play, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useI18n } from '@/lib/hooks/use-i18n';
 import { useSettingsStore } from '@/lib/store/settings';
 import { generateTTS } from '@/lib/audio/tts-providers';
+import { createAudioPlayer } from '@/lib/utils/audio-player';
 import { TTS_PROVIDERS, DEFAULT_TTS_VOICES } from '@/lib/audio/constants';
 import { db } from '@/lib/utils/database';
 import { toast } from 'sonner';
@@ -71,6 +72,66 @@ function SpeechActionEditor({
   isRegenerating: boolean;
 }) {
   const { t } = useI18n();
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [hasAudio, setHasAudio] = useState(false);
+  const [isCheckingAudio, setIsCheckingAudio] = useState(false);
+  const audioPlayerRef = useRef(createAudioPlayer());
+
+  // Check if audio exists when action changes
+  useEffect(() => {
+    const checkAudio = async () => {
+      if (!action.audioId) {
+        setHasAudio(false);
+        return;
+      }
+      setIsCheckingAudio(true);
+      try {
+        const record = await db.audioFiles.get(action.audioId);
+        setHasAudio(!!record);
+      } catch {
+        setHasAudio(false);
+      } finally {
+        setIsCheckingAudio(false);
+      }
+    };
+    checkAudio();
+  }, [action.audioId, action.audioUrl]);
+
+  // Cleanup audio player on unmount
+  useEffect(() => {
+    const player = audioPlayerRef.current;
+    return () => {
+      player.destroy();
+    };
+  }, []);
+
+  const handlePlayPreview = async () => {
+    const audioId = action.audioId;
+    if (!audioId) return;
+
+    if (isPlaying) {
+      audioPlayerRef.current.stop();
+      setIsPlaying(false);
+      return;
+    }
+
+    try {
+      setIsPlaying(true);
+      audioPlayerRef.current.onEnded(() => {
+        setIsPlaying(false);
+      });
+      const played = await audioPlayerRef.current.play(audioId, action.audioUrl);
+      if (!played) {
+        setIsPlaying(false);
+        toast.error(t('stage.noAudioAvailable'));
+      }
+    } catch (error) {
+      setIsPlaying(false);
+      toast.error(t('stage.audioPreviewFailed') || 'Failed to play audio preview');
+    }
+  };
+
+  const canPreview = hasAudio || action.audioUrl;
 
   return (
     <div className="space-y-3">
@@ -93,6 +154,20 @@ function SpeechActionEditor({
             placeholder="No audio generated"
             className="flex-1 text-xs bg-muted"
           />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePlayPreview}
+            disabled={!canPreview || isCheckingAudio || isRegenerating}
+            className="shrink-0 px-2"
+            title={isPlaying ? t('stage.stopPreview') : t('stage.playPreview')}
+          >
+            {isPlaying ? (
+              <Square className="w-3.5 h-3.5 fill-current" />
+            ) : (
+              <Play className="w-3.5 h-3.5" />
+            )}
+          </Button>
           <Button
             variant="outline"
             size="sm"
