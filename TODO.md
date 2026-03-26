@@ -28,6 +28,7 @@
 - [x] Implement per-action audio regeneration functionality
 - [x] Create new logo
 - [x] Add quiz editor
+- [ ] Add generated outline review step
 - [ ] Add generative / agentic classroom and slide modification abilities
 - [ ] Add local search and webpage fetch from our API
 - [ ] Add classroom export/import with complete data structure to local file
