@@ -1,4 +1,6 @@
-# OpenMAIC Local Inference Optimization & Fixes Tasks
+# OpenMAIC -> Ember
+
+## Local Inference Optimization, Fixes & Additions
 
 - [x] Make timeouts configurable
 - [x] Add proper TTS config
