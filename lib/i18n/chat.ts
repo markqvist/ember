@@ -123,7 +123,7 @@ export const chatEnUS = {
     },
   },
   agentBar: {
-    readyToLearn: 'Ready to learn together?',
+    readyToLearn: 'Configure Agent Roles',
     expandedTitle: 'Classroom Role Config',
     configTooltip: 'Click to configure classroom roles',
   },
