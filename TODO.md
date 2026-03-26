@@ -29,7 +29,7 @@
 - [x] Create new logo
 - [x] Add quiz editor
 - [x] Add generated outline review step
-- [ ] Add proper TTS chunking and efficient audio encoding
+- [x] Add proper TTS chunking and efficient audio encoding (now in Chatterbox TTS Server)
 - [ ] Add generative / agentic classroom and slide modification abilities
 - [ ] Add local search and webpage fetch from our API
 - [ ] Add classroom export/import with complete data structure to local file
