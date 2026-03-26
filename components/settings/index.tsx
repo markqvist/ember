@@ -409,7 +409,7 @@ export function SettingsDialog({ open, onOpenChange, initialSection }: SettingsD
       ...providersConfig,
       [newProviderId]: {
         apiKey: '',
-        baseUrl: '',
+        baseUrl: providerData.baseUrl || '',
         models: [],
         name: providerData.name,
         type: providerData.type,

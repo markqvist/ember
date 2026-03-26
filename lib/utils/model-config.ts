@@ -15,7 +15,7 @@ export function getCurrentModelConfig() {
     modelId,
     modelString,
     apiKey: providerConfig?.apiKey || '',
-    baseUrl: providerConfig?.baseUrl || '',
+    baseUrl: providerConfig?.baseUrl || providerConfig?.defaultBaseUrl || '',
     providerType: providerConfig?.type,
     requiresApiKey: providerConfig?.requiresApiKey,
     isServerConfigured: providerConfig?.isServerConfigured,
