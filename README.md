@@ -104,6 +104,16 @@ cd ember
 pnpm install
 ```
 
+### Suggested Inference Setup
+
+A single Strix Halo system with 128GB of memory will get you *very* far, if you don't mind waiting a bit for speech generation in discussions, or can live without it.
+
+1. **LM Runner:** Tested against `llama.cpp` behind `llama-swap`. Pick your model, Unsloth's Qwen3.5 122B `Q5_K_XL` quant will provide decent results.
+2. **Speech Generation:** Use my [Chatterbox TTS Server](https://github.com/markqvist/chatterbox_tts?tab=readme-ov-file#chatterbox-tts-server). Runs faster than real-time on Strix Halo and similar systems.
+3. **Speech-to-text:** Use `whisper.cpp` behind `llama-swap`, with the `large` model (`base` works well for English-only).
+
+That's it. An interactive learning center in a box.
+
 ### Configuration
 
 Configuring providers via the web UI (Settings → Providers) is the easiest. Simply open the web UI and add your custom endpoints as providers.
@@ -135,6 +145,8 @@ ASR_OPENAI_API_KEY=sk-dummy
 TTS_OPENAI_BASE_URL=http://localhost:5000/v1
 TTS_OPENAI_API_KEY=sk-dummy
 ```
+
+But really, it's **much** easier to manage multiple local inference systems and models via the web UI.
 
 All configuration can be exported/imported via Settings → General for rapid deployment across machines.
 
