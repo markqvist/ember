@@ -74,6 +74,19 @@ Local inference requires different operational patterns than API calls. Ember ad
 - **PDF processing** — Working local document ingestion (multi-PDF upload, proper parsing)
 - **Better agent registry** — Improved default agent filtering and profile injection into prompts
 
+### Post-Generation Editing Suite
+
+Unlike OpenMAIC's static, generated-once content model, Ember treats classrooms as living documents that can be refined, corrected, and extended after initial generation:
+
+- **Classroom metadata editing** — Rename classrooms, update descriptions, adjust inference and voice configurations post-generation
+- **Per-slide editing** — Full JSON editor for any scene type with validation and error recovery
+- **Interactive HTML editor** — Dedicated editor for interactive scenes with live HTML editing and URL configuration
+- **Quiz editor** — Visual editor for quiz questions: add/remove questions, edit options, set correct answers, configure points and analysis text
+- **Actions editor** — Modify scene actions, regenerate audio for speech actions with one click, add or remove actions
+- **Audio regeneration** — Per-action TTS regeneration with configurable voices and playback preview
+
+This transforms the classroom from a static artifact into a reusable template — refine the generated content, fix errors, adjust difficulty, or extend lessons with additional material without regenerating from scratch.
+
 
 ## Quick Start
 
@@ -157,7 +170,12 @@ pnpm build && pnpm start
 | **Settings portability** | Manual env configuration | Export/import UI |
 | **Multi-PDF upload** | Single file only | Multiple documents |
 | **User profile injection** | Broken (not in prompts) | Fixed |
-| **Meaningful Context** | Arbitrarily small limits | Can provide meaningful context |
+| **Meaningful Context** | Arbitrarily small limits | No limits - Can provide meaningful context |
+| **Quiz editing** | None | Full visual editor with question management |
+| **Interactive HTML editing** | None | Dedicated HTML/URL editor |
+| **Actions editing** | None | Modify actions, regenerate audio per-action |
+| **Classroom editing** | None | Rename, reconfigure post-generation |
+| **Per-slide JSON editing** | None | Raw JSON editor with validation |
 
 ## Support Ember
 If you value education, please help support the continued development of this open, free and locally viable learning tool via one of the following channels:
@@ -195,9 +213,13 @@ If you value education, please help support the continued development of this op
 | Generation introspection | ✅ Complete | Prompt logging to disk |
 | Per-classroom inference config | ✅ Complete | Model/voice overrides per lesson |
 | Per-agent model/voice config | ✅ Complete | Heterogeneous inference |
+| Per-slide JSON editing | ✅ Complete | Raw JSON editor with validation |
+| Interactive HTML editor | ✅ Complete | Dedicated HTML/URL editor for interactive scenes |
+| Quiz editor | ✅ Complete | Visual question/option/answer editor |
+| Actions editor | ✅ Complete | Modify actions, per-action audio regeneration |
+| Classroom metadata editing | ✅ Complete | Rename, reconfigure post-generation |
 | Zero-dependency HTML simulations | 🔄 In Progress | Self-contained, no external deps |
 | Quick classroom ZIP export/import | 🔄 In Progress | Complete data portability |
-| Per-slide editing | 🔄 In Progress | Raw JSON editor implemented |
 | Local web search | 🔄 In Progress | Via local search API |
 | Course prerequisite chains | 📋 Planned | Include previous courses as context |
 
