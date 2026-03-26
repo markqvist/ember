@@ -171,6 +171,7 @@ pnpm build && pnpm start
 | **Multi-PDF upload** | Single file only | Multiple documents |
 | **User profile injection** | Broken (not in prompts) | Fixed |
 | **Meaningful Context** | Arbitrarily small limits | No limits - Can provide meaningful context |
+| **Outline editor** | None | Pre-generation outline editor |
 | **Quiz editing** | None | Full visual editor with question management |
 | **Interactive HTML editing** | None | Dedicated HTML/URL editor |
 | **Actions editing** | None | Modify actions, regenerate audio per-action |
