@@ -454,6 +454,7 @@ function HomePage() {
         pdfProviderConfig,
         sceneOutlines: null,
         currentStep: 'generating' as const,
+        researchEnabled: form.research,
       };
       sessionStorage.setItem('generationSession', JSON.stringify(sessionState));
 
