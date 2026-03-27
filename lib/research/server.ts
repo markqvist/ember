@@ -131,7 +131,7 @@ export class LCInvoker {
 
 ## Key Findings
 
-This is a placeholder research synthesis. When lc is properly configured and integrated, this will contain:
+This is a placeholder research synthesis. When the research pipeline is properly configured and integrated, this will contain:
 
 - Comprehensive web search results from multiple sources
 - Deep analysis of relevant documents and papers
@@ -155,14 +155,14 @@ This is a placeholder research synthesis. When lc is properly configured and int
 - Reference materials and textbooks
 
 ---
-*Note: This is placeholder content. Install and configure lc to enable real research workflows.*`;
+*Note: This is placeholder content.*`;
     }
 
     return JSON.stringify({
       workflow: options.workflow,
       status: 'completed',
       placeholder: true,
-      message: 'LC integration pending - this is mock output',
+      message: 'Research integration pending - this is mock output',
     });
   }
 
