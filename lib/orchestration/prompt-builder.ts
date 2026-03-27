@@ -165,9 +165,7 @@ Personalize your teaching based on their background when relevant. Address them 
 
   // Build language constraint from stage language
   const courseLanguage = storeState.stage?.language;
-  const languageConstraint = courseLanguage
-    ? `\n# Language (CRITICAL)\nYou MUST speak in ${courseLanguage === 'zh-CN' ? 'Chinese (Simplified)' : courseLanguage === 'en-US' ? 'English' : courseLanguage}. ALL text content in your response MUST be in this language.\n`
-    : '';
+  const languageConstraint = `\n# Language\nYou must speak in English. All text content in your response must be in this language.\n`;
 
   return `# Role
 You are ${agentConfig.name}.

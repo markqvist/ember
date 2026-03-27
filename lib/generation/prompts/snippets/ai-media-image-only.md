@@ -7,7 +7,6 @@ When a slide scene needs an image but no suitable PDF image exists, mark it for 
 - Each entry specifies: `type` ("image"), `prompt` (description for the generation model), `elementId` (unique placeholder), and optionally `aspectRatio` (default "16:9") and `style`
 - **Image IDs**: use `"gen_img_1"`, `"gen_img_2"`, etc. — IDs are **globally unique across the entire course**, NOT reset per scene
 - The prompt should describe the desired image clearly and specifically
-- **Language in images**: If the image contains text, labels, or annotations, the prompt MUST explicitly specify that all text in the image should be in the course language (e.g., "all labels in Chinese" for zh-CN courses, "all labels in English" for en-US courses). For purely visual images without text, language does not matter.
 - Only request image generation when it genuinely enhances the content — not every slide needs an image
 - If a suitable PDF image exists, prefer using `suggestedImageIds` instead
 - **Avoid duplicate images across slides**: Each generated image must be visually distinct. Do NOT request near-identical images for different slides (e.g., two "diagram of cell structure" images). If multiple slides cover the same topic, vary the visual angle, scope, or style

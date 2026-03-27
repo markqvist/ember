@@ -1,19 +1,12 @@
 import { defaultLocale, type Locale } from './types';
 export { type Locale, defaultLocale } from './types';
-import { commonZhCN, commonEnUS } from './common';
-import { stageZhCN, stageEnUS } from './stage';
-import { chatZhCN, chatEnUS } from './chat';
-import { generationZhCN, generationEnUS } from './generation';
-import { settingsZhCN, settingsEnUS } from './settings';
+import { commonEnUS } from './common';
+import { stageEnUS } from './stage';
+import { chatEnUS } from './chat';
+import { generationEnUS } from './generation';
+import { settingsEnUS } from './settings';
 
 export const translations = {
-  'zh-CN': {
-    ...commonZhCN,
-    ...stageZhCN,
-    ...chatZhCN,
-    ...generationZhCN,
-    ...settingsZhCN,
-  },
   'en-US': {
     ...commonEnUS,
     ...stageEnUS,
@@ -40,7 +33,7 @@ export function getClientTranslation(key: string): string {
   if (typeof window !== 'undefined') {
     try {
       const storedLocale = localStorage.getItem('locale');
-      if (storedLocale === 'zh-CN' || storedLocale === 'en-US') {
+      if (storedLocale === 'en-US') {
         locale = storedLocale;
       }
     } catch {
