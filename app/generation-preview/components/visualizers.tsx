@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ScanLine,
+  Microscope,
   Search,
   Globe,
   MousePointer2,
@@ -21,17 +22,17 @@ import type { SceneOutline } from '@/lib/types/generation';
 export function StepVisualizer({
   stepId,
   outlines,
-  webSearchSources,
+  researchSources,
 }: {
   stepId: string;
   outlines?: SceneOutline[] | null;
-  webSearchSources?: Array<{ title: string; url: string }>;
+  researchSources?: Array<{ title: string; url: string }>;
 }) {
   switch (stepId) {
     case 'pdf-analysis':
       return <PdfScanVisualizer />;
-    case 'web-search':
-      return <WebSearchVisualizer sources={webSearchSources || []} />;
+    case 'research':
+      return <ResearchVisualizer sources={researchSources || []} />;
     case 'outline':
       return <StreamingOutlineVisualizer outlines={outlines || []} />;
     case 'agent-generation':
@@ -85,7 +86,7 @@ function PdfScanVisualizer() {
 }
 
 // Web Search: Miniature search engine results page with animated query + result rows
-function WebSearchVisualizer({ sources }: { sources: Array<{ title: string; url: string }> }) {
+function ResearchVisualizer({ sources }: { sources: Array<{ title: string; url: string }> }) {
   const [activeResult, setActiveResult] = useState(0);
 
   // Cycle through result highlight when we have sources

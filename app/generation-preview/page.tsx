@@ -64,7 +64,7 @@ function GenerationPreviewContent() {
   const [streamingOutlines, setStreamingOutlines] = useState<SceneOutline[] | null>(null);
   const [truncationWarnings, setTruncationWarnings] = useState<string[]>([]);
   const [pdfFailureSummary, setPdfFailureSummary] = useState<PdfFailureSummary | null>(null);
-  const [webSearchSources, setWebSearchSources] = useState<Array<{ title: string; url: string }>>(
+  const [researchSources, setResearchSources] = useState<Array<{ title: string; url: string }>>(
     [],
   );
   const [showAgentReveal, setShowAgentReveal] = useState(false);
@@ -557,28 +557,24 @@ function GenerationPreviewContent() {
         setStatusMessage('');
       }
 
-      // Step: Web Search (if enabled)
-      const webSearchStepIdx = activeSteps.findIndex((s) => s.id === 'web-search');
-      if (currentSession.requirements.webSearch && webSearchStepIdx >= 0) {
-        setCurrentStepIndex(webSearchStepIdx);
-        setWebSearchSources([]);
+      // Step: Research (if enabled)
+      const researchStepIdx = activeSteps.findIndex((s) => s.id === 'research');
+      if (currentSession.researchEnabled && researchStepIdx >= 0) {
+        setCurrentStepIndex(researchStepIdx);
+        setResearchSources([]);
 
-        const wsSettings = useSettingsStore.getState();
-        const wsApiKey =
-          wsSettings.webSearchProvidersConfig?.[wsSettings.webSearchProviderId]?.apiKey;
-        const res = await fetch('/api/web-search', {
+        const res = await fetch('/api/research', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             query: currentSession.requirements.requirement,
-            apiKey: wsApiKey || undefined,
           }),
           signal,
         });
 
         if (!res.ok) {
-          const data = await res.json().catch(() => ({ error: 'Web search failed' }));
-          throw new Error(data.error || t('generation.webSearchFailed'));
+          const data = await res.json().catch(() => ({ error: 'Research failed' }));
+          throw new Error(data.error || t('generation.researchFailed'));
         }
 
         const searchData = await res.json();
@@ -586,15 +582,15 @@ function GenerationPreviewContent() {
           title: s.title,
           url: s.url,
         }));
-        setWebSearchSources(sources);
+        setResearchSources(sources);
 
-        const updatedSessionWithSearch = {
+        const updatedSessionWithResearch = {
           ...currentSession,
           researchContext: searchData.context || '',
           researchSources: sources,
         };
-        persistSession(updatedSessionWithSearch);
-        currentSession = updatedSessionWithSearch;
+        persistSession(updatedSessionWithResearch);
+        currentSession = updatedSessionWithResearch;
         activeSteps = getActiveSteps(currentSession);
       }
 
@@ -1351,7 +1347,7 @@ function GenerationPreviewContent() {
                       <StepVisualizer
                         stepId={activeStep.id}
                         outlines={streamingOutlines}
-                        webSearchSources={webSearchSources}
+                        researchSources={researchSources}
                       />
                     </motion.div>
                   )}

@@ -1,4 +1,4 @@
-import { ScanLine, Search, Bot, FileText, LayoutPanelLeft, Clapperboard } from 'lucide-react';
+import { ScanLine, Microscope, Bot, FileText, LayoutPanelLeft, Clapperboard } from 'lucide-react';
 import { useSettingsStore } from '@/lib/store/settings';
 import type {
   SceneOutline,
@@ -25,9 +25,10 @@ export interface GenerationSessionState {
   pdfFileName?: string;
   pdfProviderId?: string;
   pdfProviderConfig?: { apiKey?: string; baseUrl?: string };
-  // Web search context
+  // Research context (replaces web search)
   researchContext?: string;
   researchSources?: Array<{ title: string; url: string }>;
+  researchEnabled?: boolean;
 }
 
 export type GenerationStep = {
@@ -47,10 +48,10 @@ export const ALL_STEPS: GenerationStep[] = [
     type: 'analysis',
   },
   {
-    id: 'web-search',
-    title: 'generation.webSearching',
-    description: 'generation.webSearchingDesc',
-    icon: Search,
+    id: 'research',
+    title: 'generation.researching',
+    description: 'generation.researchingDesc',
+    icon: Microscope,
     type: 'analysis',
   },
   {
@@ -90,7 +91,7 @@ export const getActiveSteps = (session: GenerationSessionState | null) => {
         session?.pdfStorageKey || ((session?.pdfSources?.length ?? 0) > 0 && !session?.pdfText),
       );
     }
-    if (step.id === 'web-search') return !!session?.requirements?.webSearch;
+    if (step.id === 'research') return !!session?.researchEnabled;
     if (step.id === 'agent-generation') return useSettingsStore.getState().agentMode === 'auto';
     return true;
   });

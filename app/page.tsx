@@ -54,22 +54,22 @@ import type { Stage } from '@/lib/types/stage';
 
 const log = createLogger('Home');
 
-const WEB_SEARCH_STORAGE_KEY = 'webSearchEnabled';
+const RESEARCH_STORAGE_KEY = 'researchEnabled';
 const LANGUAGE_STORAGE_KEY = 'generationLanguage';
 const RECENT_OPEN_STORAGE_KEY = 'recentClassroomsOpen';
 
 interface FormState {
   pdfFiles: SelectedPdf[];
   requirement: string;
-  language: 'en-US';
-  webSearch: boolean;
+  language: 'en-US' | 'en-GB';
+  research: boolean;
 }
 
 const initialFormState: FormState = {
   pdfFiles: [],
   requirement: '',
   language: 'en-US',
-  webSearch: false,
+  research: false,
 };
 
 function HomePage() {
@@ -102,10 +102,10 @@ function HomePage() {
       /* localStorage unavailable */
     }
     try {
-      const savedWebSearch = localStorage.getItem(WEB_SEARCH_STORAGE_KEY);
+      const savedResearch = localStorage.getItem(RESEARCH_STORAGE_KEY);
       const savedLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY);
       const updates: Partial<FormState> = {};
-      if (savedWebSearch === 'true') updates.webSearch = true;
+      if (savedResearch === 'true') updates.research = true;
       if (savedLanguage === 'en-US' || savedLanguage === 'en-US') {
         updates.language = savedLanguage;
       } else {
@@ -293,7 +293,7 @@ function HomePage() {
   const updateForm = <K extends keyof FormState>(field: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     try {
-      if (field === 'webSearch') localStorage.setItem(WEB_SEARCH_STORAGE_KEY, String(value));
+      if (field === 'research') localStorage.setItem(RESEARCH_STORAGE_KEY, String(value));
       if (field === 'language') localStorage.setItem(LANGUAGE_STORAGE_KEY, String(value));
       if (field === 'requirement') updateRequirementCache(value as string);
     } catch {
@@ -400,7 +400,7 @@ function HomePage() {
         language: form.language,
         userNickname: userProfile.nickname || undefined,
         userBio: userProfile.bio || undefined,
-        webSearch: form.webSearch || undefined,
+        researchEnabled: form.research || undefined,
       };
 
       let pdfProviderId: string | undefined;
@@ -700,8 +700,8 @@ function HomePage() {
                 <GenerationToolbar
                   language={form.language}
                   onLanguageChange={(lang) => updateForm('language', lang)}
-                  webSearch={form.webSearch}
-                  onWebSearchChange={(v) => updateForm('webSearch', v)}
+                  research={form.research}
+                  onResearchChange={(v) => updateForm('research', v)}
                   onSettingsOpen={(section) => {
                     setSettingsSection(section);
                     setSettingsOpen(true);
