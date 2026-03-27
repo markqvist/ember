@@ -59,27 +59,16 @@ export function getLCInstallInstructions(): string {
 
   const instructions: Record<string, string> = {
     linux: `Install lc via pip:
-  pip install humanitys-last-command
-
-Or install from source:
-  git clone https://github.com/markqvist/lc.git
-  cd lc && pip install -e .`,
+  pip install git+https://github.com/markqvist/lc`,
+    
     darwin: `Install lc via pip:
-  pip install humanitys-last-command
+  pip install git+https://github.com/markqvist/lc`,
 
-Or using Homebrew:
-  brew tap markqvist/lc
-  brew install lc`,
     win32: `Install lc via pip:
-  pip install humanitys-last-command
+  pip install git+https://github.com/markqvist/lc`,
 
-Or download the Windows binary from:
-  https://github.com/markqvist/lc/releases`,
     unknown: `Install lc via pip:
-  pip install humanitys-last-command
-
-For platform-specific instructions, see:
-  https://github.com/markqvist/lc#installation`,
+  pip install git+https://github.com/markqvist/lc`,
   };
 
   return instructions[platform] || instructions.unknown;
