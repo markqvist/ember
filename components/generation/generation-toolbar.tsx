@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { Bot, Check, ChevronLeft, Globe, Paperclip, FileText, X, Microscope } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
@@ -62,12 +62,40 @@ export function GenerationToolbar({
   const setPDFProvider = useSettingsStore((s) => s.setPDFProvider);
   const researchEnabled = useSettingsStore((s) => s.researchEnabled);
   const setResearchEnabled = useSettingsStore((s) => s.setResearchEnabled);
-  const lcAvailable = useSettingsStore((s) => s.lcAvailable);
+  const setLCAvailable = useSettingsStore((s) => s.setLCAvailable);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Research is available if lc is available or if the user has enabled it
-  // (lc availability will be checked at runtime)
+  // Local state for LC status (checking, available, not-available)
+  const [lcStatus, setLcStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
+
+  // Check LC availability on mount
+  useEffect(() => {
+    checkLCAvailability();
+  }, []);
+
+  const checkLCAvailability = async () => {
+    setLcStatus('checking');
+    try {
+      const res = await fetch('/api/lc/status');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          const available = data.available as boolean;
+          setLcStatus(available ? 'available' : 'unavailable');
+          setLCAvailable(available);
+          return;
+        }
+      }
+      setLcStatus('unavailable');
+      setLCAvailable(false);
+    } catch {
+      setLcStatus('unavailable');
+      setLCAvailable(false);
+    }
+  };
+
+  // Research is available if the feature is enabled in settings
   const researchAvailable = researchEnabled !== false;
 
   // Configured LLM providers (only those with valid credentials + models + endpoint)
@@ -356,11 +384,24 @@ export function GenerationToolbar({
           {/* LC Status */}
           <div className="flex items-center justify-between px-1">
             <span className="text-xs text-muted-foreground">
-              {lcAvailable === true
-                ? t('toolbar.lcReady')
-                : lcAvailable === false
-                  ? t('toolbar.lcNotReady')
-                  : t('toolbar.lcStatusUnknown')}
+              {lcStatus === 'checking' && (
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-amber-400 animate-pulse" />
+                  {t('toolbar.lcStatusChecking')}
+                </span>
+              )}
+              {lcStatus === 'available' && (
+                <span className="flex items-center gap-1.5 text-green-600 dark:text-green-400">
+                  <span className="size-2 rounded-full bg-green-500" />
+                  {t('toolbar.lcReady')}
+                </span>
+              )}
+              {lcStatus === 'unavailable' && (
+                <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+                  <span className="size-2 rounded-full bg-amber-500" />
+                  {t('toolbar.lcNotReady')}
+                </span>
+              )}
             </span>
             <button
               onClick={() => onSettingsOpen('lc')}

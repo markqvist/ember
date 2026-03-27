@@ -116,39 +116,55 @@ export interface ResearchOptions {
 /**
  * Default lc configuration template
  */
-export const DEFAULT_LC_CONFIG_TEMPLATE = `# LC Configuration Template for Ember Research Workflows
-# This template is used to configure lc sessions for research tasks
+export const DEFAULT_LC_CONFIG_TEMPLATE = `[models]
+  default = primary
 
-# Model configuration for research agent
-model:
-  provider: openai
-  model: gpt-4o
-  temperature: 0.7
+  [[primary]]
+    backend = openai
+    base_url = http://localhost:1234/v1
+    model = local-model
+    api_key =
+    sysprompt = system.jinja
+    vision = yes
+    temperature = 0.7
+    max_tokens = 32768
+    context_limit = 200000
+    context_shift_factor = 0.35
 
-# Search configuration
-search:
-  engines:
-    - brave
-    - google
-  max_results: 10
-  safe_search: true
+[toolkits]
+  builtin = filesystem
 
-# Web scraping configuration
-scrape:
-  timeout: 30000
-  max_content_length: 50000
-  extract_images: false
+[resolvers]
+  builtin = environment, filesystem, system
 
-# Research workflow settings
-research:
-  max_iterations: 3
-  synthesis_depth: comprehensive
-  include_citations: true
+[skills]
+  pinned =
+  directories =
 
-# Output formatting
-output:
-  format: markdown
-  include_metadata: true
+[loading]
+  user_skills = no
+  user_tools = no
+  user_quirks = no
+
+  project_skills = yes
+  project_tools = yes
+
+[session]
+  global_history = no
+  persistence = yes
+  lock_timeout = 10800
+
+[display]
+  show_reasoning = no
+  stream_output = yes
+  render_markdown = yes
+
+[stdin]
+  max_text_bytes = 16384
+  max_binary_bytes = 512
+
+[logging]
+  level = 4
 `;
 
 /**

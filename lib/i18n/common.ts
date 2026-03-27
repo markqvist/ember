@@ -25,6 +25,7 @@ export const commonEnUS = {
     lcReady: 'lc is ready',
     lcNotReady: 'lc not installed',
     lcStatusUnknown: 'lc status unknown',
+    lcStatusChecking: 'Checking lc...',
     researchInfo: 'When enabled, lc will research the topic comprehensively using web search and document analysis to enrich the generated classroom.',
     selectProvider: 'Select provider',
     configureProvider: 'Set up model',
