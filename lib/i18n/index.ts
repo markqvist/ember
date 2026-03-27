@@ -14,6 +14,13 @@ export const translations = {
     ...generationEnUS,
     ...settingsEnUS,
   },
+  'en-GB': {
+    ...commonEnUS,
+    ...stageEnUS,
+    ...chatEnUS,
+    ...generationEnUS,
+    ...settingsEnUS,
+  },
 } as const;
 
 export type TranslationKey = keyof (typeof translations)[typeof defaultLocale];

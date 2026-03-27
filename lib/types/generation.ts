@@ -71,7 +71,7 @@ export interface UserRequirements {
   language: 'en-US' | 'en-GB'; // Course language - critical for generation
   userNickname?: string; // Student nickname for personalization
   userBio?: string; // Student background for personalization
-  webSearch?: boolean; // Enable web search for richer context
+  researchEnabled?: boolean; // Enable lc research for richer context (replaces webSearch)
 }
 
 export interface SelectedPdf {

@@ -21,7 +21,6 @@ export async function GET() {
       pdf: getServerPDFProviders(),
       image: getServerImageProviders(),
       video: getServerVideoProviders(),
-      webSearch: getServerWebSearchProviders(),
     });
   } catch (error) {
     log.error('Error fetching server providers:', error);

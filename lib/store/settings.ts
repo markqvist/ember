@@ -15,8 +15,7 @@ import type { PDFProviderId } from '@/lib/pdf/types';
 import type { ImageProviderId, VideoProviderId } from '@/lib/media/types';
 import { IMAGE_PROVIDERS } from '@/lib/media/image-providers';
 import { VIDEO_PROVIDERS } from '@/lib/media/video-providers';
-import { WEB_SEARCH_PROVIDERS } from '@/lib/web-search/constants';
-import type { WebSearchProviderId } from '@/lib/web-search/types';
+import { DEFAULT_LC_CONFIG_TEMPLATE } from '@/lib/research/types';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('Settings');
@@ -119,18 +118,11 @@ export interface SettingsState {
   videoGenerationEnabled: boolean;
   reviewOutlineEnabled: boolean;
 
-  // Web Search settings
-  webSearchProviderId: WebSearchProviderId;
-  webSearchProvidersConfig: Record<
-    WebSearchProviderId,
-    {
-      apiKey: string;
-      baseUrl: string;
-      enabled: boolean;
-      isServerConfigured?: boolean;
-      serverBaseUrl?: string;
-    }
-  >;
+  // Research settings (replaces web search)
+  researchEnabled: boolean;
+  lcConfigTemplate: string;
+  lcAvailable?: boolean;
+  lcLastCheckedAt?: number;
 
   // Global TTS/ASR toggles
   ttsEnabled: boolean;
@@ -193,9 +185,6 @@ export interface SettingsState {
     providerId: ASRProviderId,
     config: Partial<{ apiKey: string; baseUrl: string; enabled: boolean; model?: string }>,
   ) => void;
-  setTTSEnabled: (enabled: boolean) => void;
-  setASREnabled: (enabled: boolean) => void;
-
   // PDF actions
   setPDFProvider: (providerId: PDFProviderId) => void;
   setPDFProviderConfig: (
@@ -233,13 +222,13 @@ export interface SettingsState {
   setImageGenerationEnabled: (enabled: boolean) => void;
   setVideoGenerationEnabled: (enabled: boolean) => void;
   setReviewOutlineEnabled: (enabled: boolean) => void;
+  setTTSEnabled: (enabled: boolean) => void;
+  setASREnabled: (enabled: boolean) => void;
 
-  // Web Search actions
-  setWebSearchProvider: (providerId: WebSearchProviderId) => void;
-  setWebSearchProviderConfig: (
-    providerId: WebSearchProviderId,
-    config: Partial<{ apiKey: string; baseUrl: string; enabled: boolean }>,
-  ) => void;
+  // Research actions
+  setResearchEnabled: (enabled: boolean) => void;
+  setLCConfigTemplate: (template: string) => void;
+  setLCAvailable: (available: boolean) => void;
 
   // Server provider actions
   fetchServerProviders: () => Promise<void>;
@@ -325,12 +314,12 @@ const getDefaultVideoConfig = () => ({
   } as Record<VideoProviderId, { apiKey: string; baseUrl: string; enabled: boolean }>,
 });
 
-// Initialize default Web Search config
-const getDefaultWebSearchConfig = () => ({
-  webSearchProviderId: 'tavily' as WebSearchProviderId,
-  webSearchProvidersConfig: {
-    tavily: { apiKey: '', baseUrl: '', enabled: true },
-  } as Record<WebSearchProviderId, { apiKey: string; baseUrl: string; enabled: boolean }>,
+// Initialize default Research config
+const getDefaultResearchConfig = () => ({
+  researchEnabled: false,
+  lcConfigTemplate: DEFAULT_LC_CONFIG_TEMPLATE,
+  lcAvailable: undefined,
+  lcLastCheckedAt: undefined,
 });
 
 /**
@@ -350,14 +339,9 @@ function ensureValidProviderSelections(state: Partial<SettingsState>): void {
   const defaultPdfConfig = getDefaultPDFConfig();
   const defaultImageConfig = getDefaultImageConfig();
   const defaultVideoConfig = getDefaultVideoConfig();
-  const defaultWebSearchConfig = getDefaultWebSearchConfig();
 
   if (!hasProviderId(PDF_PROVIDERS, state.pdfProviderId)) {
     state.pdfProviderId = defaultPdfConfig.pdfProviderId;
-  }
-
-  if (!hasProviderId(WEB_SEARCH_PROVIDERS, state.webSearchProviderId)) {
-    state.webSearchProviderId = defaultWebSearchConfig.webSearchProviderId;
   }
 
   if (!hasProviderId(IMAGE_PROVIDERS, state.imageProviderId)) {
@@ -491,7 +475,7 @@ export const useSettingsStore = create<SettingsState>()(
       const defaultPDFConfig = getDefaultPDFConfig();
       const defaultImageConfig = getDefaultImageConfig();
       const defaultVideoConfig = getDefaultVideoConfig();
-      const defaultWebSearchConfig = getDefaultWebSearchConfig();
+      const defaultResearchConfig = getDefaultResearchConfig();
 
       return {
         // Initial state (use migrated data if available)
@@ -538,8 +522,8 @@ export const useSettingsStore = create<SettingsState>()(
 
         autoConfigApplied: false,
 
-        // Web Search settings (use defaults)
-        ...defaultWebSearchConfig,
+        // Research settings (use defaults)
+        ...defaultResearchConfig,
 
         // Actions
         setModel: (providerId, modelId) => set({ providerId, modelId }),
@@ -688,18 +672,10 @@ export const useSettingsStore = create<SettingsState>()(
         setTTSEnabled: (enabled) => set({ ttsEnabled: enabled }),
         setASREnabled: (enabled) => set({ asrEnabled: enabled }),
 
-        // Web Search actions
-        setWebSearchProvider: (providerId) => set({ webSearchProviderId: providerId }),
-        setWebSearchProviderConfig: (providerId, config) =>
-          set((state) => ({
-            webSearchProvidersConfig: {
-              ...state.webSearchProvidersConfig,
-              [providerId]: {
-                ...state.webSearchProvidersConfig[providerId],
-                ...config,
-              },
-            },
-          })),
+        // Research actions
+        setResearchEnabled: (enabled) => set({ researchEnabled: enabled }),
+        setLCConfigTemplate: (template) => set({ lcConfigTemplate: template }),
+        setLCAvailable: (available) => set({ lcAvailable: available, lcLastCheckedAt: Date.now() }),
 
         // Fetch server-configured providers and merge into local state
         fetchServerProviders: async () => {
@@ -867,28 +843,6 @@ export const useSettingsStore = create<SettingsState>()(
                 }
               }
 
-              // Merge Web Search config — reset all first, then mark server-configured
-              const newWebSearchConfig = { ...state.webSearchProvidersConfig };
-              for (const key of Object.keys(newWebSearchConfig) as WebSearchProviderId[]) {
-                newWebSearchConfig[key] = {
-                  ...newWebSearchConfig[key],
-                  isServerConfigured: false,
-                  serverBaseUrl: undefined,
-                };
-              }
-              if (data.webSearch) {
-                for (const [pid, info] of Object.entries(data.webSearch)) {
-                  const key = pid as WebSearchProviderId;
-                  if (newWebSearchConfig[key]) {
-                    newWebSearchConfig[key] = {
-                      ...newWebSearchConfig[key],
-                      isServerConfigured: true,
-                      serverBaseUrl: info.baseUrl,
-                    };
-                  }
-                }
-              }
-
               // === Auto-select / auto-enable (only on first run) ===
               let autoTtsProvider: TTSProviderId | undefined;
               let autoTtsVoice: string | undefined;
@@ -982,7 +936,6 @@ export const useSettingsStore = create<SettingsState>()(
                 pdfProvidersConfig: newPDFConfig,
                 imageProvidersConfig: newImageConfig,
                 videoProvidersConfig: newVideoConfig,
-                webSearchProvidersConfig: newWebSearchConfig,
                 autoConfigApplied: true,
                 ...(autoPdfProvider && { pdfProviderId: autoPdfProvider }),
                 ...(autoTtsProvider && {
@@ -1017,7 +970,7 @@ export const useSettingsStore = create<SettingsState>()(
     },
     {
       name: 'settings-storage',
-      version: 2,
+      version: 3,
       // Migrate persisted state
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as Partial<SettingsState>;
@@ -1075,6 +1028,26 @@ export const useSettingsStore = create<SettingsState>()(
           delete (state as Record<string, unknown>).deepResearchProvidersConfig;
         }
 
+        // v2 → v3: Replace web search with research (lc-based)
+        if (version < 3) {
+          // Migrate web search enabled state to research enabled
+          const oldWebSearchConfig = (state as Record<string, unknown>).webSearchProvidersConfig as
+            | Record<string, { enabled?: boolean; apiKey?: string }>
+            | undefined;
+          const wasWebSearchEnabled = oldWebSearchConfig?.tavily?.enabled ?? false;
+          const hadApiKey = !!oldWebSearchConfig?.tavily?.apiKey;
+
+          // Only enable research if user had web search enabled with an API key
+          state.researchEnabled = wasWebSearchEnabled && hadApiKey;
+          state.lcConfigTemplate = DEFAULT_LC_CONFIG_TEMPLATE;
+          state.lcAvailable = undefined;
+          state.lcLastCheckedAt = undefined;
+
+          // Clean up old web search state
+          delete (state as Record<string, unknown>).webSearchProviderId;
+          delete (state as Record<string, unknown>).webSearchProvidersConfig;
+        }
+
         // Add default media generation toggles if missing
         if (state.imageGenerationEnabled === undefined) {
           state.imageGenerationEnabled = false;
@@ -1104,25 +1077,6 @@ export const useSettingsStore = create<SettingsState>()(
         }
         if ((state as Record<string, unknown>).autoAgentCount === undefined) {
           (state as Record<string, unknown>).autoAgentCount = 3;
-        }
-
-        // Migrate Web Search: old flat fields → new provider-based config
-        if (!state.webSearchProvidersConfig) {
-          const stateRecord = state as Record<string, unknown>;
-          const oldApiKey = (stateRecord.webSearchApiKey as string) || '';
-          const oldIsServerConfigured =
-            (stateRecord.webSearchIsServerConfigured as boolean) || false;
-          state.webSearchProviderId = 'tavily' as WebSearchProviderId;
-          state.webSearchProvidersConfig = {
-            tavily: {
-              apiKey: oldApiKey,
-              baseUrl: '',
-              enabled: true,
-              isServerConfigured: oldIsServerConfigured,
-            },
-          } as SettingsState['webSearchProvidersConfig'];
-          delete stateRecord.webSearchApiKey;
-          delete stateRecord.webSearchIsServerConfigured;
         }
 
         ensureValidProviderSelections(state);

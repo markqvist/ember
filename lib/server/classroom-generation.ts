@@ -17,9 +17,10 @@ import { formatTeacherPersonaForPrompt } from '@/lib/generation/prompt-formatter
 import { getDefaultAgents } from '@/lib/orchestration/registry/store';
 import { createLogger } from '@/lib/logger';
 import { parseModelString } from '@/lib/ai/providers';
-import { resolveApiKey, resolveWebSearchApiKey } from '@/lib/server/provider-config';
+import { resolveApiKey } from '@/lib/server/provider-config';
 import { resolveModel } from '@/lib/server/resolve-model';
-import { searchWithTavily, formatSearchResultsAsContext } from '@/lib/web-search/tavily';
+import { LCInvoker, formatResearchAsContext } from '@/lib/research';
+import { DEFAULT_LC_CONFIG_TEMPLATE } from '@/lib/research/types';
 import { persistClassroom } from '@/lib/server/classroom-storage';
 import {
   generateMediaForClassroom,
@@ -35,7 +36,7 @@ export interface GenerateClassroomInput {
   requirement: string;
   pdfContent?: { text: string; images: string[] };
   language?: string;
-  enableWebSearch?: boolean;
+  enableResearch?: boolean;
   enableImageGeneration?: boolean;
   enableVideoGeneration?: boolean;
   enableTTS?: boolean;
@@ -234,23 +235,23 @@ export async function generateClassroom(
     scenesGenerated: 0,
   });
 
-  // Web search (optional, graceful degradation)
+  // Research (optional, graceful degradation)
   let researchContext: string | undefined;
-  if (input.enableWebSearch) {
-    const tavilyKey = resolveWebSearchApiKey();
-    if (tavilyKey) {
-      try {
-        log.info('Running web search for requirement context...');
-        const searchResult = await searchWithTavily({ query: requirement, apiKey: tavilyKey });
-        researchContext = formatSearchResultsAsContext(searchResult);
-        if (researchContext) {
-          log.info(`Web search returned ${searchResult.sources.length} sources`);
-        }
-      } catch (e) {
-        log.warn('Web search failed, continuing without search context:', e);
+  if (input.enableResearch) {
+    try {
+      log.info('Running research for requirement context...');
+      const invoker = new LCInvoker({ configTemplate: DEFAULT_LC_CONFIG_TEMPLATE });
+      const result = await invoker.invoke({
+        workflow: 'research',
+        input: { query: requirement },
+        timeoutMs: 300000,
+      });
+      if (result.success) {
+        researchContext = formatResearchAsContext(result.output);
+        log.info(`Research completed in ${result.durationMs}ms`);
       }
-    } else {
-      log.warn('enableWebSearch is true but no Tavily API key configured, skipping web search');
+    } catch (e) {
+      log.warn('Research failed, continuing without research context:', e);
     }
   }
 

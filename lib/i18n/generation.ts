@@ -107,8 +107,8 @@ export const generationEnUS = {
     confirmAndGenerateCourse: 'Confirm and generate course',
     generatingInProgress: 'Generating...',
     // Web Search
-    webSearching: 'Web Search',
-    webSearchingDesc: 'Searching the web for up-to-date information',
-    webSearchFailed: 'Web search failed',
+    researching: 'Research',
+    researchingDesc: 'Conducting comprehensive research on the topic',
+    researchFailed: 'Research failed',
   },
 } as const;

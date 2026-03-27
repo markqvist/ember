@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useMemo } from 'react';
-import { Bot, Check, ChevronLeft, Globe, Paperclip, FileText, X, Globe2 } from 'lucide-react';
+import { Bot, Check, ChevronLeft, Globe, Paperclip, FileText, X, Microscope } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
@@ -16,8 +16,6 @@ import { useI18n } from '@/lib/hooks/use-i18n';
 import { useSettingsStore } from '@/lib/store/settings';
 import { PDF_PROVIDERS } from '@/lib/pdf/constants';
 import type { PDFProviderId } from '@/lib/pdf/types';
-import { WEB_SEARCH_PROVIDERS } from '@/lib/web-search/constants';
-import type { WebSearchProviderId } from '@/lib/web-search/types';
 import type { ProviderId } from '@/lib/ai/providers';
 import type { SettingsSection } from '@/lib/types/settings';
 import type { SelectedPdf } from '@/lib/types/generation';
@@ -32,8 +30,8 @@ const MAX_PDF_SIZE_BYTES = MAX_PDF_SIZE_MB * 1024 * 1024;
 export interface GenerationToolbarProps {
   language: 'en-US' | 'en-GB';
   onLanguageChange: (lang: 'en-US' | 'en-GB') => void;
-  webSearch: boolean;
-  onWebSearchChange: (v: boolean) => void;
+  research: boolean;
+  onResearchChange: (v: boolean) => void;
   onSettingsOpen: (section?: SettingsSection) => void;
   // PDF
   pdfFiles: SelectedPdf[];
@@ -46,8 +44,8 @@ export interface GenerationToolbarProps {
 export function GenerationToolbar({
   language,
   onLanguageChange,
-  webSearch,
-  onWebSearchChange,
+  research,
+  onResearchChange,
   onSettingsOpen,
   pdfFiles,
   onPdfFilesAdd,
@@ -62,20 +60,15 @@ export function GenerationToolbar({
   const pdfProviderId = useSettingsStore((s) => s.pdfProviderId);
   const pdfProvidersConfig = useSettingsStore((s) => s.pdfProvidersConfig);
   const setPDFProvider = useSettingsStore((s) => s.setPDFProvider);
-  const webSearchProviderId = useSettingsStore((s) => s.webSearchProviderId);
-  const webSearchProvidersConfig = useSettingsStore((s) => s.webSearchProvidersConfig);
-  const setWebSearchProvider = useSettingsStore((s) => s.setWebSearchProvider);
+  const researchEnabled = useSettingsStore((s) => s.researchEnabled);
+  const setResearchEnabled = useSettingsStore((s) => s.setResearchEnabled);
+  const lcAvailable = useSettingsStore((s) => s.lcAvailable);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Check if the selected web search provider has a valid config (API key or server-configured)
-  const webSearchProvider = WEB_SEARCH_PROVIDERS[webSearchProviderId];
-  const webSearchConfig = webSearchProvidersConfig[webSearchProviderId];
-  const webSearchAvailable = webSearchProvider
-    ? !webSearchProvider.requiresApiKey ||
-      !!webSearchConfig?.apiKey ||
-      !!webSearchConfig?.isServerConfigured
-    : false;
+  // Research is available if lc is available or if the user has enabled it
+  // (lc availability will be checked at runtime)
+  const researchAvailable = researchEnabled !== false;
 
   // Configured LLM providers (only those with valid credentials + models + endpoint)
   const configuredProviders = providersConfig
@@ -325,91 +318,64 @@ export function GenerationToolbar({
         </PopoverContent>
       </Popover>
 
-      {/* ── Web Search ── */}
-      {webSearchAvailable ? (
-        <Popover>
-          <PopoverTrigger asChild>
-            <button className={webSearch ? pillActive : pillMuted}>
-              <Globe2 className={cn('size-3.5', webSearch && 'animate-pulse')} />
-              {webSearch && (
-                <span>{WEB_SEARCH_PROVIDERS[webSearchProviderId]?.name || 'Search'}</span>
-              )}
-            </button>
-          </PopoverTrigger>
-          <PopoverContent align="start" className="w-64 p-3 space-y-3">
-            {/* Toggle */}
-            <button
-              onClick={() => onWebSearchChange(!webSearch)}
+      {/* ── Research ── */}
+      <Popover>
+        <PopoverTrigger asChild>
+          <button className={research ? pillActive : pillMuted}>
+            <Microscope className={cn('size-3.5', research && 'animate-pulse')} />
+            {research && <span>{t('toolbar.researchActive')}</span>}
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-72 p-3 space-y-3">
+          {/* Toggle */}
+          <button
+            onClick={() => onResearchChange(!research)}
+            className={cn(
+              'w-full flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-all',
+              research
+                ? 'bg-violet-50 dark:bg-violet-950/20 border-violet-200 dark:border-violet-800'
+                : 'border-border hover:bg-muted/50',
+            )}
+          >
+            <Microscope
               className={cn(
-                'w-full flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-all',
-                webSearch
-                  ? 'bg-violet-50 dark:bg-violet-950/20 border-violet-200 dark:border-violet-800'
-                  : 'border-border hover:bg-muted/50',
+                'size-4 shrink-0',
+                research ? 'text-violet-600 dark:text-violet-400' : 'text-muted-foreground',
               )}
-            >
-              <Globe2
-                className={cn(
-                  'size-4 shrink-0',
-                  webSearch ? 'text-violet-600 dark:text-violet-400' : 'text-muted-foreground',
-                )}
-              />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium">
-                  {webSearch ? t('toolbar.webSearchOn') : t('toolbar.webSearchOff')}
-                </p>
-                <p className="text-[10px] text-muted-foreground/70 mt-0.5">
-                  {t('toolbar.webSearchDesc')}
-                </p>
-              </div>
-            </button>
-
-            {/* Provider selector */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-muted-foreground shrink-0">
-                {t('toolbar.webSearchProvider')}
-              </span>
-              <Select
-                value={webSearchProviderId}
-                onValueChange={(v) => setWebSearchProvider(v as WebSearchProviderId)}
-              >
-                <SelectTrigger className="h-7 text-xs flex-1 min-w-0">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.values(WEB_SEARCH_PROVIDERS).map((provider) => {
-                    const cfg = webSearchProvidersConfig[provider.id];
-                    const available =
-                      !provider.requiresApiKey || !!cfg?.apiKey || !!cfg?.isServerConfigured;
-                    return (
-                      <SelectItem key={provider.id} value={provider.id} disabled={!available}>
-                        <div
-                          className={cn('flex items-center gap-1.5', !available && 'opacity-50')}
-                        >
-                          {provider.name}
-                          {cfg?.isServerConfigured && (
-                            <span className="text-[9px] px-1 py-0 rounded border text-muted-foreground">
-                              {t('settings.serverConfigured')}
-                            </span>
-                          )}
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
+            />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium">
+                {research ? t('toolbar.researchOn') : t('toolbar.researchOff')}
+              </p>
+              <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+                {t('toolbar.researchDesc')}
+              </p>
             </div>
-          </PopoverContent>
-        </Popover>
-      ) : (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button className={cn(pillCls, 'text-muted-foreground/40 cursor-not-allowed')} disabled>
-              <Globe2 className="size-3.5" />
+          </button>
+
+          {/* LC Status */}
+          <div className="flex items-center justify-between px-1">
+            <span className="text-xs text-muted-foreground">
+              {lcAvailable === true
+                ? t('toolbar.lcReady')
+                : lcAvailable === false
+                  ? t('toolbar.lcNotReady')
+                  : t('toolbar.lcStatusUnknown')}
+            </span>
+            <button
+              onClick={() => onSettingsOpen('lc')}
+              className="text-xs text-violet-600 dark:text-violet-400 hover:underline"
+            >
+              {t('toolbar.configureLC')}
             </button>
-          </TooltipTrigger>
-          <TooltipContent>{t('toolbar.webSearchNoProvider')}</TooltipContent>
-        </Tooltip>
-      )}
+          </div>
+
+          {/* Info note */}
+          <p className="text-[10px] text-muted-foreground/70 px-1">
+            {t('toolbar.researchInfo')}
+          </p>
+        </PopoverContent>
+      </Popover>
 
       {/* ── Language pill ── */}
       <Tooltip>

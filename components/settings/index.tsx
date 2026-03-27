@@ -23,7 +23,7 @@ import {
   FileText,
   Image as ImageIcon,
   Film,
-  Search,
+  Microscope,
   Volume2,
   Mic,
 } from 'lucide-react';
@@ -51,9 +51,7 @@ import type { TTSProviderId } from '@/lib/audio/types';
 import { ASRSettings } from './asr-settings';
 import { ASR_PROVIDERS } from '@/lib/audio/constants';
 import type { ASRProviderId } from '@/lib/audio/types';
-import { WebSearchSettings } from './web-search-settings';
-import { WEB_SEARCH_PROVIDERS } from '@/lib/web-search/constants';
-import type { WebSearchProviderId } from '@/lib/web-search/types';
+import { LCSettings } from './lc-settings';
 import { GeneralSettings } from './general-settings';
 import { ModelEditDialog } from './model-edit-dialog';
 import { AddProviderDialog, type NewProviderData } from './add-provider-dialog';
@@ -177,8 +175,6 @@ export function SettingsDialog({ open, onOpenChange, initialSection }: SettingsD
   const providersConfig = useSettingsStore((state) => state.providersConfig);
   const pdfProviderId = useSettingsStore((state) => state.pdfProviderId);
   const pdfProvidersConfig = useSettingsStore((state) => state.pdfProvidersConfig);
-  const webSearchProviderId = useSettingsStore((state) => state.webSearchProviderId);
-  const webSearchProvidersConfig = useSettingsStore((state) => state.webSearchProvidersConfig);
   const imageProviderId = useSettingsStore((state) => state.imageProviderId);
   const imageProvidersConfig = useSettingsStore((state) => state.imageProvidersConfig);
   const videoProviderId = useSettingsStore((state) => state.videoProviderId);
@@ -199,8 +195,6 @@ export function SettingsDialog({ open, onOpenChange, initialSection }: SettingsD
   const [activeSection, setActiveSection] = useState<SettingsSection>('providers');
   const [selectedProviderId, setSelectedProviderId] = useState<ProviderId>(providerId);
   const [selectedPdfProviderId, setSelectedPdfProviderId] = useState<PDFProviderId>(pdfProviderId);
-  const [selectedWebSearchProviderId, setSelectedWebSearchProviderId] =
-    useState<WebSearchProviderId>(webSearchProviderId);
   const [selectedImageProviderId, setSelectedImageProviderId] =
     useState<ImageProviderId>(imageProviderId);
   const [selectedVideoProviderId, setSelectedVideoProviderId] =
@@ -480,7 +474,6 @@ export function SettingsDialog({ open, onOpenChange, initialSection }: SettingsD
   const _hasProviderList = [
     'providers',
     'pdf',
-    'web-search',
     'image',
     'video',
     'tts',
@@ -539,24 +532,11 @@ export function SettingsDialog({ open, onOpenChange, initialSection }: SettingsD
           </>
         );
       }
-      case 'web-search': {
-        const wsProvider = WEB_SEARCH_PROVIDERS[selectedWebSearchProviderId];
-        if (!wsProvider) return null;
+      case 'lc': {
         return (
           <>
-            {wsProvider.icon ? (
-              <img
-                src={wsProvider.icon}
-                alt={wsProvider.name}
-                className="w-8 h-8 rounded"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
-              />
-            ) : (
-              <Box className="h-8 w-8 text-muted-foreground" />
-            )}
-            <h2 className="text-lg font-semibold">{wsProvider.name}</h2>
+            <Microscope className="h-8 w-8 text-violet-600 dark:text-violet-400" />
+            <h2 className="text-lg font-semibold">{t('settings.lcSettings')}</h2>
           </>
         );
       }
@@ -738,16 +718,16 @@ export function SettingsDialog({ open, onOpenChange, initialSection }: SettingsD
             </button>
 
             <button
-              onClick={() => setActiveSection('web-search')}
+              onClick={() => setActiveSection('lc')}
               className={cn(
                 'w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-left min-w-0',
-                activeSection === 'web-search'
+                activeSection === 'lc'
                   ? 'bg-primary/10 text-primary font-medium'
                   : 'hover:bg-muted',
               )}
             >
-              <Search className="h-4 w-4 shrink-0" />
-              <span className="truncate">{t('settings.webSearchSettings')}</span>
+              <Microscope className="h-4 w-4 shrink-0" />
+              <span className="truncate">{t('settings.lcSettings')}</span>
             </button>
 
             <button
@@ -798,25 +778,6 @@ export function SettingsDialog({ open, onOpenChange, initialSection }: SettingsD
                 configs={pdfProvidersConfig}
                 selectedId={selectedPdfProviderId}
                 onSelect={setSelectedPdfProviderId}
-                width={providerListWidth}
-                t={t}
-              />
-              <div
-                onMouseDown={(e) => handleResizeStart(e, 'providerList')}
-                className="flex-shrink-0 w-[5px] cursor-col-resize group flex justify-center"
-              >
-                <div className="w-px h-full bg-border group-hover:bg-primary/50 transition-colors" />
-              </div>
-            </>
-          )}
-
-          {activeSection === 'web-search' && (
-            <>
-              <ProviderListColumn
-                providers={Object.values(WEB_SEARCH_PROVIDERS)}
-                configs={webSearchProvidersConfig}
-                selectedId={selectedWebSearchProviderId}
-                onSelect={setSelectedWebSearchProviderId}
                 width={providerListWidth}
                 t={t}
               />
@@ -972,9 +933,7 @@ export function SettingsDialog({ open, onOpenChange, initialSection }: SettingsD
               {activeSection === 'pdf' && (
                 <PDFSettings selectedProviderId={selectedPdfProviderId} />
               )}
-              {activeSection === 'web-search' && (
-                <WebSearchSettings selectedProviderId={selectedWebSearchProviderId} />
-              )}
+              {activeSection === 'lc' && <LCSettings />}
               {activeSection === 'image' && (
                 <ImageSettings selectedProviderId={selectedImageProviderId} />
               )}
