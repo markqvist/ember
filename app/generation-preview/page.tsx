@@ -558,17 +558,17 @@ function GenerationPreviewContent() {
       }
 
       // Step: Research (if enabled)
+      log.info(`DETERMINE RESEARCH: ${currentSession.researchEnabled}`);
       const researchStepIdx = activeSteps.findIndex((s) => s.id === 'research');
       if (currentSession.researchEnabled && researchStepIdx >= 0) {
+        log.info("DISPATCHING RESEARCH");
         setCurrentStepIndex(researchStepIdx);
         setResearchSources([]);
 
         const res = await fetch('/api/research', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            query: currentSession.requirements.requirement,
-          }),
+          body: JSON.stringify({ query: currentSession.requirements.requirement }),
           signal,
         });
 
@@ -719,7 +719,7 @@ function GenerationPreviewContent() {
       const outlineStepIdx = activeSteps.findIndex((s) => s.id === 'outline');
       setCurrentStepIndex(outlineStepIdx >= 0 ? outlineStepIdx : 0);
       if (!outlines || outlines.length === 0) {
-        log.debug('=== Generating outlines (SSE) ===');
+        log.info('=== Generating outlines (SSE) ===');
         setStreamingOutlines([]);
 
         outlines = await new Promise<SceneOutline[]>((resolve, reject) => {
