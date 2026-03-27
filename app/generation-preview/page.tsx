@@ -558,10 +558,8 @@ function GenerationPreviewContent() {
       }
 
       // Step: Research (if enabled)
-      log.info(`DETERMINE RESEARCH: ${currentSession.researchEnabled}`);
       const researchStepIdx = activeSteps.findIndex((s) => s.id === 'research');
       if (currentSession.researchEnabled && researchStepIdx >= 0) {
-        log.info("DISPATCHING RESEARCH");
         setCurrentStepIndex(researchStepIdx);
         setResearchSources([]);
 
