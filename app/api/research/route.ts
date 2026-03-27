@@ -8,7 +8,8 @@
 
 import { createLogger } from '@/lib/logger';
 import { apiError, apiSuccess } from '@/lib/server/api-response';
-import { LCInvoker, formatResearchAsContext } from '@/lib/research';
+import { LCInvoker } from '@/lib/research/server';
+import { formatResearchAsContext } from '@/lib/research';
 import { DEFAULT_LC_CONFIG_TEMPLATE } from '@/lib/research/types';
 
 const log = createLogger('Research');

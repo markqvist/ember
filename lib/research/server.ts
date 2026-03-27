@@ -1,66 +1,61 @@
 /**
- * LC (Humanity's Last Command) Invoker
+ * Research Module - Server-Only Components
  *
- * A general-purpose wrapper for shelling out to lc for agentic workflows.
- * This class handles environment setup, configuration templating, and
- * execution of lc workflows with proper error handling and output capture.
+ * ⚠️ SERVER-ONLY: This file contains code that MUST NOT be imported
+ * by client components. It uses Node.js APIs like child_process,
+ * fs, etc. that are not available in the browser.
+ *
+ * Use 'import "server-only"' to enforce this at build time.
  */
 
+import 'server-only';
 import { createLogger } from '@/lib/logger';
+import type { LCConfig, LCInvokeOptions, LCInvokeResult } from './types';
+import { DEFAULT_LC_CONFIG_TEMPLATE } from './types';
 
 const log = createLogger('LCInvoker');
 
-export interface LCInvokeOptions {
-  /** The workflow/task to execute */
-  workflow: 'research' | 'analyze' | 'generate';
-  /** Input data for the workflow */
-  input: Record<string, unknown>;
-  /** Timeout in milliseconds */
-  timeoutMs?: number;
-  /** Working directory for lc execution */
-  workingDir?: string;
-}
-
-export interface LCInvokeResult {
-  /** Whether the invocation succeeded */
-  success: boolean;
-  /** The workflow output */
-  output: string;
-  /** Any error message */
-  error?: string;
-  /** Exit code */
-  exitCode?: number;
-  /** Execution time in ms */
-  durationMs: number;
-}
-
-export interface LCConfig {
-  /** Path to lc binary (optional, defaults to 'lc' in PATH) */
-  binaryPath?: string;
-  /** Base configuration template */
-  configTemplate: string;
-  /** Environment variables to inject */
-  env?: Record<string, string>;
-}
-
 /**
  * Check if lc command is available in the system PATH
+ * SERVER-ONLY: Requires child_process access
  */
 export async function isLCAvailable(): Promise<boolean> {
   try {
-    // In a real implementation, this would check if 'lc' is in PATH
-    // For now, return false to indicate placeholder state
-    return false;
+    // Dynamically import child_process to ensure it's only loaded server-side
+    const { exec } = await import('child_process');
+    const { promisify } = await import('util');
+    const execAsync = promisify(exec);
+
+    await execAsync('which lc');
+    return true;
   } catch {
     return false;
   }
 }
 
 /**
+ * Get lc version if available
+ * SERVER-ONLY: Requires child_process access
+ */
+export async function getLCVersion(): Promise<string | undefined> {
+  try {
+    const { exec } = await import('child_process');
+    const { promisify } = await import('util');
+    const execAsync = promisify(exec);
+
+    const { stdout } = await execAsync('lc --version');
+    return stdout.trim();
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Get installation instructions for lc based on the platform
+ * Pure function but kept here since it's only needed server-side
  */
 export function getLCInstallInstructions(): string {
-  const platform = typeof process !== 'undefined' ? process.platform : 'unknown';
+  const platform = process.platform;
 
   const instructions: Record<string, string> = {
     linux: `Install lc via pip:
@@ -92,6 +87,7 @@ For platform-specific instructions, see:
 
 /**
  * LC Invoker class for managing lc workflow execution
+ * SERVER-ONLY: Spawns child processes
  */
 export class LCInvoker {
   private config: LCConfig;
@@ -141,7 +137,7 @@ export class LCInvoker {
    */
   private generateMockOutput(options: LCInvokeOptions): string {
     if (options.workflow === 'research') {
-      const query = options.input.query as string || 'the topic';
+      const query = (options.input.query as string) || 'the topic';
       return `# Research Synthesis: ${query}
 
 ## Key Findings
@@ -214,23 +210,8 @@ This is a placeholder research synthesis. When lc is properly configured and int
 }
 
 /**
- * Format research results into markdown context for LLM prompts
- */
-export function formatResearchAsContext(researchOutput: string): string {
-  if (!researchOutput || researchOutput.trim().length === 0) {
-    return '';
-  }
-
-  return `## Research Context
-
-${researchOutput}
-
----
-`;
-}
-
-/**
  * Singleton instance for common use cases
+ * SERVER-ONLY
  */
 let defaultInvoker: LCInvoker | null = null;
 

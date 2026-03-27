@@ -19,7 +19,8 @@ import { createLogger } from '@/lib/logger';
 import { parseModelString } from '@/lib/ai/providers';
 import { resolveApiKey } from '@/lib/server/provider-config';
 import { resolveModel } from '@/lib/server/resolve-model';
-import { LCInvoker, formatResearchAsContext } from '@/lib/research';
+import { LCInvoker } from '@/lib/research/server';
+import { formatResearchAsContext } from '@/lib/research';
 import { DEFAULT_LC_CONFIG_TEMPLATE } from '@/lib/research/types';
 import { persistClassroom } from '@/lib/server/classroom-storage';
 import {

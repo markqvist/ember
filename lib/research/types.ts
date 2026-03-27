@@ -5,6 +5,52 @@
  * that supports lc-based agentic research workflows.
  */
 
+// ==================== LC Invoker Types ====================
+
+/**
+ * LC Invoker configuration
+ */
+export interface LCConfig {
+  /** Path to lc binary (optional, defaults to 'lc' in PATH) */
+  binaryPath?: string;
+  /** Base configuration template */
+  configTemplate: string;
+  /** Environment variables to inject */
+  env?: Record<string, string>;
+}
+
+/**
+ * LC Invocation options
+ */
+export interface LCInvokeOptions {
+  /** The workflow/task to execute */
+  workflow: 'research' | 'analyze' | 'generate';
+  /** Input data for the workflow */
+  input: Record<string, unknown>;
+  /** Timeout in milliseconds */
+  timeoutMs?: number;
+  /** Working directory for lc execution */
+  workingDir?: string;
+}
+
+/**
+ * LC Invocation result
+ */
+export interface LCInvokeResult {
+  /** Whether the invocation succeeded */
+  success: boolean;
+  /** The workflow output */
+  output: string;
+  /** Any error message */
+  error?: string;
+  /** Exit code */
+  exitCode?: number;
+  /** Execution time in ms */
+  durationMs: number;
+}
+
+// ==================== Research Types ====================
+
 /**
  * Research configuration stored in settings
  */

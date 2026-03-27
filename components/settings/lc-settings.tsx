@@ -6,10 +6,20 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/hooks/use-i18n';
 import { useSettingsStore } from '@/lib/store/settings';
-import { isLCAvailable, getLCInstallInstructions } from '@/lib/research';
 import { DEFAULT_LC_CONFIG_TEMPLATE } from '@/lib/research/types';
 import { Terminal, CheckCircle2, XCircle, AlertCircle, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+interface LCStatusResponse {
+  available: boolean;
+  version?: string;
+  checkedAt: string;
+}
+
+interface LCInstallInstructionsResponse {
+  instructions: string;
+  platform: string;
+}
 
 export function LCSettings() {
   const { t } = useI18n();
@@ -20,20 +30,48 @@ export function LCSettings() {
   const [lcAvailable, setLcAvailable] = useState<boolean | null>(null);
   const [isChecking, setIsChecking] = useState(false);
   const [showInstallInstructions, setShowInstallInstructions] = useState(false);
+  const [installInstructions, setInstallInstructions] = useState<string>('');
 
   // Check lc availability on mount
   useEffect(() => {
     checkLCAvailability();
+    fetchInstallInstructions();
   }, []);
+
+  const fetchInstallInstructions = async () => {
+    try {
+      const res = await fetch('/api/lc/install-instructions');
+      if (res.ok) {
+        const data = await res.json() as { success: true } & LCInstallInstructionsResponse;
+        if (data.success) {
+          setInstallInstructions(data.instructions);
+        }
+      }
+    } catch {
+      // Silently fail - instructions are optional
+      setInstallInstructions('pip install humanitys-last-command');
+    }
+  };
 
   const checkLCAvailability = async () => {
     setIsChecking(true);
     try {
-      const available = await isLCAvailable();
-      setLcAvailable(available);
-      if (!available) {
+      const res = await fetch('/api/lc/status');
+      if (res.ok) {
+        const data = await res.json() as { success: true } & LCStatusResponse;
+        if (data.success) {
+          setLcAvailable(data.available);
+          if (!data.available) {
+            setShowInstallInstructions(true);
+          }
+        }
+      } else {
+        setLcAvailable(false);
         setShowInstallInstructions(true);
       }
+    } catch {
+      setLcAvailable(false);
+      setShowInstallInstructions(true);
     } finally {
       setIsChecking(false);
     }
@@ -96,7 +134,7 @@ export function LCSettings() {
                   </button>
                 </div>
                 <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-mono">
-                  {getLCInstallInstructions()}
+                  {installInstructions}
                 </pre>
               </div>
             )}
