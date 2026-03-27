@@ -553,8 +553,8 @@ export const settingsEnUS = {
     clearCacheFailed: 'Failed to clear cache, please try again',
     // LC (Humanity's Last Command) settings
     lcConfigTemplate: 'Configuration Template',
-    lcConfigTemplateDesc: 'YAML configuration template for lc research workflows',
-    lcConfigTemplateHint: 'This template is used to configure lc sessions for research tasks. Advanced users can customize model selection, search engines, and workflow parameters.',
+    lcConfigTemplateDesc: 'Configuration template for lc research workflows. At minimum, you will need to configure the primary model.',
+    lcConfigTemplateHint: 'This template is used to configure lc sessions for research tasks.',
     lcStatusChecking: 'Checking lc availability...',
     lcStatusAvailable: 'The lc command is available',
     lcStatusAvailableDesc: 'Humanity\'s Last Command is installed and ready to use for research workflows.',
