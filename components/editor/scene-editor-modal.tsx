@@ -13,7 +13,8 @@ import { SceneJsonEditor } from './scene-json-editor';
 import { InteractiveEditor } from './interactive-editor';
 import { ActionsEditor } from './actions-editor';
 import { QuizEditor } from './quiz-editor';
-import type { Scene, InteractiveContent, QuizContent } from '@/lib/types/stage';
+import type { Scene, InteractiveContent, QuizContent, SlideContent } from '@/lib/types/stage';
+import type { PPTElement } from '@/lib/types/slides';
 
 interface SceneEditorModalProps {
   open: boolean;
@@ -87,6 +88,15 @@ export function SceneEditorModal({ open, onOpenChange, scene, onSave }: SceneEdi
     onOpenChange(false);
   }, [scene, onSave, onOpenChange]);
 
+  // Extract slide elements for element ID selection in actions editor
+  const slideElements = useMemo(() => {
+    if (scene?.type === 'slide' && scene.content.type === 'slide') {
+      const slideContent = scene.content as SlideContent;
+      return slideContent.canvas?.elements || [];
+    }
+    return undefined;
+  }, [scene]);
+
   if (!scene) return null;
 
   // Determine available tabs based on scene type
@@ -150,6 +160,7 @@ export function SceneEditorModal({ open, onOpenChange, scene, onSave }: SceneEdi
                     actions={scene.actions || []}
                     onSave={handleActionsSave}
                     onRevert={handleRevert}
+                    elements={slideElements}
                   />
                 </TabsContent>
               )}
