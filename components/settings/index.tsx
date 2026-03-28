@@ -458,17 +458,25 @@ export function SettingsDialog({ open, onOpenChange, initialSection }: SettingsD
     toast.success(t('settings.resetSuccess'));
   };
 
-  // Get all providers from providersConfig
-  const allProviders = Object.entries(providersConfig).map(([id, config]) => ({
-    id: id as ProviderId,
-    name: config.name,
-    type: config.type,
-    defaultBaseUrl: config.defaultBaseUrl,
-    icon: config.icon,
-    requiresApiKey: config.requiresApiKey,
-    models: config.models,
-    isServerConfigured: config.isServerConfigured,
-  }));
+  // Get all providers from providersConfig, sorted: custom (user-defined) first, then built-in
+  const allProviders = Object.entries(providersConfig)
+    .map(([id, config]) => ({
+      id: id as ProviderId,
+      name: config.name,
+      type: config.type,
+      defaultBaseUrl: config.defaultBaseUrl,
+      icon: config.icon,
+      requiresApiKey: config.requiresApiKey,
+      models: config.models,
+      isServerConfigured: config.isServerConfigured,
+    }))
+    .sort((a, b) => {
+      const aIsCustom = !providersConfig[a.id]?.isBuiltIn;
+      const bIsCustom = !providersConfig[b.id]?.isBuiltIn;
+      if (aIsCustom && !bIsCustom) return -1;
+      if (!aIsCustom && bIsCustom) return 1;
+      return 0;
+    });
 
   // Sections that show a provider list column
   const _hasProviderList = [
