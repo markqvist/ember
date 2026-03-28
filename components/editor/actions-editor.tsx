@@ -526,7 +526,7 @@ function ElementIdSelector({
           <Search className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[350px] p-0" align="start">
+      <PopoverContent className="w-[350px] p-0" align="start" onWheel={(e) => e.stopPropagation()}>
         <div className="flex items-center border-b px-3 py-2">
           <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
           <input
@@ -536,7 +536,10 @@ function ElementIdSelector({
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="max-h-[300px] overflow-y-auto">
+        <div 
+          className="max-h-[300px] overflow-y-auto overscroll-contain"
+          onWheel={(e) => e.stopPropagation()}
+        >
           {filteredElements.length === 0 ? (
             <div className="py-6 text-center text-sm text-muted-foreground">
               No elements found.
@@ -1223,7 +1226,7 @@ function AddActionDropdown({
           Add Action
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[280px] p-0" align="center">
+      <PopoverContent className="w-[280px] p-0" align="center" onWheel={(e) => e.stopPropagation()}>
         <div className="flex items-center border-b px-3 py-2">
           <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
           <input
@@ -1233,7 +1236,10 @@ function AddActionDropdown({
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="max-h-[300px] overflow-y-auto">
+        <div 
+          className="max-h-[300px] overflow-y-auto overscroll-contain"
+          onWheel={(e) => e.stopPropagation()}
+        >
           {search.trim() ? (
             // Search results - flat list
             filteredActions.length === 0 ? (
