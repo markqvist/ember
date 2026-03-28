@@ -39,7 +39,7 @@ export type { ProviderId, ProviderConfig, ModelInfo, ModelConfig };
  * 
  * NOTE: Intentionally empty - users configure their own providers.
  */
-export const PROVIDERS: Record<ProviderId, ProviderConfig> = {};
+export const PROVIDERS: Record<ProviderId, ProviderConfig> = {} as Record<ProviderId, ProviderConfig>;
 
 /**
  * Get provider config (from built-in or unified config in localStorage)
