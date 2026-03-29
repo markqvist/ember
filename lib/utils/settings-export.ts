@@ -95,7 +95,7 @@ export function exportSettings(): ExportData {
     metadata: {
       version: EXPORT_VERSION,
       exportedAt: new Date().toISOString(),
-      appName: 'OpenMAIC',
+      appName: 'Ember',
     },
     data,
   };
@@ -116,7 +116,7 @@ export function downloadSettingsExport(): void {
 
   // Generate filename with timestamp
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  link.download = `openmaic-settings-${timestamp}.json`;
+  link.download = `ember-settings-${timestamp}.json`;
 
   document.body.appendChild(link);
   link.click();

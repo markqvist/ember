@@ -322,6 +322,46 @@ export async function collectMediaFiles(
 }
 
 /**
+ * Migrate media files stored with 'editor' stageId to the actual stageId
+ * This handles files uploaded in the editor before the classroom was saved
+ */
+async function migrateEditorMediaToStageId(stageId: string, mediaIds: string[]): Promise<void> {
+  for (const elementId of mediaIds) {
+    // Only process embedded media IDs (emb_img_*, emb_vid_*)
+    if (!isEmbeddedMediaId(elementId)) continue;
+
+    const editorKey = `editor:${elementId}`;
+    const stageKey = `${stageId}:${elementId}`;
+
+    try {
+      // Check if exists with editor key
+      const editorRecord = await db.mediaFiles.get(editorKey);
+      if (!editorRecord) continue; // Not an editor-stored file
+
+      // Check if already exists with stage key
+      const existing = await db.mediaFiles.get(stageKey);
+      if (existing) {
+        // Already migrated, delete editor key
+        await db.mediaFiles.delete(editorKey);
+        log.debug(`Deleted editor key for already-migrated media: ${elementId}`);
+        continue;
+      }
+
+      // Migrate: create new record with stageId, delete old
+      await db.mediaFiles.put({
+        ...editorRecord,
+        id: stageKey,
+        stageId: stageId,
+      });
+      await db.mediaFiles.delete(editorKey);
+      log.info(`Migrated editor media to stageId ${stageId}: ${elementId}`);
+    } catch (error) {
+      log.error(`Failed to migrate editor media ${elementId}:`, error);
+    }
+  }
+}
+
+/**
  * Collect all media for a classroom (both audio and images/videos)
  * Also migrates any base64-encoded media to IndexedDB for efficient storage
  */
@@ -343,6 +383,9 @@ export async function collectAllMediaForClassroom(
     audioFiles: audioIds.length,
     mediaFiles: mediaIds.length,
   });
+
+  // Migrate any editor-stored media to the correct stageId before collection
+  await migrateEditorMediaToStageId(stageId, mediaIds);
 
   const [audioFiles, mediaFiles] = await Promise.all([
     collectAudioFiles(audioIds),

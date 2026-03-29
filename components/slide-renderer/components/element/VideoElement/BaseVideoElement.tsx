@@ -27,7 +27,7 @@ function useEmbeddedVideo(src: string | null, stageId: string | null) {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (!src || !isEmbeddedMediaPlaceholder(src) || !stageId) {
+    if (!src || !isEmbeddedMediaPlaceholder(src)) {
       setObjectUrl(null);
       return;
     }
@@ -37,8 +37,19 @@ function useEmbeddedVideo(src: string | null, stageId: string | null) {
 
     const loadEmbeddedVideo = async () => {
       try {
-        const compoundKey = `${stageId}:${src}`;
-        const record = await db.mediaFiles.get(compoundKey);
+        let record = null;
+
+        // Try stageId key first if available
+        if (stageId) {
+          const stageKey = `${stageId}:${src}`;
+          record = await db.mediaFiles.get(stageKey);
+        }
+
+        // Fall back to editor key for editor previews
+        if (!record) {
+          const editorKey = `editor:${src}`;
+          record = await db.mediaFiles.get(editorKey);
+        }
 
         if (record && record.blob.size > 0) {
           const url = URL.createObjectURL(record.blob);

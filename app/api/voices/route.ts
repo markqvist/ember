@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
 
     const data = await response.json();
     
-    // Transform to OpenMAIC format - handle multiple response formats:
+    // Transform to Ember format - handle multiple response formats:
     // 1. OpenAI format: { voices: [{ voice_id: "...", name: "..." }] }
     // 2. Simple array format: ["voice1", "voice2", "voice3"]
     let voices = [];
