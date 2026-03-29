@@ -27,6 +27,7 @@ import {
   Upload,
   Link as LinkIcon,
   Download,
+  Film,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -1020,18 +1021,351 @@ function VideoElementEditor({
   element: PPTVideoElement;
   onChange: (updated: PPTVideoElement) => void;
 }) {
+  const [isDragging, setIsDragging] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [urlInput, setUrlInput] = useState(element.src?.startsWith('http') ? element.src : '');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { generateEmbeddedMediaId } = require('@/lib/utils/media-extractor');
+  const { db } = require('@/lib/utils/database');
+  const { isEmbeddedMediaPlaceholder } = require('@/lib/store/media-generation');
+
+  // Check video source type
+  const hasVideo = element.src && element.src.length > 0;
+  const isEmbeddedId = isEmbeddedMediaPlaceholder(element.src || '');
+  const isExternalUrl = element.src?.startsWith('http://') || element.src?.startsWith('https://');
+  const isBase64Video = element.src?.startsWith('data:video');
+
+  // Load preview URL for embedded media
+  useEffect(() => {
+    let objectUrl: string | null = null;
+    
+    const loadPreview = async () => {
+      if (isEmbeddedId && element.src) {
+        try {
+          const records = await db.mediaFiles.toArray();
+          const record = records.find((r: { id: string }) => r.id.includes(element.src as string));
+          if (record) {
+            objectUrl = URL.createObjectURL(record.blob);
+            setPreviewUrl(objectUrl);
+          }
+        } catch (error) {
+          console.error('Failed to load embedded video preview:', error);
+        }
+      } else if (isBase64Video || isExternalUrl) {
+        setPreviewUrl(element.src);
+      } else {
+        setPreviewUrl(null);
+      }
+    };
+
+    loadPreview();
+
+    return () => {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [element.src, isEmbeddedId, isBase64Video, isExternalUrl]);
+
+  // Generate embedded ID from file
+  const fileToEmbeddedId = async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        const base64Data = base64.split(',')[1];
+        const embeddedId = generateEmbeddedMediaId(base64Data, 'video');
+        resolve(embeddedId);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Store file in IndexedDB
+  const storeFileInIndexedDB = async (file: File, embeddedId: string): Promise<void> => {
+    const { base64ToBlob } = await import('@/lib/utils/base64');
+    
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    const blob = base64ToBlob(base64.split(',')[1], file.type);
+    const compoundKey = `editor:${embeddedId}`;
+    
+    await db.mediaFiles.put({
+      id: compoundKey,
+      stageId: 'editor',
+      type: 'video',
+      blob,
+      mimeType: file.type,
+      size: blob.size,
+      prompt: '',
+      params: JSON.stringify({ source: 'editor_upload', pendingMigration: true }),
+      createdAt: Date.now(),
+    });
+  };
+
+  // Handle file upload
+  const handleFileUpload = async (file: File) => {
+    // Validate file type
+    if (!file.type.startsWith('video/')) {
+      toast.error('Please select a valid video file');
+      return;
+    }
+    // Validate file size (100MB limit for videos)
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error('Video must be smaller than 100MB');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const embeddedId = await fileToEmbeddedId(file);
+      await storeFileInIndexedDB(file, embeddedId);
+      onChange({ ...element, src: embeddedId });
+      toast.success('Video uploaded successfully');
+    } catch {
+      toast.error('Failed to process video file');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle drag events
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFileUpload(file);
+  };
+
+  // Handle file picker
+  const handleFilePicker = () => fileInputRef.current?.click();
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFileUpload(file);
+    e.target.value = '';
+  };
+
+  // Fetch external URL
+  const handleFetchUrl = async () => {
+    if (!urlInput.trim()) {
+      toast.error('Please enter a URL');
+      return;
+    }
+    if (!urlInput.startsWith('http://') && !urlInput.startsWith('https://')) {
+      toast.error('URL must start with http:// or https://');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/proxy-media', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: urlInput.trim() }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || `Failed to fetch video: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+
+      if (!blob.type.startsWith('video/')) {
+        throw new Error('URL does not point to a valid video');
+      }
+
+      // Convert to base64 for hash generation
+      const reader = new FileReader();
+      const base64: string = await new Promise((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+
+      const base64Data = base64.split(',')[1];
+      const embeddedId = generateEmbeddedMediaId(base64Data, 'video');
+      
+      const compoundKey = `editor:${embeddedId}`;
+      await db.mediaFiles.put({
+        id: compoundKey,
+        stageId: 'editor',
+        type: 'video',
+        blob,
+        mimeType: blob.type,
+        size: blob.size,
+        prompt: '',
+        params: JSON.stringify({ source: 'fetched_url', url: urlInput.trim(), pendingMigration: true }),
+        createdAt: Date.now(),
+      });
+
+      onChange({ ...element, src: embeddedId });
+      setUrlInput('');
+      toast.success('Video fetched and stored successfully');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to fetch video');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Clear video
+  const handleClear = () => {
+    onChange({ ...element, src: '' });
+    setUrlInput('');
+  };
+
   return (
     <div className="space-y-3">
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-foreground">Video Source URL</label>
-        <Input
-          value={element.src}
-          onChange={(e) => onChange({ ...element, src: e.target.value })}
-          placeholder="https://example.com/video.mp4"
-          className="text-xs"
+      {/* Video Preview / Upload Area */}
+      <div
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onClick={!hasVideo ? handleFilePicker : undefined}
+        className={cn(
+          'relative h-32 rounded-lg border-2 border-dashed transition-all overflow-hidden',
+          isDragging
+            ? 'border-primary bg-primary/5'
+            : hasVideo
+              ? 'border-border bg-muted/30'
+              : 'border-muted-foreground/25 bg-muted/20 hover:border-muted-foreground/40 cursor-pointer',
+          isLoading && 'opacity-70'
+        )}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="video/*"
+          onChange={handleFileInputChange}
+          className="hidden"
         />
+
+        {isLoading ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+              Processing...
+            </div>
+          </div>
+        ) : hasVideo ? (
+          <>
+            <video
+              src={previewUrl || element.src}
+              className="w-full h-full object-contain"
+              preload="metadata"
+              muted
+            />
+            {/* Overlay with actions */}
+            <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleFilePicker();
+                }}
+              >
+                <Upload className="w-3.5 h-3.5 mr-1" />
+                Replace
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleClear();
+                }}
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-1" />
+                Remove
+              </Button>
+            </div>
+          </>
+        ) : (
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
+            <Film className="w-8 h-8 mb-2 opacity-50" />
+            <span className="text-xs font-medium">Drop video here or click to upload</span>
+            <span className="text-[10px] opacity-60 mt-1">Supports MP4, WebM, MOV (max 100MB)</span>
+          </div>
+        )}
       </div>
-      <div className="flex items-center gap-4">
+
+      {/* Video Source Info */}
+      {hasVideo && (
+        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+          {isEmbeddedId ? (
+            <>
+              <Check className="w-3 h-3 text-green-500" />
+              <span>Stored in IndexedDB (offline available)</span>
+            </>
+          ) : isBase64Video ? (
+            <>
+              <Check className="w-3 h-3 text-green-500" />
+              <span>Embedded base64 (will migrate on save)</span>
+            </>
+          ) : isExternalUrl ? (
+            <>
+              <LinkIcon className="w-3 h-3 text-amber-500" />
+              <span>External URL (click fetch to store)</span>
+            </>
+          ) : (
+            <>
+              <Film className="w-3 h-3" />
+              <span>Video source</span>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* URL Input with Fetch Button */}
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-foreground">Video URL (optional)</label>
+        <div className="flex gap-2">
+          <Input
+            value={urlInput}
+            onChange={(e) => setUrlInput(e.target.value)}
+            placeholder="https://example.com/video.mp4"
+            className="text-xs flex-1"
+            disabled={isLoading}
+          />
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleFetchUrl}
+            disabled={isLoading || !urlInput.trim()}
+            className="shrink-0"
+          >
+            {isLoading ? (
+              <div className="w-3.5 h-3.5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+            ) : (
+              <Download className="w-3.5 h-3.5" />
+            )}
+            <span className="ml-1.5 hidden sm:inline">Fetch & Store</span>
+          </Button>
+        </div>
+        <p className="text-[10px] text-muted-foreground">
+          Enter a URL to fetch and store the video for offline use.
+        </p>
+      </div>
+
+      <div className="flex items-center gap-4 pt-1">
         <div className="flex items-center gap-2">
           <Switch
             checked={element.autoplay}

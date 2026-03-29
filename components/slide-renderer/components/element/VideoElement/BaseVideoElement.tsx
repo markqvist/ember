@@ -1,13 +1,14 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useAnimate } from 'motion/react';
 import type { PPTVideoElement } from '@/lib/types/slides';
 import { useCanvasStore } from '@/lib/store/canvas';
-import { useMediaGenerationStore, isMediaPlaceholder } from '@/lib/store/media-generation';
+import { useMediaGenerationStore, isMediaPlaceholder, isEmbeddedMediaPlaceholder } from '@/lib/store/media-generation';
 import { useSettingsStore } from '@/lib/store/settings';
 import { useMediaStageId } from '@/lib/contexts/media-stage-context';
 import { retryMediaTask } from '@/lib/media/media-orchestrator';
+import { db } from '@/lib/utils/database';
 import { RotateCcw, Film, ShieldAlert, VideoOff } from 'lucide-react';
 import { useI18n } from '@/lib/hooks/use-i18n';
 import { createLogger } from '@/lib/logger';
@@ -16,6 +17,57 @@ const log = createLogger('BaseVideoElement');
 
 export interface BaseVideoElementProps {
   elementInfo: PPTVideoElement;
+}
+
+/**
+ * Hook to resolve embedded video from IndexedDB
+ */
+function useEmbeddedVideo(src: string | null, stageId: string | null) {
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!src || !isEmbeddedMediaPlaceholder(src) || !stageId) {
+      setObjectUrl(null);
+      return;
+    }
+
+    let revoked = false;
+    setIsLoading(true);
+
+    const loadEmbeddedVideo = async () => {
+      try {
+        const compoundKey = `${stageId}:${src}`;
+        const record = await db.mediaFiles.get(compoundKey);
+
+        if (record && record.blob.size > 0) {
+          const url = URL.createObjectURL(record.blob);
+          if (!revoked) {
+            setObjectUrl(url);
+          } else {
+            URL.revokeObjectURL(url);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load embedded video:', error);
+      } finally {
+        if (!revoked) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadEmbeddedVideo();
+
+    return () => {
+      revoked = true;
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [src, stageId]);
+
+  return { objectUrl, isLoading };
 }
 
 /**
@@ -30,24 +82,49 @@ export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
   const prevPlayingRef = useRef('');
   const [scope, animate] = useAnimate<HTMLDivElement>();
 
+  // Extract src to a local const
+  const elementSrc = elementInfo.src || '';
+
   // Only subscribe to media store when inside a classroom (stageId provided via context).
   const stageId = useMediaStageId();
-  const isPlaceholder = isMediaPlaceholder(elementInfo.src);
+  const isGenPlaceholder = isMediaPlaceholder(elementSrc);
+  const isEmbeddedPlaceholder = isEmbeddedMediaPlaceholder(elementSrc);
+
+  // Get AI-generated video task
   const task = useMediaGenerationStore((s) => {
-    if (!isPlaceholder) return undefined;
-    const t = s.tasks[elementInfo.src];
+    if (!isGenPlaceholder) return undefined;
+    const t = s.tasks[elementSrc];
     if (t && t.stageId !== stageId) return undefined;
     return t;
   });
+
+  // Get embedded video from IndexedDB
+  const { objectUrl: embeddedObjectUrl, isLoading: embeddedLoading } = useEmbeddedVideo(
+    elementSrc || null,
+    stageId || null
+  );
+
   const videoGenerationEnabled = useSettingsStore((s) => s.videoGenerationEnabled);
-  const resolvedSrc = task?.status === 'done' && task.objectUrl ? task.objectUrl : elementInfo.src;
-  const showDisabled = isPlaceholder && !task && !videoGenerationEnabled;
+
+  // Resolve actual src priority:
+  // 1. AI-generated objectUrl (if done)
+  // 2. Embedded video objectUrl (if loaded)
+  // 3. Original src (base64 or URL)
+  const resolvedSrc =
+    (isGenPlaceholder && task?.status === 'done' && task.objectUrl)
+      ? task.objectUrl
+      : (isEmbeddedPlaceholder && embeddedObjectUrl)
+        ? embeddedObjectUrl
+        : elementSrc;
+
+  const showDisabled = isGenPlaceholder && !task && !videoGenerationEnabled;
   const showSkeleton =
-    isPlaceholder &&
+    isGenPlaceholder &&
     !showDisabled &&
     (!task || task.status === 'pending' || task.status === 'generating');
-  const showError = isPlaceholder && task?.status === 'failed';
-  const isReady = !isPlaceholder || task?.status === 'done';
+  const showEmbeddedLoading = isEmbeddedPlaceholder && embeddedLoading;
+  const showError = isGenPlaceholder && task?.status === 'failed';
+  const isReady = (!isGenPlaceholder && !isEmbeddedPlaceholder) || task?.status === 'done' || (isEmbeddedPlaceholder && embeddedObjectUrl);
 
   // Ensure video is paused on mount — prevents browser autoplay from user gesture context
   useEffect(() => {
@@ -115,6 +192,13 @@ export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
               <span>{t('settings.mediaGenerationDisabled')}</span>
             </div>
           </div>
+        ) : showEmbeddedLoading ? (
+          <div className="w-full h-full bg-gray-50 dark:bg-gray-900/30 flex items-center justify-center rounded">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+              Loading video...
+            </div>
+          </div>
         ) : showSkeleton ? (
           <div className="w-full h-full bg-gradient-to-br from-indigo-50 via-violet-50/60 to-blue-50 dark:from-indigo-950/40 dark:via-violet-950/30 dark:to-blue-950/20 flex items-center justify-center rounded">
             <style>{`
@@ -149,7 +233,7 @@ export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  retryMediaTask(elementInfo.src);
+                  retryMediaTask(elementSrc);
                 }}
                 onPointerDown={(e) => e.stopPropagation()}
                 className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/40 rounded hover:bg-red-200 dark:hover:bg-red-900/60 transition-colors"
@@ -159,8 +243,9 @@ export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
               </button>
             )}
           </div>
-        ) : (isReady && resolvedSrc && !isPlaceholder) ||
-          (isPlaceholder && task?.status === 'done') ? (
+        ) : (isReady && resolvedSrc) ||
+          (isGenPlaceholder && task?.status === 'done') ||
+          (isEmbeddedPlaceholder && embeddedObjectUrl) ? (
           <video
             ref={videoRef}
             className="w-full h-full"
