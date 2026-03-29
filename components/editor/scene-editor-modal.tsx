@@ -13,8 +13,9 @@ import { SceneJsonEditor } from './scene-json-editor';
 import { InteractiveEditor } from './interactive-editor';
 import { ActionsEditor } from './actions-editor';
 import { QuizEditor } from './quiz-editor';
+import { SlideEditor } from './slide-editor';
 import type { Scene, InteractiveContent, QuizContent, SlideContent } from '@/lib/types/stage';
-import type { PPTElement } from '@/lib/types/slides';
+import type { PPTElement, Slide } from '@/lib/types/slides';
 
 interface SceneEditorModalProps {
   open: boolean;
@@ -26,13 +27,15 @@ interface SceneEditorModalProps {
 function getDefaultTab(scene: Scene | null): string {
   if (!scene) return 'json';
 
-  // Priority: quiz > interactive > actions > json
+  // Priority: quiz > interactive > slide > actions > json
   const hasQuizEditor = scene.type === 'quiz' && scene.content.type === 'quiz';
   const hasInteractiveEditor = scene.type === 'interactive' && scene.content.type === 'interactive';
+  const hasSlideEditor = scene.type === 'slide' && scene.content.type === 'slide';
   const hasActionsEditor = scene.actions && scene.actions.length > 0;
 
   if (hasQuizEditor) return 'quiz';
   if (hasInteractiveEditor) return 'interactive';
+  if (hasSlideEditor) return 'slide';
   if (hasActionsEditor) return 'actions';
   return 'json';
 }
@@ -88,6 +91,19 @@ export function SceneEditorModal({ open, onOpenChange, scene, onSave }: SceneEdi
     onOpenChange(false);
   }, [scene, onSave, onOpenChange]);
 
+  const handleSlideSave = useCallback((updatedSlide: Slide) => {
+    if (!scene || scene.type !== 'slide') return;
+    const updatedScene: Scene = {
+      ...scene,
+      content: {
+        type: 'slide',
+        canvas: updatedSlide,
+      },
+    };
+    onSave(updatedScene);
+    onOpenChange(false);
+  }, [scene, onSave, onOpenChange]);
+
   // Extract slide elements for element ID selection in actions editor
   const slideElements = useMemo(() => {
     if (scene?.type === 'slide' && scene.content.type === 'slide') {
@@ -102,6 +118,7 @@ export function SceneEditorModal({ open, onOpenChange, scene, onSave }: SceneEdi
   // Determine available tabs based on scene type
   const hasQuizEditor = scene.type === 'quiz' && scene.content.type === 'quiz';
   const hasInteractiveEditor = scene.type === 'interactive' && scene.content.type === 'interactive';
+  const hasSlideEditor = scene.type === 'slide' && scene.content.type === 'slide';
   const hasActionsEditor = scene.actions && scene.actions.length > 0;
 
   return (
@@ -128,6 +145,11 @@ export function SceneEditorModal({ open, onOpenChange, scene, onSave }: SceneEdi
               {hasActionsEditor && (
                 <TabsTrigger value="actions" className="text-xs">
                   {t('stage.actionsTab')}
+                </TabsTrigger>
+              )}
+              {hasSlideEditor && (
+                <TabsTrigger value="slide" className="text-xs">
+                  Slide
                 </TabsTrigger>
               )}
               <TabsTrigger value="json" className="text-xs">
@@ -161,6 +183,15 @@ export function SceneEditorModal({ open, onOpenChange, scene, onSave }: SceneEdi
                     onSave={handleActionsSave}
                     onRevert={handleRevert}
                     elements={slideElements}
+                  />
+                </TabsContent>
+              )}
+              {hasSlideEditor && (
+                <TabsContent value="slide" className="h-full mt-0">
+                  <SlideEditor
+                    slide={(scene.content as SlideContent).canvas}
+                    onSave={handleSlideSave}
+                    onRevert={handleRevert}
                   />
                 </TabsContent>
               )}
