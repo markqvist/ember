@@ -90,6 +90,7 @@ export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
   const { t } = useI18n();
   const videoRef = useRef<HTMLVideoElement>(null);
   const playingVideoElementId = useCanvasStore.use.playingVideoElementId();
+  const presentationPaused = useCanvasStore.use.presentationPaused();
   const prevPlayingRef = useRef('');
   const [scope, animate] = useAnimate<HTMLDivElement>();
 
@@ -149,6 +150,12 @@ export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
     const video = videoRef.current;
     if (!video) return;
 
+    // If presentation is globally paused, pause this video regardless of playingVideoElementId
+    if (presentationPaused) {
+      video.pause();
+      return;
+    }
+
     const isMe = playingVideoElementId === elementInfo.id;
     const wasMe = prevPlayingRef.current === elementInfo.id;
     prevPlayingRef.current = playingVideoElementId;
@@ -170,7 +177,7 @@ export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
     } else if (!isMe && wasMe) {
       video.pause();
     }
-  }, [playingVideoElementId, elementInfo.id, animate, scope]);
+  }, [playingVideoElementId, presentationPaused, elementInfo.id, animate, scope]);
 
   const handleEnded = () => {
     if (useCanvasStore.getState().playingVideoElementId === elementInfo.id) {

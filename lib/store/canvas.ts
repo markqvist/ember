@@ -98,6 +98,7 @@ interface CanvasState {
 
   // ===== Video playback =====
   playingVideoElementId: string; // Video element currently playing
+  presentationPaused: boolean; // Global pause state - pauses all videos regardless of playingVideoElementId
 
   // ===== Whiteboard =====
   whiteboardOpen: boolean; // Whether whiteboard is open
@@ -151,6 +152,7 @@ interface CanvasState {
   // ----- Video playback -----
   playVideo: (elementId: string) => void;
   pauseVideo: () => void;
+  setPresentationPaused: (paused: boolean) => void;
 
   // ----- Whiteboard -----
   setWhiteboardOpen: (open: boolean) => void;
@@ -223,6 +225,7 @@ const initialState = {
 
   // Video playback
   playingVideoElementId: '',
+  presentationPaused: false,
 
   // Whiteboard
   whiteboardOpen: false,
@@ -335,6 +338,8 @@ const useCanvasStoreBase = create<CanvasState>((set, get) => ({
   playVideo: (elementId) => set({ playingVideoElementId: elementId }),
 
   pauseVideo: () => set({ playingVideoElementId: '' }),
+
+  setPresentationPaused: (paused: boolean) => set({ presentationPaused: paused }),
 
   // ===== Whiteboard Actions =====
 

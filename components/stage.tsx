@@ -215,6 +215,8 @@ export function Stage({
     setDiscussionTrigger(null);
     // Stop any in-flight discussion TTS audio on scene switch
     discussionTTS.cleanup();
+    // Reset presentation paused state so videos can play in the new scene
+    useCanvasStore.getState().setPresentationPaused(false);
   }, [resetLiveState, discussionTTS]);
 
   /**
@@ -556,6 +558,8 @@ export function Stage({
   const gatedSceneSwitch = useCallback(
     (targetSceneId: string): boolean => {
       if (targetSceneId === currentSceneId) return false;
+      // Pause all videos before switching scenes
+      useCanvasStore.getState().setPresentationPaused(true);
       if (isTopicActive) {
         setPendingSceneId(targetSceneId);
         return false;
@@ -588,12 +592,16 @@ export function Stage({
     const mode = engine.getMode();
     if (mode === 'playing' || mode === 'live') {
       engine.pause();
+      // Pause all videos in the presentation
+      useCanvasStore.getState().setPresentationPaused(true);
       // Pause lecture buffer so text stops immediately
       if (lectureSessionIdRef.current) {
         chatAreaRef.current?.pauseBuffer(lectureSessionIdRef.current);
       }
     } else if (mode === 'paused') {
       engine.resume();
+      // Resume video playback capability
+      useCanvasStore.getState().setPresentationPaused(false);
       // Resume lecture buffer
       if (lectureSessionIdRef.current) {
         chatAreaRef.current?.resumeBuffer(lectureSessionIdRef.current);
