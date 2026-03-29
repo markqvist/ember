@@ -420,21 +420,102 @@ function ImageElementEditor({
 }) {
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [urlInput, setUrlInput] = useState(element.src?.startsWith('http') ? element.src : '');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Check if current src is a valid image (base64, http, or non-empty)
+  // Import needed functions
+  const { generateEmbeddedMediaId } = require('@/lib/utils/media-extractor');
+  const { db } = require('@/lib/utils/database');
+  const { isEmbeddedMediaPlaceholder } = require('@/lib/store/media-generation');
+
+  // Check if current src is a valid image
   const hasImage = element.src && element.src.length > 0;
   const isBase64Image = element.src?.startsWith('data:image');
   const isExternalUrl = element.src?.startsWith('http://') || element.src?.startsWith('https://');
+  const isEmbeddedId = isEmbeddedMediaPlaceholder(element.src || '');
 
-  // Convert file to base64 on client side
-  const fileToBase64 = (file: File): Promise<string> => {
+  // Load preview URL for embedded media
+  useEffect(() => {
+    let objectUrl: string | null = null;
+    
+    const loadPreview = async () => {
+      if (isEmbeddedId && element.src) {
+        // For embedded IDs, get from IndexedDB
+        try {
+          // We need stageId from context, but for editor preview we'll use a temporary approach
+          // In practice, the stage component will handle the actual rendering
+          const records = await db.mediaFiles.toArray();
+          const record = records.find((r: { id: string }) => r.id.includes(element.src as string));
+          if (record) {
+            objectUrl = URL.createObjectURL(record.blob);
+            setPreviewUrl(objectUrl);
+          }
+        } catch (error) {
+          console.error('Failed to load embedded media preview:', error);
+        }
+      } else if (isBase64Image || isExternalUrl) {
+        // For base64 or external URLs, use src directly
+        setPreviewUrl(element.src);
+      } else {
+        setPreviewUrl(null);
+      }
+    };
+
+    loadPreview();
+
+    return () => {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [element.src, isEmbeddedId, isBase64Image, isExternalUrl]);
+
+  // Convert file to base64 and generate embedded ID
+  const fileToEmbeddedId = async (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        // Extract just the base64 data (remove data:image/... prefix)
+        const base64Data = base64.split(',')[1];
+        const embeddedId = generateEmbeddedMediaId(base64Data, 'image');
+        resolve(embeddedId);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Store file in IndexedDB and return embedded ID
+  const storeFileInIndexedDB = async (file: File, embeddedId: string): Promise<void> => {
+    const { base64ToBlob } = await import('@/lib/utils/base64');
+    
+    // Read file as base64 first
+    const base64 = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
       reader.onerror = reject;
       reader.readAsDataURL(file);
+    });
+
+    // Convert to blob
+    const blob = base64ToBlob(base64.split(',')[1], file.type);
+
+    // Store with a temporary stageId that will be replaced on save
+    // Using 'editor' as temporary stageId - will be migrated on classroom save
+    const compoundKey = `editor:${embeddedId}`;
+    
+    await db.mediaFiles.put({
+      id: compoundKey,
+      stageId: 'editor',
+      type: 'image',
+      blob,
+      mimeType: file.type,
+      size: blob.size,
+      prompt: '',
+      params: JSON.stringify({ source: 'editor_upload', pendingMigration: true }),
+      createdAt: Date.now(),
     });
   };
 
@@ -453,11 +534,12 @@ function ImageElementEditor({
 
     try {
       setIsLoading(true);
-      const base64 = await fileToBase64(file);
-      onChange({ ...element, src: base64 });
+      const embeddedId = await fileToEmbeddedId(file);
+      await storeFileInIndexedDB(file, embeddedId);
+      onChange({ ...element, src: embeddedId });
       toast.success('Image uploaded successfully');
     } catch {
-      toast.error('Failed to read image file');
+      toast.error('Failed to process image file');
     } finally {
       setIsLoading(false);
     }
@@ -487,7 +569,7 @@ function ImageElementEditor({
     e.target.value = ''; // Reset for re-selecting same file
   };
 
-  // Fetch external URL and convert to base64
+  // Fetch external URL and store in IndexedDB with embedded ID
   const handleFetchUrl = async () => {
     if (!urlInput.trim()) {
       toast.error('Please enter a URL');
@@ -518,7 +600,7 @@ function ImageElementEditor({
         throw new Error('URL does not point to a valid image');
       }
 
-      // Convert blob to base64
+      // Convert blob to base64 for hash generation
       const reader = new FileReader();
       const base64: string = await new Promise((resolve, reject) => {
         reader.onload = () => resolve(reader.result as string);
@@ -526,8 +608,27 @@ function ImageElementEditor({
         reader.readAsDataURL(blob);
       });
 
-      onChange({ ...element, src: base64 });
-      toast.success('Image fetched and embedded successfully');
+      // Generate embedded ID and store in IndexedDB
+      const base64Data = base64.split(',')[1];
+      const embeddedId = generateEmbeddedMediaId(base64Data, 'image');
+      
+      // Store in IndexedDB (reusing the blob we already have)
+      const compoundKey = `editor:${embeddedId}`;
+      await db.mediaFiles.put({
+        id: compoundKey,
+        stageId: 'editor',
+        type: 'image',
+        blob,
+        mimeType: blob.type,
+        size: blob.size,
+        prompt: '',
+        params: JSON.stringify({ source: 'fetched_url', url: urlInput.trim(), pendingMigration: true }),
+        createdAt: Date.now(),
+      });
+
+      onChange({ ...element, src: embeddedId });
+      setUrlInput('');
+      toast.success('Image fetched and stored successfully');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to fetch image');
     } finally {
@@ -577,7 +678,7 @@ function ImageElementEditor({
         ) : hasImage ? (
           <>
             <img
-              src={element.src}
+              src={previewUrl || element.src}
               alt="Preview"
               className="w-full h-full object-contain"
               onError={(e) => {
@@ -622,15 +723,20 @@ function ImageElementEditor({
       {/* Image Source Info */}
       {hasImage && (
         <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-          {isBase64Image ? (
+          {isEmbeddedId ? (
             <>
               <Check className="w-3 h-3 text-green-500" />
-              <span>Embedded (offline available)</span>
+              <span>Stored in IndexedDB (offline available)</span>
+            </>
+          ) : isBase64Image ? (
+            <>
+              <Check className="w-3 h-3 text-green-500" />
+              <span>Embedded base64 (will migrate on save)</span>
             </>
           ) : isExternalUrl ? (
             <>
               <LinkIcon className="w-3 h-3 text-amber-500" />
-              <span>External URL (click fetch to embed)</span>
+              <span>External URL (click fetch to store)</span>
             </>
           ) : (
             <>

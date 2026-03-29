@@ -33,8 +33,8 @@
 - [x] Improve LLM providers settings panel
 - [ ] Improved editing capabilities
 - [ ] Add generative / agentic classroom and slide modification abilities
-- [ ] Implement research via `lc`
 - [ ] Add classroom export/import with complete data structure to local file
+- [ ] Implement research via `lc`
 - [ ] Fix strange PDF content formatting in prompts
 - [ ] Add some way to include previous courses as "completed context"
 

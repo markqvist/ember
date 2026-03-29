@@ -71,6 +71,11 @@ export function isMediaPlaceholder(src: string): boolean {
   return /^gen_(img|vid)_[\w-]+$/i.test(src);
 }
 
+/** Check if a src string is an embedded media placeholder ID (user-uploaded) */
+export function isEmbeddedMediaPlaceholder(src: string): boolean {
+  return /^emb_(img|vid|aud)_[a-f0-9]{8,}$/i.test(src);
+}
+
 // ==================== Store ====================
 
 export const useMediaGenerationStore = create<MediaGenerationState>()((set, get) => ({

@@ -270,7 +270,15 @@ export function updateScenesWithAudioUrls(
 }
 
 /**
+ * Check if a string is an embedded media ID
+ */
+function isEmbeddedMediaId(value: string): boolean {
+  return /^emb_(img|vid|aud)_[a-f0-9]{8,}$/i.test(value);
+}
+
+/**
  * Update scenes to replace media placeholders with server URLs
+ * Handles both AI-generated (gen_*) and embedded (emb_*) media
  */
 export function updateScenesWithMediaUrls(
   scenes: Scene[],
@@ -296,7 +304,16 @@ export function updateScenesWithMediaUrls(
     if (!canvas?.elements) continue;
 
     for (const element of canvas.elements) {
-      if ((element.type === 'image' || element.type === 'video') && element.src?.startsWith('gen_')) {
+      if (element.type !== 'image' && element.type !== 'video') continue;
+      if (!element.src) continue;
+
+      // Handle AI-generated placeholders (gen_img_*, gen_vid_*)
+      if (element.src.startsWith('gen_')) {
+        const ext = mediaExtMap.get(element.src) || (element.type === 'video' ? 'mp4' : 'png');
+        element.src = `${mediaBaseUrl}/${element.src}.${ext}`;
+      }
+      // Handle embedded media (emb_img_*, emb_vid_*)
+      else if (isEmbeddedMediaId(element.src)) {
         const ext = mediaExtMap.get(element.src) || (element.type === 'video' ? 'mp4' : 'png');
         element.src = `${mediaBaseUrl}/${element.src}.${ext}`;
       }
