@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import type { NextRequest } from 'next/server';
+import JSZip from 'jszip';
 import type { Scene, Stage, ClassroomInferenceConfig } from '@/lib/types/stage';
 
 export const CLASSROOMS_DIR = path.join(process.cwd(), 'data', 'classrooms');
@@ -360,4 +361,318 @@ export async function persistClassroom(
     ...classroomData,
     url: `${baseUrl}/classroom/${data.id}`,
   };
+}
+
+// ==================== Export/Import Functions ====================
+
+/** Maximum size for classroom export/import: 1 GB */
+export const MAX_CLASSROOM_EXPORT_SIZE = 1024 * 1024 * 1024;
+
+/** Name of the main classroom JSON file inside the ZIP */
+export const CLASSROOM_JSON_FILENAME = 'classroom.json';
+
+export interface ClassroomExportResult {
+  buffer: Buffer;
+  filename: string;
+  size: number;
+}
+
+export interface ClassroomImportResult {
+  id: string;
+  name: string;
+  url: string;
+  overwritten: boolean;
+}
+
+export interface ClassroomValidationResult {
+  valid: boolean;
+  id?: string;
+  error?: string;
+}
+
+/**
+ * Recursively get all files in a directory
+ */
+async function getAllFiles(dir: string, baseDir: string): Promise<{ relativePath: string; absolutePath: string }[]> {
+  const files: { relativePath: string; absolutePath: string }[] = [];
+
+  try {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const absolutePath = path.join(dir, entry.name);
+      const relativePath = path.relative(baseDir, absolutePath);
+
+      if (entry.isDirectory()) {
+        const subFiles = await getAllFiles(absolutePath, baseDir);
+        files.push(...subFiles);
+      } else {
+        files.push({ relativePath, absolutePath });
+      }
+    }
+  } catch (error) {
+    // Directory doesn't exist
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      throw error;
+    }
+  }
+
+  return files;
+}
+
+/**
+ * Calculate total size of all files in classroom directory
+ */
+async function calculateClassroomSize(classroomId: string): Promise<number> {
+  const classroomDir = path.join(CLASSROOMS_DIR, classroomId);
+  const files = await getAllFiles(classroomDir, classroomDir);
+
+  let totalSize = 0;
+  for (const file of files) {
+    const stat = await fs.stat(file.absolutePath);
+    totalSize += stat.size;
+  }
+
+  // Add the JSON file size
+  const jsonPath = path.join(CLASSROOMS_DIR, `${classroomId}.json`);
+  try {
+    const jsonStat = await fs.stat(jsonPath);
+    totalSize += jsonStat.size;
+  } catch {
+    // JSON file may not exist
+  }
+
+  return totalSize;
+}
+
+/**
+ * Export a classroom to a ZIP buffer
+ */
+export async function exportClassroomToZip(classroomId: string): Promise<ClassroomExportResult> {
+  // Validate classroom exists
+  const classroom = await readClassroom(classroomId);
+  if (!classroom) {
+    throw new Error(`Classroom not found: ${classroomId}`);
+  }
+
+  // Check size limit before processing
+  const totalSize = await calculateClassroomSize(classroomId);
+  if (totalSize > MAX_CLASSROOM_EXPORT_SIZE) {
+    throw new Error(
+      `Classroom size (${(totalSize / 1024 / 1024).toFixed(1)} MB) exceeds maximum export size of ${(MAX_CLASSROOM_EXPORT_SIZE / 1024 / 1024).toFixed(0)} MB`
+    );
+  }
+
+  const zip = new JSZip();
+
+  // Add the main classroom JSON
+  zip.file(CLASSROOM_JSON_FILENAME, JSON.stringify(classroom, null, 2));
+
+  // Add all files from the classroom directory recursively
+  const classroomDir = path.join(CLASSROOMS_DIR, classroomId);
+  const files = await getAllFiles(classroomDir, classroomDir);
+
+  for (const file of files) {
+    const content = await fs.readFile(file.absolutePath);
+    zip.file(file.relativePath, content);
+  }
+
+  // Generate ZIP buffer
+  const buffer = await zip.generateAsync({
+    type: 'nodebuffer',
+    compression: 'DEFLATE',
+    compressionOptions: { level: 6 },
+  });
+
+  // Generate filename: sanitize stage name + id
+  const sanitizedName = classroom.stage.name
+    .replace(/[^a-zA-Z0-9\-_\s]/g, '')
+    .replace(/\s+/g, '-')
+    .slice(0, 50);
+  const filename = `${sanitizedName}-${classroomId}.zip`;
+
+  return {
+    buffer,
+    filename,
+    size: buffer.length,
+  };
+}
+
+/**
+ * Validate classroom data structure
+ */
+export function validateClassroomData(data: unknown): ClassroomValidationResult {
+  if (!data || typeof data !== 'object') {
+    return { valid: false, error: 'Invalid classroom data: not an object' };
+  }
+
+  const classroom = data as Partial<PersistedClassroomData>;
+
+  if (!classroom.id || typeof classroom.id !== 'string') {
+    return { valid: false, error: 'Invalid classroom data: missing or invalid id' };
+  }
+
+  if (!isValidClassroomId(classroom.id)) {
+    return { valid: false, id: classroom.id, error: 'Invalid classroom ID format' };
+  }
+
+  if (!classroom.stage || typeof classroom.stage !== 'object') {
+    return { valid: false, id: classroom.id, error: 'Invalid classroom data: missing or invalid stage' };
+  }
+
+  if (!classroom.scenes || !Array.isArray(classroom.scenes)) {
+    return { valid: false, id: classroom.id, error: 'Invalid classroom data: missing or invalid scenes' };
+  }
+
+  return { valid: true, id: classroom.id };
+}
+
+/**
+ * Import a classroom from a ZIP buffer
+ */
+export async function importClassroomFromZip(
+  zipBuffer: Buffer,
+  baseUrl: string,
+  allowOverwrite = false
+): Promise<ClassroomImportResult> {
+  // Parse ZIP
+  const zip = await JSZip.loadAsync(zipBuffer);
+
+  // Check file size limit by summing compressed sizes as a conservative estimate
+  // JSZip doesn't expose uncompressedSize directly, so we use compressed size
+  let totalCompressedSize = 0;
+  zip.forEach((_, file) => {
+    // Access internal _data property which contains compressedSize
+    const compressedSize = (file as unknown as { _data?: { compressedSize?: number } })._data?.compressedSize || 0;
+    totalCompressedSize += compressedSize;
+  });
+
+  // Use compressed size * 10 as a rough estimate of uncompressed size
+  const estimatedUncompressedSize = totalCompressedSize * 10;
+
+  if (estimatedUncompressedSize > MAX_CLASSROOM_EXPORT_SIZE) {
+    throw new Error(
+      `Estimated extracted classroom size (${(estimatedUncompressedSize / 1024 / 1024).toFixed(1)} MB) exceeds maximum import size of ${(MAX_CLASSROOM_EXPORT_SIZE / 1024 / 1024).toFixed(0)} MB`
+    );
+  }
+
+  // Find and validate classroom.json
+  const classroomJsonFile = zip.file(CLASSROOM_JSON_FILENAME);
+  if (!classroomJsonFile) {
+    throw new Error(`Invalid classroom archive: missing ${CLASSROOM_JSON_FILENAME}`);
+  }
+
+  const classroomJsonContent = await classroomJsonFile.async('string');
+  let classroomData: unknown;
+
+  try {
+    classroomData = JSON.parse(classroomJsonContent);
+  } catch (e) {
+    throw new Error(`Invalid classroom archive: ${CLASSROOM_JSON_FILENAME} is not valid JSON`);
+  }
+
+  // Validate structure
+  const validation = validateClassroomData(classroomData);
+  if (!validation.valid) {
+    throw new Error(validation.error || 'Invalid classroom data structure');
+  }
+
+  const classroomId = validation.id!;
+  const classroom = classroomData as PersistedClassroomData;
+
+  // Check for existing classroom
+  const existingClassroom = await readClassroom(classroomId);
+  let overwritten = false;
+
+  if (existingClassroom) {
+    if (!allowOverwrite) {
+      throw new Error(
+        `Classroom with ID "${classroomId}" already exists. Set allowOverwrite=true to replace it.`
+      );
+    }
+
+    // Remove existing classroom data
+    const existingDir = path.join(CLASSROOMS_DIR, classroomId);
+    try {
+      await fs.rm(existingDir, { recursive: true, force: true });
+    } catch {
+      // Directory may not exist
+    }
+
+    const existingJson = path.join(CLASSROOMS_DIR, `${classroomId}.json`);
+    try {
+      await fs.unlink(existingJson);
+    } catch {
+      // File may not exist
+    }
+
+    overwritten = true;
+  }
+
+  // Create classroom directory
+  const classroomDir = path.join(CLASSROOMS_DIR, classroomId);
+  await ensureDir(classroomDir);
+
+  // Extract all files from ZIP (except classroom.json which we handle separately)
+  const extractPromises: Promise<void>[] = [];
+
+  zip.forEach((relativePath, file) => {
+    if (relativePath === CLASSROOM_JSON_FILENAME) return;
+    if (file.dir) return;
+
+    const extractPromise = (async () => {
+      const content = await file.async('nodebuffer');
+      const targetPath = path.join(classroomDir, relativePath);
+
+      // Ensure parent directory exists
+      await ensureDir(path.dirname(targetPath));
+
+      // Write file
+      await fs.writeFile(targetPath, content);
+    })();
+
+    extractPromises.push(extractPromise);
+  });
+
+  await Promise.all(extractPromises);
+
+  // Write the classroom.json file
+  const jsonPath = path.join(CLASSROOMS_DIR, `${classroomId}.json`);
+  await writeJsonFileAtomic(jsonPath, classroom);
+
+  return {
+    id: classroomId,
+    name: classroom.stage.name,
+    url: `${baseUrl}/classroom/${classroomId}`,
+    overwritten,
+  };
+}
+
+/**
+ * Delete a classroom and all its associated data
+ */
+export async function deleteClassroom(classroomId: string): Promise<void> {
+  if (!isValidClassroomId(classroomId)) {
+    throw new Error('Invalid classroom ID');
+  }
+
+  // Delete directory
+  const classroomDir = path.join(CLASSROOMS_DIR, classroomId);
+  try {
+    await fs.rm(classroomDir, { recursive: true, force: true });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      throw error;
+    }
+  }
+
+  // Delete JSON file
+  const jsonPath = path.join(CLASSROOMS_DIR, `${classroomId}.json`);
+  try {
+    await fs.unlink(jsonPath);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      throw error;
+    }
+  }
 }
