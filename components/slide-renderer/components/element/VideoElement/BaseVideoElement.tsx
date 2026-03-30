@@ -109,7 +109,7 @@ export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
   // Debug: log render count to detect remounts
   renderCountRef.current++;
   if (renderCountRef.current <= 5 || renderCountRef.current % 10 === 0) {
-    log.info(`[${elementInfo.id}] RENDER #${renderCountRef.current}`);
+    // log.info(`[${elementInfo.id}] RENDER #${renderCountRef.current}`);
   }
 
   // Extract src to a local const
@@ -162,7 +162,7 @@ export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
     instanceCounter++;
     const myInstance = instanceCounter;
     instanceMap.set(elementInfo.id, myInstance);
-    log.info(`[${elementInfo.id}] MOUNT #${myInstance}: total instances=${instanceMap.size}, playInitiated=${playInitiatedRef.current}`);
+    // log.info(`[${elementInfo.id}] MOUNT #${myInstance}: total instances=${instanceMap.size}, playInitiated=${playInitiatedRef.current}`);
     
     // Capture video ref in closure for cleanup - ref may become null by unmount time
     let capturedVideo: HTMLVideoElement | null = null;
@@ -171,23 +171,23 @@ export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
     if (video) {
       capturedVideo = video;
       activeVideoElements.add(video);
-      log.info(`[${elementInfo.id}] Mount: ensuring video is paused, video.paused=${video.paused}, tracked=${activeVideoElements.size} videos`);
+      // log.info(`[${elementInfo.id}] Mount: ensuring video is paused, video.paused=${video.paused}, tracked=${activeVideoElements.size} videos`);
       video.pause();
     } else {
-      log.info(`[${elementInfo.id}] Mount: no video ref yet`);
+      // log.info(`[${elementInfo.id}] Mount: no video ref yet`);
     }
     
     return () => {
       instanceMap.delete(elementInfo.id);
-      log.info(`[${elementInfo.id}] UNMOUNT #${myInstance}: remaining instances=${instanceMap.size}, playInitiated=${playInitiatedRef.current}`);
+      // log.info(`[${elementInfo.id}] UNMOUNT #${myInstance}: remaining instances=${instanceMap.size}, playInitiated=${playInitiatedRef.current}`);
       // Use captured video from mount, not current ref (which may be null)
       const videoOnUnmount = capturedVideo || videoRef.current;
       if (videoOnUnmount) {
         activeVideoElements.delete(videoOnUnmount);
       }
-      log.info(`[${elementInfo.id}] Unmount: video=${videoOnUnmount ? 'exists' : 'null'}, paused=${videoOnUnmount?.paused}, remaining=${activeVideoElements.size} videos`);
+      // log.info(`[${elementInfo.id}] Unmount: video=${videoOnUnmount ? 'exists' : 'null'}, paused=${videoOnUnmount?.paused}, remaining=${activeVideoElements.size} videos`);
       if (videoOnUnmount && !videoOnUnmount.paused) {
-        log.info(`[${elementInfo.id}] Unmount cleanup: PAUSING active video!`);
+        // log.info(`[${elementInfo.id}] Unmount cleanup: PAUSING active video!`);
         videoOnUnmount.pause();
       }
       // Reset playInitiated on unmount so fresh component can play
@@ -199,7 +199,7 @@ export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
   useEffect(() => {
     const video = videoRef.current;
     if (!video) {
-      log.info(`[${elementInfo.id}] Effect: no video ref, skipping`);
+      // log.info(`[${elementInfo.id}] Effect: no video ref, skipping`);
       return;
     }
 
@@ -229,7 +229,7 @@ export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
         // Guard: Check for other playing videos (detached/ghost players)
         const playingVideos = Array.from(activeVideoElements).filter(v => !v.paused);
         if (playingVideos.length > 0) {
-          log.info(`[${elementInfo.id}] DETECTED ${playingVideos.length} other playing video(s)! Pausing them before play.`);
+          // log.info(`[${elementInfo.id}] DETECTED ${playingVideos.length} other playing video(s)! Pausing them before play.`);
           playingVideos.forEach(v => v.pause());
         }
         
@@ -246,28 +246,28 @@ export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
         
         playInitiatedRef.current = true;
         playInitiatedSet.add(elementInfo.id);
-        log.info(`[${elementInfo.id}] PLAY: isMe=true, wasMe=false, video.paused=true, tracked=${activeVideoElements.size} videos -> calling play()`);
+        // log.info(`[${elementInfo.id}] PLAY: isMe=true, wasMe=false, video.paused=true, tracked=${activeVideoElements.size} videos -> calling play()`);
         video.play().catch((err) => {
           log.warn(`[${elementInfo.id}] play() failed:`, err);
           playInitiatedRef.current = false;
           playInitiatedSet.delete(elementInfo.id);
         });
       } else {
-        log.info(`[${elementInfo.id}] SKIP PLAY: isMe=true, wasMe=false, but video.paused=false (already playing)`);
+        // log.info(`[${elementInfo.id}] SKIP PLAY: isMe=true, wasMe=false, but video.paused=false (already playing)`);
       }
     } else if (!isMe && wasMe) {
       // Guard: only call pause() if video is actually playing
       if (!video.paused) {
-        log.info(`[${elementInfo.id}] PAUSE: isMe=false, wasMe=true, video.paused=false -> calling pause()`);
+        // log.info(`[${elementInfo.id}] PAUSE: isMe=false, wasMe=true, video.paused=false -> calling pause()`);
         video.pause();
       } else {
-        log.info(`[${elementInfo.id}] SKIP PAUSE: isMe=false, wasMe=true, but video.paused=true (already paused)`);
+        // log.info(`[${elementInfo.id}] SKIP PAUSE: isMe=false, wasMe=true, but video.paused=true (already paused)`);
       }
       // Reset playInitiated when we're no longer the active video
       playInitiatedRef.current = false;
       playInitiatedSet.delete(elementInfo.id);
     } else {
-      log.info(`[${elementInfo.id}] NO-OP: isMe=${isMe}, wasMe=${wasMe}`);
+      // log.info(`[${elementInfo.id}] NO-OP: isMe=${isMe}, wasMe=${wasMe}`);
     }
   }, [playingVideoElementId, presentationPaused, elementInfo.id, animate, scope]);
 
