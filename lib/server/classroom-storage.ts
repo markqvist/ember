@@ -587,7 +587,7 @@ export async function importClassroomFromZip(
   if (existingClassroom) {
     if (!allowOverwrite) {
       throw new Error(
-        `Classroom with ID "${classroomId}" already exists. Set allowOverwrite=true to replace it.`
+        `Classroom with ID "${classroomId}" already exists.`
       );
     }
 

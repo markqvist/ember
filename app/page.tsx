@@ -20,6 +20,8 @@ import {
   Monitor,
   BotOff,
   ChevronUp,
+  Upload,
+  Download,
 } from 'lucide-react';
 import { useI18n } from '@/lib/hooks/use-i18n';
 import { createLogger } from '@/lib/logger';
@@ -50,6 +52,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useDraftCache } from '@/lib/hooks/use-draft-cache';
 import { SpeechButton } from '@/components/audio/speech-button';
 import { ClassroomEditModal } from '@/components/editor/classroom-edit-modal';
+import { ClassroomImportDialog } from '@/components/classroom-import-dialog';
 import type { Stage } from '@/lib/types/stage';
 
 const log = createLogger('Home');
@@ -139,6 +142,7 @@ function HomePage() {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [editingClassroomId, setEditingClassroomId] = useState<string | null>(null);
   const [editingClassroomData, setEditingClassroomData] = useState<Stage | null>(null);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const pdfFileMapRef = useRef<Record<string, File>>({});
@@ -287,6 +291,41 @@ function HomePage() {
     } finally {
       setEditingClassroomId(null);
       setEditingClassroomData(null);
+    }
+  };
+
+  const handleExport = async (id: string) => {
+    try {
+      const response = await fetch(`/api/classroom-export?id=${id}`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        toast.error(errorData.error || 'Failed to export classroom');
+        return;
+      }
+
+      // Get filename from Content-Disposition header
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = `${id}.zip`;
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="(.+)"/);
+        if (match) filename = match[1];
+      }
+
+      // Download the file
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Classroom exported successfully');
+    } catch (err) {
+      log.error('Failed to export classroom:', err);
+      toast.error('Failed to export classroom');
     }
   };
 
@@ -588,6 +627,19 @@ function HomePage() {
 
         <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700" />
 
+        {/* Import Button */}
+        <div className="relative">
+          <button
+            onClick={() => setImportDialogOpen(true)}
+            className="p-2 rounded-full text-gray-400 dark:text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200 hover:shadow-sm transition-all"
+            title={t('classroom.import.title')}
+          >
+            <Upload className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700" />
+
         {/* Settings Button */}
         <div className="relative">
           <button
@@ -800,6 +852,7 @@ function HomePage() {
                         onDelete={handleDelete}
                         onPersist={handlePersist}
                         onEdit={handleEdit}
+                        onExport={handleExport}
                         confirmingDelete={pendingDeleteId === classroom.id}
                         onConfirmDelete={() => confirmDelete(classroom.id)}
                         onCancelDelete={() => setPendingDeleteId(null)}
@@ -825,6 +878,15 @@ function HomePage() {
         }}
         classroom={editingClassroomData}
         onSave={handleSaveEdit}
+      />
+
+      {/* Classroom Import Dialog */}
+      <ClassroomImportDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onImportSuccess={() => {
+          loadClassrooms();
+        }}
       />
     </div>
   );
@@ -1127,6 +1189,7 @@ function ClassroomCard({
   onDelete,
   onPersist,
   onEdit,
+  onExport,
   confirmingDelete,
   onConfirmDelete,
   onCancelDelete,
@@ -1138,6 +1201,7 @@ function ClassroomCard({
   onDelete: (id: string, e: React.MouseEvent) => void;
   onPersist: (id: string) => void;
   onEdit: (id: string) => void;
+  onExport: (id: string) => void;
   confirmingDelete: boolean;
   onConfirmDelete: () => void;
   onCancelDelete: () => void;
@@ -1204,7 +1268,32 @@ function ClassroomCard({
           )}
         </AnimatePresence>
 
-        {/* Save — top-right, left of delete, only on hover */}
+        {/* Save — top-right, left of export, only on hover */}
+        <AnimatePresence>
+          {!confirmingDelete && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="absolute top-2 right-29"
+            >
+              <Button
+                size="icon"
+                variant="ghost"
+                className="size-7 opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 hover:bg-emerald-500/80 text-white hover:text-white backdrop-blur-sm rounded-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPersist(classroom.id);
+                }}
+              >
+                <Save className="size-3.5" />
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Export — top-right, left of delete, only on hover */}
         <AnimatePresence>
           {!confirmingDelete && (
             <motion.div
@@ -1217,13 +1306,13 @@ function ClassroomCard({
               <Button
                 size="icon"
                 variant="ghost"
-                className="size-7 opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 hover:bg-emerald-500/80 text-white hover:text-white backdrop-blur-sm rounded-full"
+                className="size-7 opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 hover:bg-violet-500/80 text-white hover:text-white backdrop-blur-sm rounded-full"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onPersist(classroom.id);
+                  onExport(classroom.id);
                 }}
               >
-                <Save className="size-3.5" />
+                <Download className="size-3.5" />
               </Button>
             </motion.div>
           )}
