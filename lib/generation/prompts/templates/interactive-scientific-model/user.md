@@ -1,4 +1,4 @@
-Please perform scientific modeling for the following concept.
+Perform the required conceptual modeling for the following subject.
 
 ---
 
@@ -16,8 +16,8 @@ Please perform scientific modeling for the following concept.
 
 1. List the core formulas, laws, concepts, or logical rules involved
 2. Clarify the specific physical/logical mechanisms
-3. List constraints that any simulation must obey
-4. List scientific errors that must be strictly forbidden
+3. List constraints that any simulation or visualization must obey
+4. List scientific, logical, philosophical or conceptual errors that must be avoided
 
 Output JSON directly with the following structure:
 

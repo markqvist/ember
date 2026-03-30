@@ -1,4 +1,4 @@
-Please generate scene outlines based on the following course requirements.
+Generate scene outlines based on the following course requirements.
 
 ---
 
@@ -13,8 +13,6 @@ Please generate scene outlines based on the following course requirements.
 ## Course Language
 
 **Required language**: {{language}}
-
-(All content must be in the specified language)
 
 ---
 
@@ -32,13 +30,17 @@ Please generate scene outlines based on the following course requirements.
 
 {{researchContext}}
 
+---
+
+### Teacher Persona
+
 {{teacherContext}}
 
 ---
 
 ## Output Requirements
 
-Please automatically infer the following from user requirements:
+Carefully analyze the requirement text to understand:
 
 - Course topic and core content
 - Target audience and difficulty level
@@ -71,9 +73,9 @@ Then output a JSON array containing all scene outlines. Each scene must include:
    ```
 2. **If images are available**, add `suggestedImageIds` to relevant slide scenes
 3. **Interactive scenes**: If a concept benefits from hands-on simulation/visualization, use `"type": "interactive"` with an `interactiveConfig` object containing `conceptName`, `conceptOverview`, `designIdea`, and `subject`. Limit to 1-2 per course.
-4. **Scene count**: Based on inferred duration, typically 1-2 scenes per minute
-5. **Quiz placement**: Recommend inserting a quiz every 3-5 slides for assessment
-6. **Language**: Strictly output all content in the specified course language
-7. **If web search results are provided**, reference specific findings and sources in scene descriptions and keyPoints. The search results provide up-to-date information — incorporate it to make the course content current and accurate.
+4. **Scene count**: Based on inferred duration, typically 2-4 minutes per scene
+5. **Quiz placement**: If applicable, insert a quiz every 3-5 slides for anchoring of knowledge and conceptual connection building
+6. **Language**: Output all content in the specified course language
+7. **If research results are provided**, reference specific findings and sources in scene descriptions and keyPoints. The search results provide up-to-date information — incorporate it to make the course content current and accurate.
 
 Output the final JSON array directly without additional explanatory text.

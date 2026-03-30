@@ -12,7 +12,7 @@ export function buildCourseContext(ctx?: SceneGenerationContext): string {
   const lines: string[] = [];
 
   // Course outline with position marker
-  lines.push('Course Outline:');
+  lines.push('# Course Outline');
   ctx.allTitles.forEach((t, i) => {
     const marker = i === ctx.pageIndex - 1 ? ' ← current' : '';
     lines.push(`  ${i + 1}. ${t}${marker}`);
@@ -32,7 +32,7 @@ export function buildCourseContext(ctx?: SceneGenerationContext): string {
       'Transition: Continue naturally from the previous page. Do NOT greet or re-introduce.',
     );
   } else {
-    lines.push(`Position: Page ${ctx.pageIndex} of ${ctx.totalPages} (middle of the course).`);
+    lines.push(`Position: Page ${ctx.pageIndex} of ${ctx.totalPages}.`);
     lines.push(
       'Transition: Continue naturally from the previous page. Do NOT greet or re-introduce.',
     );
@@ -53,10 +53,10 @@ export function buildCourseContext(ctx?: SceneGenerationContext): string {
 export function formatAgentsForPrompt(agents?: AgentInfo[]): string {
   if (!agents || agents.length === 0) return '';
 
-  const lines = ['Classroom Agents:'];
+  const lines = ['# Classroom Agents'];
   for (const a of agents) {
-    const personaPart = a.persona ? ` — ${a.persona}` : '';
-    lines.push(`- id: "${a.id}", name: "${a.name}", role: ${a.role}${personaPart}`);
+    const personaPart = a.persona ? `\n\n${a.persona}` : '';
+    lines.push(`## id: "${a.id}", name: "${a.name}"\n\n**Role:** ${a.role}${personaPart}\n`);
   }
   return lines.join('\n');
 }
@@ -68,7 +68,7 @@ export function formatTeacherPersonaForPrompt(agents?: AgentInfo[]): string {
   const teacher = agents.find((a) => a.role === 'teacher');
   if (!teacher?.persona) return '';
 
-  return `Teacher Persona:\nName: ${teacher.name}\n${teacher.persona}\n\nAdapt the content style and tone to match this teacher's personality. IMPORTANT: The teacher's name and identity must NOT appear on the slides — no "Teacher ${teacher.name}'s tips", no "Teacher's message", etc. Slides should read as neutral, professional visual aids.`;
+  return `Name: ${teacher.name}\n${teacher.persona}\n\n*Adapt the content style and tone to match this teacher's personality.* IMPORTANT: The teacher's name and identity must NOT appear on the slides — no "Teacher ${teacher.name}'s tips", no "Teacher's message", etc. Slides should read as neutral, professional visual aids.`;
 }
 
 /**

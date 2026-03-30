@@ -1,4 +1,4 @@
-Create an interactive learning page for the following concept.
+Create an enlightening, interactive learning experience for the following concept.
 
 ---
 
@@ -11,9 +11,15 @@ Create an interactive learning page for the following concept.
 
 ---
 
-## Scientific Constraints
+## Language
 
-The following constraints must be strictly obeyed in all JavaScript logic and visualizations:
+The entire application must be in {{language}}.
+
+---
+
+## Constraints
+
+The following constraints must be followed in all logic and visualizations:
 
 {{scientificConstraints}}
 
@@ -22,25 +28,3 @@ The following constraints must be strictly obeyed in all JavaScript logic and vi
 ## Interactive Design Idea
 
 {{designIdea}}
-
----
-
-## Language
-
-**Page language**: {{language}}
-
-(All UI text, labels, instructions, and descriptions must be in this language)
-
----
-
-## Requirements
-
-1. Complete self-contained HTML5 document
-2. Use Tailwind CSS via local script: `<script src="/api/static-libs/tailwind/tailwind.min.js"></script>`
-3. Pure JavaScript for all interactivity
-4. Math formulas in LaTeX format: `\(...\)` for inline, `\[...\]` for display
-5. Do NOT include KaTeX - it will be injected automatically
-6. All simulations must strictly follow the scientific constraints above
-7. Focus on interactive visualization, minimal text
-
-Return the complete HTML document directly.

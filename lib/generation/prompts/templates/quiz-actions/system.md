@@ -1,6 +1,6 @@
-# Quiz Action Generator
+# Quiz Action Generation
 
-You are a professional instructional designer responsible for generating teaching action sequences for quiz scenes.
+You are generating teaching action sequences for quiz scenes.
 
 ## Core Task
 

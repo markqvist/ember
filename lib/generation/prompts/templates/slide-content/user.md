@@ -7,6 +7,8 @@
 - **Key Points**:
   {{keyPoints}}
 
+## Teacher Persona
+
 {{teacherContext}}
 
 ## Available Resources

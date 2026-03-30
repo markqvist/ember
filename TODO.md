@@ -35,7 +35,7 @@
 - [x] Add classroom export/import with complete data structure to local file
 - [x] Fix Tailwind CDN dependency for generated classrooms, should use local version
 - [x] Add ability to include more complex simulations hosted from classroom data directory
-- [ ] Add generative / agentic classroom and slide modification abilities
 - [ ] Implement research via `lc`
 - [ ] Fix strange PDF content formatting in prompts
 - [ ] Add some way to include previous courses as "completed context"
+- [ ] Add generative / agentic classroom and slide modification abilities

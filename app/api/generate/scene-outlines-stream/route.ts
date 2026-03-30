@@ -159,8 +159,8 @@ export async function POST(req: NextRequest) {
     // Build user profile text for personalization
     const userProfileText =
       requirements.userNickname || requirements.userBio
-        ? `## Student Profile\n\nConsider the student's background when designing the course. Adapt difficulty, examples, and teaching approach accordingly.\n\n**Name:** ${requirements.userNickname || 'Unknown'}\n**Provided Information:** ${requirements.userBio ? `${requirements.userBio}` : ''}`
-        : '';
+        ? `## Learner Profile\n\nConsider this learner's background when designing the course. Adapt difficulty, examples, and teaching approach accordingly.\n\n**Name:** ${requirements.userNickname || 'Unknown'}\n**Provided Information:** ${requirements.userBio ? `${requirements.userBio}` : ''}`
+        : 'No learner profile provided';
 
     // Build AI-generated media instructions based on enabled flags
     // Only include the relevant snippet if at least one media type is enabled
