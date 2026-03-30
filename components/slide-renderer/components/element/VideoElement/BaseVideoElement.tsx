@@ -92,13 +92,14 @@ export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
   const playingVideoElementId = useCanvasStore.use.playingVideoElementId();
   const presentationPaused = useCanvasStore.use.presentationPaused();
   const prevPlayingRef = useRef('');
+  const playInitiatedRef = useRef(false); // Guard against effect double-invocation
   const [scope, animate] = useAnimate<HTMLDivElement>();
   const renderCountRef = useRef(0);
 
   // Debug: log render count to detect remounts
   renderCountRef.current++;
   if (renderCountRef.current <= 5 || renderCountRef.current % 10 === 0) {
-    log.debug(`[${elementInfo.id}] RENDER #${renderCountRef.current}`);
+    log.info(`[${elementInfo.id}] RENDER #${renderCountRef.current}`);
   }
 
   // Extract src to a local const
@@ -149,7 +150,7 @@ export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
   useEffect(() => {
     const video = videoRef.current;
     if (video) {
-      log.debug(`[${elementInfo.id}] Mount: ensuring video is paused`);
+      log.info(`[${elementInfo.id}] Mount: ensuring video is paused`);
       video.pause();
     }
     
@@ -157,28 +158,30 @@ export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
       // Cleanup on unmount: pause if still playing to prevent ghost audio
       const videoOnUnmount = videoRef.current;
       if (videoOnUnmount && !videoOnUnmount.paused) {
-        log.debug(`[${elementInfo.id}] Unmount cleanup: pausing active video`);
+        log.info(`[${elementInfo.id}] Unmount cleanup: pausing active video`);
         videoOnUnmount.pause();
       }
+      // Reset playInitiated on unmount so fresh component can play
+      playInitiatedRef.current = false;
     };
   }, [elementInfo.id]);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) {
-      log.debug(`[${elementInfo.id}] Effect: no video ref, skipping`);
+      log.info(`[${elementInfo.id}] Effect: no video ref, skipping`);
       return;
     }
 
-    log.debug(`[${elementInfo.id}] Effect: storeId=${playingVideoElementId}, prevId=${prevPlayingRef.current}, presentationPaused=${presentationPaused}, video.paused=${video.paused}`);
+    log.info(`[${elementInfo.id}] Effect: storeId=${playingVideoElementId}, prevId=${prevPlayingRef.current}, presentationPaused=${presentationPaused}, video.paused=${video.paused}`);
 
     // If presentation is globally paused, pause this video regardless of playingVideoElementId
     if (presentationPaused) {
       if (!video.paused) {
-        log.debug(`[${elementInfo.id}] PAUSE: presentationPaused=true, video was playing`);
+        log.info(`[${elementInfo.id}] PAUSE: presentationPaused=true, video was playing`);
         video.pause();
       } else {
-        log.debug(`[${elementInfo.id}] SKIP: presentationPaused=true, video already paused`);
+        log.info(`[${elementInfo.id}] SKIP: presentationPaused=true, video already paused`);
       }
       return;
     }
@@ -188,46 +191,54 @@ export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
     prevPlayingRef.current = playingVideoElementId;
 
     if (isMe && !wasMe) {
-      // "Tap" press animation — a deliberate, teacher-paced click feel
-      animate(
-        scope.current,
-        { scale: [1, 1.035, 1] },
-        {
-          duration: 0.6,
-          ease: [0.25, 0.1, 0.25, 1],
-          times: [0, 0.35, 1],
-        },
-      );
-      
-      // Guard: only call play() if video is actually paused (prevents double playback)
-      if (video.paused) {
-        log.debug(`[${elementInfo.id}] PLAY: isMe=true, wasMe=false, video.paused=true -> calling play()`);
+      // Guard: prevent double-invocation from React StrictMode or rapid re-renders
+      if (playInitiatedRef.current) {
+        log.info(`[${elementInfo.id}] SKIP PLAY: playInitiatedRef=true (already initiated)`);
+      } else if (video.paused) {
+        // "Tap" press animation — a deliberate, teacher-paced click feel
+        animate(
+          scope.current,
+          { scale: [1, 1.035, 1] },
+          {
+            duration: 0.6,
+            ease: [0.25, 0.1, 0.25, 1],
+            times: [0, 0.35, 1],
+          },
+        );
+        
+        playInitiatedRef.current = true;
+        log.info(`[${elementInfo.id}] PLAY: isMe=true, wasMe=false, video.paused=true -> calling play()`);
         video.play().catch((err) => {
           log.warn(`[${elementInfo.id}] play() failed:`, err);
+          playInitiatedRef.current = false; // Reset on failure
         });
       } else {
-        log.debug(`[${elementInfo.id}] SKIP PLAY: isMe=true, wasMe=false, but video.paused=false (already playing)`);
+        log.info(`[${elementInfo.id}] SKIP PLAY: isMe=true, wasMe=false, but video.paused=false (already playing)`);
       }
     } else if (!isMe && wasMe) {
       // Guard: only call pause() if video is actually playing
       if (!video.paused) {
-        log.debug(`[${elementInfo.id}] PAUSE: isMe=false, wasMe=true, video.paused=false -> calling pause()`);
+        log.info(`[${elementInfo.id}] PAUSE: isMe=false, wasMe=true, video.paused=false -> calling pause()`);
         video.pause();
       } else {
-        log.debug(`[${elementInfo.id}] SKIP PAUSE: isMe=false, wasMe=true, but video.paused=true (already paused)`);
+        log.info(`[${elementInfo.id}] SKIP PAUSE: isMe=false, wasMe=true, but video.paused=true (already paused)`);
       }
+      // Reset playInitiated when we're no longer the active video
+      playInitiatedRef.current = false;
     } else {
-      log.debug(`[${elementInfo.id}] NO-OP: isMe=${isMe}, wasMe=${wasMe}`);
+      log.info(`[${elementInfo.id}] NO-OP: isMe=${isMe}, wasMe=${wasMe}`);
     }
   }, [playingVideoElementId, presentationPaused, elementInfo.id, animate, scope]);
 
   const handleEnded = () => {
-    log.debug(`[${elementInfo.id}] onEnded: video playback ended naturally`);
+    log.info(`[${elementInfo.id}] onEnded: video playback ended naturally`);
+    // Reset playInitiated so video can be replayed
+    playInitiatedRef.current = false;
     if (useCanvasStore.getState().playingVideoElementId === elementInfo.id) {
-      log.debug(`[${elementInfo.id}] onEnded: syncing store state (pauseVideo)`);
+      log.info(`[${elementInfo.id}] onEnded: syncing store state (pauseVideo)`);
       useCanvasStore.getState().pauseVideo();
     } else {
-      log.debug(`[${elementInfo.id}] onEnded: store already cleared, no action needed`);
+      log.info(`[${elementInfo.id}] onEnded: store already cleared, no action needed`);
     }
   };
 
