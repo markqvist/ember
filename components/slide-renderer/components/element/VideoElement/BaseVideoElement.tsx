@@ -15,6 +15,16 @@ import { createLogger } from '@/lib/logger';
 
 const log = createLogger('BaseVideoElement');
 
+// Module-level instance counter to detect multiple mounted video elements
+let instanceCounter = 0;
+const instanceMap = new Map<string, number>();
+
+// Track all video elements globally to detect detached/orphaned players
+const activeVideoElements = new Set<HTMLVideoElement>();
+
+// Track which elements have initiated play (module-level to survive StrictMode)
+const playInitiatedSet = new Set<string>();
+
 export interface BaseVideoElementProps {
   elementInfo: PPTVideoElement;
 }
@@ -148,21 +158,41 @@ export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
 
   // Mount/unmount lifecycle: ensure video is paused on mount, and cleanup on unmount
   useEffect(() => {
+    // Track instance
+    instanceCounter++;
+    const myInstance = instanceCounter;
+    instanceMap.set(elementInfo.id, myInstance);
+    log.info(`[${elementInfo.id}] MOUNT #${myInstance}: total instances=${instanceMap.size}, playInitiated=${playInitiatedRef.current}`);
+    
+    // Capture video ref in closure for cleanup - ref may become null by unmount time
+    let capturedVideo: HTMLVideoElement | null = null;
+    
     const video = videoRef.current;
     if (video) {
-      log.info(`[${elementInfo.id}] Mount: ensuring video is paused`);
+      capturedVideo = video;
+      activeVideoElements.add(video);
+      log.info(`[${elementInfo.id}] Mount: ensuring video is paused, video.paused=${video.paused}, tracked=${activeVideoElements.size} videos`);
       video.pause();
+    } else {
+      log.info(`[${elementInfo.id}] Mount: no video ref yet`);
     }
     
     return () => {
-      // Cleanup on unmount: pause if still playing to prevent ghost audio
-      const videoOnUnmount = videoRef.current;
+      instanceMap.delete(elementInfo.id);
+      log.info(`[${elementInfo.id}] UNMOUNT #${myInstance}: remaining instances=${instanceMap.size}, playInitiated=${playInitiatedRef.current}`);
+      // Use captured video from mount, not current ref (which may be null)
+      const videoOnUnmount = capturedVideo || videoRef.current;
+      if (videoOnUnmount) {
+        activeVideoElements.delete(videoOnUnmount);
+      }
+      log.info(`[${elementInfo.id}] Unmount: video=${videoOnUnmount ? 'exists' : 'null'}, paused=${videoOnUnmount?.paused}, remaining=${activeVideoElements.size} videos`);
       if (videoOnUnmount && !videoOnUnmount.paused) {
-        log.info(`[${elementInfo.id}] Unmount cleanup: pausing active video`);
+        log.info(`[${elementInfo.id}] Unmount cleanup: PAUSING active video!`);
         videoOnUnmount.pause();
       }
       // Reset playInitiated on unmount so fresh component can play
       playInitiatedRef.current = false;
+      playInitiatedSet.delete(elementInfo.id);
     };
   }, [elementInfo.id]);
 
@@ -192,9 +222,17 @@ export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
 
     if (isMe && !wasMe) {
       // Guard: prevent double-invocation from React StrictMode or rapid re-renders
-      if (playInitiatedRef.current) {
-        log.info(`[${elementInfo.id}] SKIP PLAY: playInitiatedRef=true (already initiated)`);
+      // Use both ref (fast) and module Set (survives StrictMode)
+      if (playInitiatedRef.current || playInitiatedSet.has(elementInfo.id)) {
+        log.info(`[${elementInfo.id}] SKIP PLAY: already initiated (ref=${playInitiatedRef.current}, set=${playInitiatedSet.has(elementInfo.id)})`);
       } else if (video.paused) {
+        // Guard: Check for other playing videos (detached/ghost players)
+        const playingVideos = Array.from(activeVideoElements).filter(v => !v.paused);
+        if (playingVideos.length > 0) {
+          log.info(`[${elementInfo.id}] DETECTED ${playingVideos.length} other playing video(s)! Pausing them before play.`);
+          playingVideos.forEach(v => v.pause());
+        }
+        
         // "Tap" press animation — a deliberate, teacher-paced click feel
         animate(
           scope.current,
@@ -207,10 +245,12 @@ export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
         );
         
         playInitiatedRef.current = true;
-        log.info(`[${elementInfo.id}] PLAY: isMe=true, wasMe=false, video.paused=true -> calling play()`);
+        playInitiatedSet.add(elementInfo.id);
+        log.info(`[${elementInfo.id}] PLAY: isMe=true, wasMe=false, video.paused=true, tracked=${activeVideoElements.size} videos -> calling play()`);
         video.play().catch((err) => {
           log.warn(`[${elementInfo.id}] play() failed:`, err);
-          playInitiatedRef.current = false; // Reset on failure
+          playInitiatedRef.current = false;
+          playInitiatedSet.delete(elementInfo.id);
         });
       } else {
         log.info(`[${elementInfo.id}] SKIP PLAY: isMe=true, wasMe=false, but video.paused=false (already playing)`);
@@ -225,6 +265,7 @@ export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
       }
       // Reset playInitiated when we're no longer the active video
       playInitiatedRef.current = false;
+      playInitiatedSet.delete(elementInfo.id);
     } else {
       log.info(`[${elementInfo.id}] NO-OP: isMe=${isMe}, wasMe=${wasMe}`);
     }
@@ -234,6 +275,7 @@ export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
     log.info(`[${elementInfo.id}] onEnded: video playback ended naturally`);
     // Reset playInitiated so video can be replayed
     playInitiatedRef.current = false;
+    playInitiatedSet.delete(elementInfo.id);
     if (useCanvasStore.getState().playingVideoElementId === elementInfo.id) {
       log.info(`[${elementInfo.id}] onEnded: syncing store state (pauseVideo)`);
       useCanvasStore.getState().pauseVideo();
