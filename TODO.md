@@ -31,9 +31,9 @@
 - [x] Add generated outline review step
 - [x] Add proper TTS chunking and efficient audio encoding (now in Chatterbox TTS Server)
 - [x] Improve LLM providers settings panel
-- [ ] Improved editing capabilities
-- [ ] Add generative / agentic classroom and slide modification abilities
+- [X] Improved editing capabilities: Editors for slide elements and action types, slide image and video upload (with persistence), etc.
 - [ ] Add classroom export/import with complete data structure to local file
+- [ ] Add generative / agentic classroom and slide modification abilities
 - [ ] Implement research via `lc`
 - [ ] Fix strange PDF content formatting in prompts
 - [ ] Add some way to include previous courses as "completed context"
