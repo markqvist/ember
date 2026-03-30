@@ -11,6 +11,7 @@ import {
   Copy,
   FileEdit,
   ImagePlus,
+  Loader2,
   Pencil,
   Save,
   Trash2,
@@ -143,6 +144,7 @@ function HomePage() {
   const [editingClassroomId, setEditingClassroomId] = useState<string | null>(null);
   const [editingClassroomData, setEditingClassroomData] = useState<Stage | null>(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [exportingId, setExportingId] = useState<string | null>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const pdfFileMapRef = useRef<Record<string, File>>({});
@@ -295,6 +297,7 @@ function HomePage() {
   };
 
   const handleExport = async (id: string) => {
+    setExportingId(id);
     try {
       const response = await fetch(`/api/classroom-export?id=${id}`);
       if (!response.ok) {
@@ -326,6 +329,8 @@ function HomePage() {
     } catch (err) {
       log.error('Failed to export classroom:', err);
       toast.error('Failed to export classroom');
+    } finally {
+      setExportingId(null);
     }
   };
 
@@ -853,6 +858,7 @@ function HomePage() {
                         onPersist={handlePersist}
                         onEdit={handleEdit}
                         onExport={handleExport}
+                        isExporting={exportingId === classroom.id}
                         confirmingDelete={pendingDeleteId === classroom.id}
                         onConfirmDelete={() => confirmDelete(classroom.id)}
                         onCancelDelete={() => setPendingDeleteId(null)}
@@ -1190,6 +1196,7 @@ function ClassroomCard({
   onPersist,
   onEdit,
   onExport,
+  isExporting,
   confirmingDelete,
   onConfirmDelete,
   onCancelDelete,
@@ -1202,6 +1209,7 @@ function ClassroomCard({
   onPersist: (id: string) => void;
   onEdit: (id: string) => void;
   onExport: (id: string) => void;
+  isExporting?: boolean;
   confirmingDelete: boolean;
   onConfirmDelete: () => void;
   onCancelDelete: () => void;
@@ -1306,13 +1314,26 @@ function ClassroomCard({
               <Button
                 size="icon"
                 variant="ghost"
-                className="size-7 opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 hover:bg-violet-500/80 text-white hover:text-white backdrop-blur-sm rounded-full"
+                disabled={isExporting}
+                className={cn(
+                  'size-7 transition-opacity bg-black/30 hover:bg-violet-500/80 text-white hover:text-white backdrop-blur-sm rounded-full',
+                  isExporting ? 'opacity-100 cursor-not-allowed' : 'opacity-0 group-hover:opacity-100',
+                )}
                 onClick={(e) => {
                   e.stopPropagation();
                   onExport(classroom.id);
                 }}
               >
-                <Download className="size-3.5" />
+                {isExporting ? (
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  >
+                    <Loader2 className="size-3.5" />
+                  </motion.div>
+                ) : (
+                  <Download className="size-3.5" />
+                )}
               </Button>
             </motion.div>
           )}
