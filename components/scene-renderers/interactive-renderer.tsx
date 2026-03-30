@@ -7,19 +7,40 @@ interface InteractiveRendererProps {
   readonly content: InteractiveContent;
   readonly mode: 'autonomous' | 'playback';
   readonly sceneId: string;
+  readonly stageId?: string;
 }
 
-export function InteractiveRenderer({ content, mode: _mode, sceneId }: InteractiveRendererProps) {
+export function InteractiveRenderer({ content, mode: _mode, sceneId, stageId }: InteractiveRendererProps) {
   const patchedHtml = useMemo(
     () => (content.html ? patchHtmlForIframe(content.html) : undefined),
     [content.html],
   );
 
+  // Resolve URL: handle relative paths for hosted simulations
+  const resolvedUrl = useMemo(() => {
+    if (!content.url || patchedHtml) return undefined;
+
+    // Absolute URLs pass through unchanged
+    if (/^(https?:)?\/\//i.test(content.url)) {
+      return content.url;
+    }
+
+    // Relative URLs resolve to classroom-interactive API
+    if (stageId) {
+      // Normalize path: remove leading ./ or / if present
+      const normalizedPath = content.url.replace(/^\.?\/?/, '');
+      return `/api/classroom-interactive/${stageId}/${normalizedPath}`;
+    }
+
+    // Fallback: return as-is if no stageId available
+    return content.url;
+  }, [content.url, patchedHtml, stageId]);
+
   return (
     <div className="w-full h-full relative">
       <iframe
         srcDoc={patchedHtml}
-        src={patchedHtml ? undefined : content.url}
+        src={patchedHtml ? undefined : resolvedUrl}
         className="absolute inset-0 w-full h-full border-0"
         title={`Interactive Scene ${sceneId}`}
         sandbox="allow-scripts allow-same-origin allow-forms allow-popups"

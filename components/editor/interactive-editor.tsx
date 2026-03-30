@@ -98,12 +98,17 @@ export function InteractiveEditor({ content, onSave, onRevert }: InteractiveEdit
         <Input
           value={url}
           onChange={(e) => handleUrlChange(e.target.value)}
-          placeholder="https://example.com or about:blank"
+          placeholder="https://example.com, molecules, or molecules/index.html"
           className="w-full text-xs"
         />
         <p className="text-xs text-muted-foreground">
           {t('stage.interactiveUrlHint')}
         </p>
+        {url && !/^(https?:)?\/\//i.test(url) && (
+          <p className="text-xs text-emerald-600 dark:text-emerald-400">
+            {t('stage.interactiveUrlRelativeHint')}
+          </p>
+        )}
       </div>
 
       {/* HTML Editor */}
