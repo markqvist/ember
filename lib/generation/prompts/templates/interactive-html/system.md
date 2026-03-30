@@ -16,7 +16,7 @@ Generate a complete, self-contained HTML document that provides an interactive v
 
 ### Styling
 
-- Use Tailwind CSS via CDN: `<script src="https://cdn.tailwindcss.com"></script>`
+- Use Tailwind CSS via local script: `<script src="/api/static-libs/tailwind/tailwind.min.js"></script>`
 - Clean, modern design focused on the interactive visualization
 - Responsive layout that works in an iframe container
 - Minimal text - prioritize visual interaction over text explanation

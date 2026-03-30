@@ -36,7 +36,7 @@ The following constraints must be strictly obeyed in all JavaScript logic and vi
 ## Requirements
 
 1. Complete self-contained HTML5 document
-2. Use Tailwind CSS via CDN for styling
+2. Use Tailwind CSS via local script: `<script src="/api/static-libs/tailwind/tailwind.min.js"></script>`
 3. Pure JavaScript for all interactivity
 4. Math formulas in LaTeX format: `\(...\)` for inline, `\[...\]` for display
 5. Do NOT include KaTeX - it will be injected automatically

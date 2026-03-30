@@ -68,13 +68,14 @@ function convertLatexDelimiters(html: string): string {
 
 /**
  * Inject KaTeX CSS, JS, auto-render, and MutationObserver before </head>.
+ * Uses local static-libs paths for offline capability.
  * Falls back to appending at end if </head> is not found.
  */
 function injectKatex(html: string): string {
   const katexInjection = `
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<link rel="stylesheet" href="/api/static-libs/katex/katex.min.css">
+<script src="/api/static-libs/katex/katex.min.js"></script>
+<script src="/api/static-libs/katex/contrib/auto-render.min.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     const katexOptions = {

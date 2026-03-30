@@ -33,7 +33,7 @@
 - [x] Improve LLM providers settings panel
 - [X] Improved editing capabilities: Editors for slide elements and action types, slide image and video upload (with persistence), etc.
 - [x] Add classroom export/import with complete data structure to local file
-- [ ] Fix Tailwind CDN dependency for generated classrooms, should use local version
+- [x] Fix Tailwind CDN dependency for generated classrooms, should use local version
 - [ ] Add ability to include more complex simulations hosted from classroom data directory
 - [ ] Add generative / agentic classroom and slide modification abilities
 - [ ] Implement research via `lc`

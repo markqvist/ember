@@ -1,0 +1,33 @@
+{
+  "generated": "2026-03-30T19:13:04.444Z",
+  "libraries": {
+    "katex": {
+      "version": "0.16.38",
+      "files": [
+        "katex.min.css",
+        "katex.min.js",
+        "contrib/auto-render.min.js",
+        "fonts/"
+      ]
+    },
+    "tailwind": {
+      "version": "3.4.17",
+      "files": [
+        "tailwind.min.js"
+      ]
+    },
+    "d3": {
+      "version": "7.9.0",
+      "files": [
+        "d3.min.js"
+      ]
+    }
+  },
+  "usage": {
+    "tailwind": "<script src=\"/api/static-libs/tailwind/tailwind.min.js\"></script>",
+    "katex_css": "<link rel=\"stylesheet\" href=\"/api/static-libs/katex/katex.min.css\">",
+    "katex_js": "<script src=\"/api/static-libs/katex/katex.min.js\"></script>",
+    "katex_auto_render": "<script src=\"/api/static-libs/katex/contrib/auto-render.min.js\"></script>",
+    "d3": "<script src=\"/api/static-libs/d3/d3.min.js\"></script>"
+  }
+}
