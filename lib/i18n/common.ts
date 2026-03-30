@@ -30,7 +30,7 @@ export const commonEnUS = {
     selectProvider: 'Select provider',
     configureProvider: 'Set up model',
     configureProviderHint: 'Configure at least one model provider to generate courses',
-    enterClassroom: 'Enter Classroom',
+    enterClassroom: 'Create Classroom',
     advancedSettings: 'Advanced Settings',
     ttsTitle: 'Text-to-Speech',
     ttsHint: 'Choose a voice for the AI teacher',
