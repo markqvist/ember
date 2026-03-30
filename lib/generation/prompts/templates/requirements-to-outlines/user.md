@@ -8,6 +8,8 @@ Generate scene outlines based on the following course requirements.
 
 ---
 
+# User Profile - Who is this course generated for
+
 {{userProfile}}
 
 ## Course Language

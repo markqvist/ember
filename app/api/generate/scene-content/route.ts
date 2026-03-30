@@ -132,9 +132,7 @@ export async function POST(req: NextRequest) {
     const generatedMediaMapping: ImageMapping = {};
 
     // ── Generate content ──
-    log.info(
-      `Generating content: "${effectiveOutline.title}" (${effectiveOutline.type}) [model=${modelString}]`,
-    );
+    log.info(`Generating content: "${effectiveOutline.title}" (${effectiveOutline.type}) [model=${modelString}]`);
 
     const content = await generateSceneContent(
       effectiveOutline,
