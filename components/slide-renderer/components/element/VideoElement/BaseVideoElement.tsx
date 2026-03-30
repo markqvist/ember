@@ -91,7 +91,6 @@ export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const playingVideoElementId = useCanvasStore.use.playingVideoElementId();
   const presentationPaused = useCanvasStore.use.presentationPaused();
-  const prevPlayingRef = useRef('');
   const [scope, animate] = useAnimate<HTMLDivElement>();
 
   // Extract src to a local const
@@ -138,30 +137,19 @@ export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
   const showError = isGenPlaceholder && task?.status === 'failed';
   const isReady = (!isGenPlaceholder && !isEmbeddedPlaceholder) || task?.status === 'done' || (isEmbeddedPlaceholder && embeddedObjectUrl);
 
-  // Ensure video is paused on mount — prevents browser autoplay from user gesture context
-  useEffect(() => {
-    const video = videoRef.current;
-    if (video) {
-      video.pause();
-    }
-  }, []);
+  // Track if this video is currently playing (for native event handling)
+  const isPlayingRef = useRef(false);
 
+  // Sync with store state when playingVideoElementId changes externally
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    // If presentation is globally paused, pause this video regardless of playingVideoElementId
-    if (presentationPaused) {
-      video.pause();
-      return;
-    }
-
     const isMe = playingVideoElementId === elementInfo.id;
-    const wasMe = prevPlayingRef.current === elementInfo.id;
-    prevPlayingRef.current = playingVideoElementId;
 
-    if (isMe && !wasMe) {
-      // "Tap" press animation — a deliberate, teacher-paced click feel
+    if (isMe && !isPlayingRef.current && !presentationPaused) {
+      // Store wants us to play
+      isPlayingRef.current = true;
       animate(
         scope.current,
         { scale: [1, 1.035, 1] },
@@ -173,17 +161,59 @@ export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
       );
       video.play().catch((err) => {
         log.warn('[BaseVideoElement] play() failed:', err);
+        isPlayingRef.current = false;
       });
-    } else if (!isMe && wasMe) {
+    } else if (!isMe && isPlayingRef.current) {
+      // Store wants us to stop
+      isPlayingRef.current = false;
+      video.pause();
+    } else if (presentationPaused && isPlayingRef.current) {
+      // Presentation paused - pause video
+      isPlayingRef.current = false;
       video.pause();
     }
   }, [playingVideoElementId, presentationPaused, elementInfo.id, animate, scope]);
 
-  const handleEnded = () => {
-    if (useCanvasStore.getState().playingVideoElementId === elementInfo.id) {
-      useCanvasStore.getState().pauseVideo();
-    }
-  };
+  // Handle native video events to sync with store
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handlePlay = () => {
+      // Video started playing (could be native controls or our code)
+      if (!isPlayingRef.current && playingVideoElementId !== elementInfo.id) {
+        // Native play - update store
+        useCanvasStore.getState().playVideo(elementInfo.id);
+      }
+      isPlayingRef.current = true;
+    };
+
+    const handlePause = () => {
+      // Video paused (could be native controls, ended, or our code)
+      if (isPlayingRef.current && playingVideoElementId === elementInfo.id) {
+        // Native pause - update store
+        useCanvasStore.getState().pauseVideo();
+      }
+      isPlayingRef.current = false;
+    };
+
+    const handleEnded = () => {
+      isPlayingRef.current = false;
+      if (playingVideoElementId === elementInfo.id) {
+        useCanvasStore.getState().pauseVideo();
+      }
+    };
+
+    video.addEventListener('play', handlePlay);
+    video.addEventListener('pause', handlePause);
+    video.addEventListener('ended', handleEnded);
+
+    return () => {
+      video.removeEventListener('play', handlePlay);
+      video.removeEventListener('pause', handlePause);
+      video.removeEventListener('ended', handleEnded);
+    };
+  }, [elementInfo.id, playingVideoElementId]);
 
   return (
     <div
@@ -272,7 +302,6 @@ export function BaseVideoElement({ elementInfo }: BaseVideoElementProps) {
             poster={task?.poster || elementInfo.poster}
             preload="metadata"
             controls
-            onEnded={handleEnded}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-black/10 rounded">
