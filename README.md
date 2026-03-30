@@ -80,6 +80,7 @@ Unlike OpenMAIC's static, generated-once content model, Ember treats classrooms 
 
 - **Classroom metadata editing** — Rename classrooms, update descriptions, adjust inference and voice configurations post-generation
 - **Per-slide editing** — Full JSON editor for any scene type with validation and error recovery
+- **Visual slide editor** — Full editing for slide content, image/video upload, element manipulation
 - **Interactive HTML editor** — Dedicated editor for interactive scenes with live HTML editing and URL configuration
 - **Quiz editor** — Visual editor for quiz questions: add/remove questions, edit options, set correct answers, configure points and analysis text
 - **Actions editor** — Modify scene actions, regenerate audio for speech actions with one click, add or remove actions
@@ -87,6 +88,23 @@ Unlike OpenMAIC's static, generated-once content model, Ember treats classrooms 
 
 This transforms the classroom from a static artifact into a reusable template — refine the generated content, fix errors, adjust difficulty, or extend lessons with additional material without regenerating from scratch.
 
+### Complete Data Portability
+
+Your classrooms are yours to keep, share, and archive:
+
+- **Classroom export/import** — Full ZIP export including all scenes, media, audio, simulations and configuration
+- **Server-side media persistence** — All assets stored on local filesystem with portable references
+- **Settings portability** — Complete provider and model configuration export/import
+- **Cross-device migration** — Load classrooms on any Ember instance without regeneration
+
+### Zero-Dependency Interactive Content
+
+Interactive simulations work entirely offline without external CDN dependencies:
+
+- **Local library hosting** — Tailwind CSS, KaTeX, and D3.js served from local server
+- **Multi-file simulations** — Complex interactive content with separate CSS, JS, and assets
+- **Hosted simulations** — Serve simulations from `data/classrooms/[id]/interactive/` directory
+- **Instant iteration** — No caching on interactive content; changes reflect immediately
 
 ## Quick Start
 
@@ -189,6 +207,11 @@ pnpm build && pnpm start
 | **Actions editing** | None | Modify actions, regenerate audio per-action |
 | **Classroom editing** | None | Rename, reconfigure post-generation |
 | **Per-slide JSON editing** | None | Raw JSON editor with validation |
+| **Alide editor** | None | Full editing support, media upload |
+| **Media upload** | None | Full image/video support with persistence |
+| **Classroom export/import** | None | Complete ZIP archive with all media |
+| **Multi-file simulations** | None | Hosted interactive content with assets |
+| **Zero-dependency libraries** | CDN required | Local Tailwind, KaTeX, D3.js |
 
 ## Support Ember
 If you value education, please help support the continued development of this open, free and locally viable learning tool via one of the following channels:
@@ -231,9 +254,13 @@ If you value education, please help support the continued development of this op
 | Quiz editor | ✅ Complete | Visual question/option/answer editor |
 | Actions editor | ✅ Complete | Modify actions, per-action audio regeneration |
 | Classroom metadata editing | ✅ Complete | Rename, reconfigure post-generation |
-| Zero-dependency HTML simulations | 🔄 In Progress | Self-contained, no external deps |
-| Quick classroom ZIP export/import | 🔄 In Progress | Complete data portability |
-| Local web search | 🔄 In Progress | Via local search API |
+| Slide editor | ✅ Complete | Full editing capabilities, element manipulation |
+| Video upload/persistence | ✅ Complete | Upload videos with server-side storage |
+| Slide image management | ✅ Complete | Upload, persist, and manage slide images |
+| Zero-dependency HTML simulations | ✅ Complete | Self-contained, no external deps |
+| Quick classroom ZIP export/import | ✅ Complete | Complete data portability |
+| Multi-file hosted simulations | ✅ Complete | Serve from classroom data directory |
+| Comprehensive research | 🔄 In Progress | Inform classroom generation with comprehensive research pipelines |
 | Course prerequisite chains | 📋 Planned | Include previous courses as context |
 
 ---
