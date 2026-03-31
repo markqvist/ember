@@ -40,6 +40,7 @@ import {
   type ParsedPdfPart,
   type ParsedPdfAsset,
 } from '@/lib/pdf/document-aggregator';
+import type { AnalyzedImage } from '@/lib/types/image-analysis';
 
 const log = createLogger('GenerationPreview');
 
@@ -408,6 +409,14 @@ function GenerationPreviewContent() {
             : 'preparing';
         }
 
+        // Check vision capability for selected model
+        log.info("CHECK VISION SUPPORT");
+        const settings = useSettingsStore.getState();
+        const providerConfig = settings.providersConfig[settings.providerId];
+        const modelInfo = providerConfig?.models.find((m) => m.id === settings.modelId);
+        normalizedSession.selectedModelSupportsVision = modelInfo?.capabilities?.vision === true;
+        log.info(`RESULT: ${normalizedSession.selectedModelSupportsVision}`);
+
         setSession(normalizedSession);
         if (normalizedSession !== parsed) {
           sessionStorage.setItem('generationSession', JSON.stringify(normalizedSession));
@@ -432,6 +441,11 @@ function GenerationPreviewContent() {
     const settings = useSettingsStore.getState();
     const imageProviderConfig = settings.imageProvidersConfig?.[settings.imageProviderId];
     const videoProviderConfig = settings.videoProvidersConfig?.[settings.videoProviderId];
+
+    // Get model info for capability detection (needed for custom models)
+    const providerConfig = settings.providersConfig[settings.providerId];
+    const modelInfo = providerConfig?.models.find((m) => m.id === settings.modelId);
+
     return {
       'Content-Type': 'application/json',
       'x-model': modelConfig.modelString,
@@ -439,6 +453,8 @@ function GenerationPreviewContent() {
       'x-base-url': modelConfig.baseUrl,
       'x-provider-type': modelConfig.providerType || '',
       'x-requires-api-key': modelConfig.requiresApiKey ? 'true' : 'false',
+      // Model capabilities (critical for custom models not in server registry)
+      'x-model-vision-capable': modelInfo?.capabilities?.vision ? 'true' : 'false',
       // Image generation provider
       'x-image-provider': settings.imageProviderId || '',
       'x-image-model': settings.imageModelId || '',
@@ -555,6 +571,180 @@ function GenerationPreviewContent() {
           return;
         }
         setStatusMessage('');
+      }
+
+      // Step: Image Analysis (if images exist and vision is available)
+      const imageAnalysisStepIdx = activeSteps.findIndex((s) => s.id === 'image-analysis');
+      if (imageAnalysisStepIdx >= 0 && currentSession.pdfImages && currentSession.pdfImages.length > 0) {
+        setCurrentStepIndex(imageAnalysisStepIdx);
+
+        // Load image mapping for analysis
+        let analysisImageMapping: ImageMapping = {};
+        if (currentSession.imageStorageIds && currentSession.imageStorageIds.length > 0) {
+          analysisImageMapping = await loadImageMapping(currentSession.imageStorageIds);
+        }
+
+        // Prepare images with src for analysis
+        const imagesForAnalysis = currentSession.pdfImages
+          .filter((img) => analysisImageMapping[img.id])
+          .map((img) => ({
+            id: img.id,
+            src: analysisImageMapping[img.id],
+            pageNumber: img.pageNumber,
+            width: img.width,
+            height: img.height,
+            sourceFileId: img.sourceFileId,
+            sourceFileName: img.sourceFileName,
+          }));
+
+        if (imagesForAnalysis.length > 0) {
+          log.info(`Starting image analysis for ${imagesForAnalysis.length} images`);
+
+          // Initialize analysis state
+          const analysisSession: GenerationSessionState = {
+            ...currentSession,
+            imageAnalysis: {
+              status: 'analyzing',
+              progress: { completed: 0, total: imagesForAnalysis.length },
+              analyses: [],
+            },
+          };
+          persistSession(analysisSession);
+
+          // Build user profile for context
+          const userProfileText = currentSession.requirements.userNickname || currentSession.requirements.userBio
+            ? `**Name:** ${currentSession.requirements.userNickname || 'Unknown'}${currentSession.requirements.userBio ? `\n**Provided Information:**\n${currentSession.requirements.userBio}` : '\n**Provided Information:** None'}`
+            : '';
+
+          // Call analysis API
+          const analysisRes = await fetch('/api/analyze-images', {
+            method: 'POST',
+            headers: getApiHeaders(),
+            body: JSON.stringify({
+              images: imagesForAnalysis,
+              context: {
+                requirement: currentSession.requirements.requirement,
+                language: currentSession.requirements.language || 'en-US',
+                userProfile: userProfileText,
+              },
+            }),
+            signal,
+          });
+
+          if (!analysisRes.ok) {
+            log.error('Image analysis API failed, continuing without analyzed images');
+            // Continue with unanalyzed images - they'll be handled by legacy path
+          } else {
+            // Process SSE stream
+            const reader = analysisRes.body?.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            const analyses: AnalyzedImage[] = [];
+
+            if (reader) {
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                  if (!line.startsWith('data: ')) continue;
+                  try {
+                    const event = JSON.parse(line.slice(6));
+
+                    if (event.type === 'progress') {
+                      const { completed, total, currentId, status } = event.data;
+                      setStatusMessage(
+                        `Analyzing image ${completed}/${total}: ${currentId} (${status})`
+                      );
+                      persistSession({
+                        ...currentSession,
+                        imageAnalysis: {
+                          status: 'analyzing',
+                          progress: { completed, total, currentImageId: currentId, currentStatus: status },
+                          analyses,
+                        },
+                      });
+                    } else if (event.type === 'analysis') {
+                      analyses.push(event.data);
+                    } else if (event.type === 'complete') {
+                      const result = event.data;
+                      log.info(
+                        `Image analysis complete: ${result.metadata.includedImages}/${result.metadata.totalImages} images included`
+                      );
+
+                      // Merge analyses into pdfImages
+                      const analyzedPdfImages = (currentSession.pdfImages || []).map((img) => {
+                        const analysis = analyses.find((a) => a.id === img.id);
+                        if (analysis) {
+                          return {
+                            ...img,
+                            analysis: {
+                              include: analysis.analysis.include,
+                              description: analysis.analysis.description || '',
+                              concepts: analysis.analysis.concepts || [],
+                              pedagogical: analysis.analysis.pedagogical || {
+                                contentType: 'other',
+                                complexity: 'intermediate',
+                                relevanceToCourse: 'Relevant to course',
+                                suggestedPlacement: 'supporting_detail',
+                              },
+                              confidence: analysis.analysis.confidence,
+                            },
+                          };
+                        }
+                        return img;
+                      });
+
+                      // Filter to only included images for the generation pipeline
+                      const includedImages = analyzedPdfImages.filter(
+                        (img) => img.analysis?.include !== false
+                      );
+
+                      const completedSession: GenerationSessionState = {
+                        ...currentSession,
+                        pdfImages: includedImages, // Replace with filtered set
+                        imageAnalysis: {
+                          status: 'complete',
+                          progress: {
+                            completed: result.metadata.totalImages,
+                            total: result.metadata.totalImages,
+                          },
+                          analyses: result.analyses,
+                        },
+                      };
+                      persistSession(completedSession);
+                      currentSession = completedSession;
+                      activeSteps = getActiveSteps(currentSession);
+
+                      setStatusMessage(
+                        t('generation.imageAnalysisComplete')
+                          .replace('{included}', String(result.metadata.includedImages))
+                          .replace('{total}', String(result.metadata.totalImages))
+                      );
+                    } else if (event.type === 'error') {
+                      log.error('Image analysis error:', event.error);
+                      persistSession({
+                        ...currentSession,
+                        imageAnalysis: {
+                          status: 'failed',
+                          progress: { completed: 0, total: imagesForAnalysis.length },
+                          analyses: [],
+                          error: event.error,
+                        },
+                      });
+                    }
+                  } catch (e) {
+                    log.error('Failed to parse SSE event:', e);
+                  }
+                }
+              }
+            }
+          }
+        }
       }
 
       // Step: Research (if enabled)

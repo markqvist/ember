@@ -28,6 +28,11 @@ export const generationEnUS = {
     // Progress steps (used dynamically via activeStep)
     analyzingPdf: 'Analyzing PDF Document',
     analyzingPdfDesc: 'Extracting document structure and content...',
+    analyzingImages: 'Analyzing Images for Relevance',
+    analyzingImagesDesc: 'Using vision AI to evaluate pedagogical value...',
+    imageAnalysisComplete: 'Image analysis complete: {included} of {total} images relevant',
+    imageAnalysisFailed: 'Image analysis failed, continuing without images',
+    imageAnalysisSkipped: 'Vision not available, skipping image analysis',
     pdfLoadFailed: 'Failed to load PDF file, please try again',
     pdfParseFailed: 'PDF parsing failed',
     streamNotReadable: 'Unable to read generation stream',

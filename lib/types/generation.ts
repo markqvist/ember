@@ -17,7 +17,7 @@ export interface PdfImage {
   id: string; // e.g., "img_1", "img_2"
   src: string; // base64 data URL (empty when stored in IndexedDB)
   pageNumber: number; // Page number in PDF
-  description?: string; // Optional description for AI context
+  description?: string; // Optional description for AI context (from PDF parser)
   originalId?: string; // Original per-file image ID before aggregation
   sourceFileId?: string; // Source PDF ID for multi-file uploads
   sourceFileName?: string; // Source PDF filename for multi-file uploads
@@ -25,6 +25,28 @@ export interface PdfImage {
   width?: number; // Image width (px or normalized)
   height?: number; // Image height (px or normalized)
   visionPriority?: number; // Higher priority images should be used first in vision mode
+  /**
+   * Semantic analysis result from vision analysis step.
+   * Only present if image was analyzed by vision-capable model.
+   */
+  analysis?: {
+    /** Whether this image should be included in the course */
+    include: boolean;
+    /** If include === false, the reason for rejection */
+    rejectionReason?: 'irrelevant' | 'decorative' | 'low_quality' | 'error';
+    /** Detailed description of image content (required if include === true) */
+    description: string;
+    /** Educational concepts illustrated (required if include === true) */
+    concepts: string[];
+    /** Pedagogical classification (required if include === true) */
+    pedagogical: {
+      contentType: 'diagram' | 'illustration' | 'photograph' | 'chart' | 'formula' | 'map' | 'timeline' | 'other';
+      complexity: 'basic' | 'intermediate' | 'advanced';
+      relevanceToCourse: string;
+      suggestedPlacement: 'central_focus' | 'supporting_detail' | 'example' | 'summary';
+    };
+    confidence: 'high' | 'medium' | 'low';
+  };
 }
 
 /**

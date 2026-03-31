@@ -118,8 +118,10 @@ export async function POST(req: NextRequest) {
       agents?: AgentInfo[];
     };
 
-    // Detect vision capability
-    const hasVision = !!modelInfo?.capabilities?.vision;
+    // Detect vision capability - prioritize header from client (for custom models)
+    // Fall back to server-side model info lookup (for built-in providers)
+    const visionCapableHeader = req.headers.get('x-model-vision-capable');
+    const hasVision = visionCapableHeader === 'true' || (!!modelInfo?.capabilities?.vision);
 
     // Build prompt (same logic as generateSceneOutlinesFromRequirements)
     let availableImagesText = 'No images available';

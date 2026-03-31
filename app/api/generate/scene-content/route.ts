@@ -79,8 +79,10 @@ export async function POST(req: NextRequest) {
     // ── Model resolution from request headers ──
     const { model: languageModel, modelInfo, modelString } = resolveModelFromHeaders(req);
 
-    // Detect vision capability
-    const hasVision = !!modelInfo?.capabilities?.vision;
+    // Detect vision capability - prioritize header from client (for custom models)
+    // Fall back to server-side model info lookup (for built-in providers)
+    const visionCapableHeader = req.headers.get('x-model-vision-capable');
+    const hasVision = visionCapableHeader === 'true' || (!!modelInfo?.capabilities?.vision);
 
     // Vision-aware AI call function
     const aiCall = async (

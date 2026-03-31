@@ -1,4 +1,4 @@
-import { ScanLine, Microscope, Bot, FileText, LayoutPanelLeft, Clapperboard } from 'lucide-react';
+import { ScanLine, Microscope, Bot, FileText, LayoutPanelLeft, Clapperboard, ScanEye } from 'lucide-react';
 import { useSettingsStore } from '@/lib/store/settings';
 import type {
   SceneOutline,
@@ -7,6 +7,7 @@ import type {
   ImageMapping,
   SessionPdfSource,
 } from '@/lib/types/generation';
+import type { AnalyzedImage } from '@/lib/types/image-analysis';
 
 // Session state stored in sessionStorage
 export interface GenerationSessionState {
@@ -29,6 +30,20 @@ export interface GenerationSessionState {
   researchContext?: string;
   researchSources?: Array<{ title: string; url: string }>;
   researchEnabled?: boolean;
+  // Image analysis results
+  imageAnalysis?: {
+    status: 'pending' | 'analyzing' | 'complete' | 'failed' | 'skipped';
+    progress: {
+      completed: number;
+      total: number;
+      currentImageId?: string;
+      currentStatus?: 'analyzing' | 'included' | 'rejected';
+    };
+    analyses: AnalyzedImage[];
+    error?: string;
+  };
+  // Model capability cache
+  selectedModelSupportsVision?: boolean;
 }
 
 export type GenerationStep = {
@@ -45,6 +60,13 @@ export const ALL_STEPS: GenerationStep[] = [
     title: 'generation.analyzingPdf',
     description: 'generation.analyzingPdfDesc',
     icon: ScanLine,
+    type: 'analysis',
+  },
+  {
+    id: 'image-analysis',
+    title: 'generation.analyzingImages',
+    description: 'generation.analyzingImagesDesc',
+    icon: ScanEye,
     type: 'analysis',
   },
   {
@@ -90,6 +112,12 @@ export const getActiveSteps = (session: GenerationSessionState | null) => {
       return Boolean(
         session?.pdfStorageKey || ((session?.pdfSources?.length ?? 0) > 0 && !session?.pdfText),
       );
+    }
+    if (step.id === 'image-analysis') {
+      // Only show if we have images AND vision model is selected
+      const hasImages = (session?.pdfImages?.length ?? 0) > 0;
+      const visionSupported = session?.selectedModelSupportsVision === true;
+      return hasImages && visionSupported;
     }
     if (step.id === 'research') return !!session?.researchEnabled;
     if (step.id === 'agent-generation') return useSettingsStore.getState().agentMode === 'auto';

@@ -44,33 +44,54 @@ export async function generateSceneOutlinesFromRequirements(
   let visionImages: Array<{ id: string; src: string }> | undefined;
 
   if (pdfImages && pdfImages.length > 0) {
-    const prioritizedImages = sortPdfImagesForVision(pdfImages);
-    if (options?.visionEnabled && options?.imageMapping) {
-      // Vision mode: split into vision images (first N) and text-only (rest)
-      const allWithSrc = prioritizedImages.filter((img) => options.imageMapping![img.id]);
-      const visionSlice = allWithSrc.slice(0, MAX_VISION_IMAGES);
-      const textOnlySlice = allWithSrc.slice(MAX_VISION_IMAGES);
-      const noSrcImages = prioritizedImages.filter((img) => !options.imageMapping![img.id]);
+    // Check if images have semantic analysis
+    const hasAnalyzedImages = pdfImages.some((img) => img.analysis);
 
-      const visionDescriptions = visionSlice.map((img) =>
-        formatImagePlaceholder(img, requirements.language),
-      );
-      const textDescriptions = [...textOnlySlice, ...noSrcImages].map((img) =>
-        formatImageDescription(img, requirements.language),
-      );
-      availableImagesText = [...visionDescriptions, ...textDescriptions].join('\n');
+    if (hasAnalyzedImages) {
+      // Use semantic analysis for image descriptions
+      availableImagesText = formatAnalyzedImagesForOutline(pdfImages);
 
-      visionImages = visionSlice.map((img) => ({
-        id: img.id,
-        src: options.imageMapping![img.id],
-        width: img.width,
-        height: img.height,
-      }));
+      // Still provide vision images if mapping available and vision enabled
+      if (options?.visionEnabled && options?.imageMapping) {
+        const includedImages = pdfImages.filter((img) => img.analysis?.include !== false);
+        const withSrc = includedImages.filter((img) => options.imageMapping![img.id]);
+        visionImages = withSrc.slice(0, MAX_VISION_IMAGES).map((img) => ({
+          id: img.id,
+          src: options.imageMapping![img.id],
+          width: img.width,
+          height: img.height,
+        }));
+      }
     } else {
-      // Text-only mode: full descriptions
-      availableImagesText = prioritizedImages
-        .map((img) => formatImageDescription(img, requirements.language))
-        .join('\n');
+      // Fallback to legacy behavior (no semantic analysis)
+      const prioritizedImages = sortPdfImagesForVision(pdfImages);
+      if (options?.visionEnabled && options?.imageMapping) {
+        // Vision mode: split into vision images (first N) and text-only (rest)
+        const allWithSrc = prioritizedImages.filter((img) => options.imageMapping![img.id]);
+        const visionSlice = allWithSrc.slice(0, MAX_VISION_IMAGES);
+        const textOnlySlice = allWithSrc.slice(MAX_VISION_IMAGES);
+        const noSrcImages = prioritizedImages.filter((img) => !options.imageMapping![img.id]);
+
+        const visionDescriptions = visionSlice.map((img) =>
+          formatImagePlaceholder(img, requirements.language),
+        );
+        const textDescriptions = [...textOnlySlice, ...noSrcImages].map((img) =>
+          formatImageDescription(img, requirements.language),
+        );
+        availableImagesText = [...visionDescriptions, ...textDescriptions].join('\n');
+
+        visionImages = visionSlice.map((img) => ({
+          id: img.id,
+          src: options.imageMapping![img.id],
+          width: img.width,
+          height: img.height,
+        }));
+      } else {
+        // Text-only mode: full descriptions
+        availableImagesText = prioritizedImages
+          .map((img) => formatImageDescription(img, requirements.language))
+          .join('\n');
+      }
     }
   }
 
@@ -162,6 +183,52 @@ export async function generateSceneOutlinesFromRequirements(
   } catch (error) {
     return { success: false, error: String(error) };
   }
+}
+
+/**
+ * Format analyzed images for outline generation prompt
+ * Uses semantic analysis data when available
+ */
+function formatAnalyzedImagesForOutline(pdfImages: PdfImage[]): string {
+  const analyzedImages = pdfImages.filter((img) => img.analysis);
+
+  if (analyzedImages.length === 0) {
+    return 'No analyzed images available.';
+  }
+
+  const lines: string[] = [`${analyzedImages.length} semantically analyzed images:`];
+
+  for (const img of analyzedImages) {
+    const a = img.analysis!;
+
+    if (a.include) {
+      // Included image with full details
+      lines.push(`\n**${img.id}**: [${a.pedagogical.contentType}] ${a.description}`);
+      lines.push(`  - include: true`);
+      lines.push(`  - concepts: ${a.concepts.join(', ')}`);
+      lines.push(`  - relevance: ${a.pedagogical.relevanceToCourse}`);
+      lines.push(`  - placement: ${a.pedagogical.suggestedPlacement}`);
+      lines.push(`  - complexity: ${a.pedagogical.complexity}`);
+      lines.push(`  - confidence: ${a.confidence}`);
+      if (img.width && img.height) {
+        const ratio = (img.width / img.height).toFixed(2);
+        lines.push(`  - dimensions: ${img.width}×${img.height} (ratio ${ratio})`);
+      }
+    } else {
+      // Rejected image
+      const reason = a.rejectionReason || 'irrelevant';
+      lines.push(`\n**${img.id}**: [REJECTED - ${reason}]`);
+      lines.push(`  - include: false`);
+      lines.push(`  - reason: ${reason}`);
+    }
+  }
+
+  // Summary
+  const included = analyzedImages.filter((img) => img.analysis?.include).length;
+  const rejected = analyzedImages.filter((img) => !img.analysis?.include).length;
+  lines.push(`\n**Summary**: ${included} included, ${rejected} rejected`);
+
+  return lines.join('\n');
 }
 
 /**

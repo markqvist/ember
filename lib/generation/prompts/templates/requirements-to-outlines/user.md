@@ -22,9 +22,21 @@ Generate scene outlines based on the following course requirements.
 
 {{pdfContent}}
 
-### Available Images
+### Available Images (Semantically Analyzed)
 
 {{availableImages}}
+
+**Image Selection Guidelines:**
+- Only select images where `include: true` (these have passed pedagogical relevance review)
+- Match image `concepts` to your scene's `keyPoints` for optimal alignment
+- Use `suggestedPlacement` to guide how the image should be integrated:
+  - `central_focus`: Use for key diagrams, main illustrations (prominent position)
+  - `supporting_detail`: Use for clarifying examples, minor diagrams
+  - `example`: Use for photographs showing concrete instances
+  - `summary`: Use for review visuals, comparison charts
+- Consider `complexity` relative to target audience - match basic/intermediate/advanced appropriately
+- Images marked `include: false` have been rejected as irrelevant, decorative, or low quality - do not use them
+- If no suitable images exist for a scene, generate content without images (do not force irrelevant images)
 
 ### Research Results
 
