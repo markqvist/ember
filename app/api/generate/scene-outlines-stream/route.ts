@@ -21,6 +21,7 @@ import {
   uniquifyMediaElementIds,
   formatTeacherPersonaForPrompt,
 } from '@/lib/generation/generation-pipeline';
+import { formatAnalyzedImagesForOutline } from '@/lib/generation/outline-generator';
 import type { AgentInfo } from '@/lib/generation/generation-pipeline';
 import { MAX_PDF_CONTENT_CHARS, MAX_VISION_IMAGES } from '@/lib/constants/generation';
 import { sortPdfImagesForVision } from '@/lib/pdf/document-aggregator';
@@ -128,33 +129,54 @@ export async function POST(req: NextRequest) {
     let visionImages: Array<{ id: string; src: string }> | undefined;
 
     if (pdfImages && pdfImages.length > 0) {
-      const prioritizedImages = sortPdfImagesForVision(pdfImages);
-      if (hasVision && imageMapping) {
-        // Vision mode: split into vision images (first N) and text-only (rest)
-        const allWithSrc = prioritizedImages.filter((img) => imageMapping[img.id]);
-        const visionSlice = allWithSrc.slice(0, MAX_VISION_IMAGES);
-        const textOnlySlice = allWithSrc.slice(MAX_VISION_IMAGES);
-        const noSrcImages = prioritizedImages.filter((img) => !imageMapping[img.id]);
+      // Check if images have semantic analysis data
+      const hasAnalyzedImages = pdfImages.some((img) => img.analysis);
 
-        const visionDescriptions = visionSlice.map((img) =>
-          formatImagePlaceholder(img, requirements.language),
-        );
-        const textDescriptions = [...textOnlySlice, ...noSrcImages].map((img) =>
-          formatImageDescription(img, requirements.language),
-        );
-        availableImagesText = [...visionDescriptions, ...textDescriptions].join('\n');
+      if (hasAnalyzedImages) {
+        // Use semantic analysis for image descriptions
+        availableImagesText = formatAnalyzedImagesForOutline(pdfImages);
 
-        visionImages = visionSlice.map((img) => ({
-          id: img.id,
-          src: imageMapping[img.id],
-          width: img.width,
-          height: img.height,
-        }));
+        // Still provide vision images if mapping available and vision enabled
+        if (hasVision && imageMapping) {
+          const includedImages = pdfImages.filter((img) => img.analysis?.include !== false);
+          const withSrc = includedImages.filter((img) => imageMapping[img.id]);
+          visionImages = withSrc.slice(0, MAX_VISION_IMAGES).map((img) => ({
+            id: img.id,
+            src: imageMapping[img.id],
+            width: img.width,
+            height: img.height,
+          }));
+        }
       } else {
-        // Text-only mode: full descriptions
-        availableImagesText = prioritizedImages
-          .map((img) => formatImageDescription(img, requirements.language))
-          .join('\n');
+        // Legacy behavior: no semantic analysis
+        const prioritizedImages = sortPdfImagesForVision(pdfImages);
+        if (hasVision && imageMapping) {
+          // Vision mode: split into vision images (first N) and text-only (rest)
+          const allWithSrc = prioritizedImages.filter((img) => imageMapping[img.id]);
+          const visionSlice = allWithSrc.slice(0, MAX_VISION_IMAGES);
+          const textOnlySlice = allWithSrc.slice(MAX_VISION_IMAGES);
+          const noSrcImages = prioritizedImages.filter((img) => !imageMapping[img.id]);
+
+          const visionDescriptions = visionSlice.map((img) =>
+            formatImagePlaceholder(img, requirements.language),
+          );
+          const textDescriptions = [...textOnlySlice, ...noSrcImages].map((img) =>
+            formatImageDescription(img, requirements.language),
+          );
+          availableImagesText = [...visionDescriptions, ...textDescriptions].join('\n');
+
+          visionImages = visionSlice.map((img) => ({
+            id: img.id,
+            src: imageMapping[img.id],
+            width: img.width,
+            height: img.height,
+          }));
+        } else {
+          // Text-only mode: full descriptions
+          availableImagesText = prioritizedImages
+            .map((img) => formatImageDescription(img, requirements.language))
+            .join('\n');
+        }
       }
     }
 

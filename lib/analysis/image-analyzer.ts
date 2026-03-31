@@ -229,10 +229,12 @@ function buildAnalysisSystemPrompt(context: ImageAnalysisContext): string {
 You are evaluating an image for inclusion in an educational course.
 
 ## Course Context
-- Topic: ${context.requirement}
-${context.subject ? `- Subject: ${context.subject}` : ''}
-${context.targetAudience ? `- Target Audience: ${context.targetAudience}` : ''}
-- Language: ${context.language}${userProfileSection}
+
+**Topic:**
+${context.requirement}
+
+**Language:**
+${context.language}${userProfileSection}
 
 ## Your Task
 Analyze the attached image and determine:
@@ -240,7 +242,9 @@ Analyze the attached image and determine:
 2. What does it depict?
 3. How relevant is it to the learning objectives?
 
-Consider the learner profile when determining relevance - images should be appropriate for the student's background and knowledge level.
+Consider the learner profile when determining relevance - images should be appropriate and helpful for the student's background and knowledge level.
+
+The description field must contain a precise description of the image contents in natural language, and be informationally and semantically highly optimized. Provide all information about the image relevant to the course and learner context in as few words as possible, but do not leave out important descriptive details.
 
 ## Output Format (JSON ONLY)
 Respond with ONLY a JSON object, no markdown, no explanation:
@@ -262,12 +266,10 @@ Respond with ONLY a JSON object, no markdown, no explanation:
 ## Decision Guidelines
 
 REJECT (include: false) if:
-- Logo, header, footer, page decoration
+- Image is just a logo, header, footer, page decoration, etc.
 - Purely decorative graphic with no educational content
-- Image quality too low to be useful
 - Content completely unrelated to course topic
-- Duplicate of another image already analyzed
-- Content inappropriate for the target audience
+- Content inappropriate for the learner or target audience
 
 ACCEPT (include: true) if:
 - Illustrates a concept relevant to the course
@@ -275,8 +277,7 @@ ACCEPT (include: true) if:
 - Photograph showing relevant subject matter
 - Formula, equation, or technical drawing
 - Map, timeline, or structured information display
-
-Be decisive. When in doubt, reject rather than include marginal content.`;
+`;
 }
 
 /**

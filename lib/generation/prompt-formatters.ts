@@ -113,6 +113,55 @@ export function formatImagePlaceholder(img: PdfImage, language: string): string 
 }
 
 /**
+ * Format analyzed images for slide content generation.
+ * Uses semantic analysis data when available for rich pedagogical context.
+ */
+export function formatAnalyzedImagesForSlideContent(images: PdfImage[], language: string): string {
+  if (!images || images.length === 0) {
+    return 'No images available; do not insert any image elements.';
+  }
+
+  // Check if any images have analysis data
+  const hasAnalyzedImages = images.some((img) => img.analysis);
+
+  if (!hasAnalyzedImages) {
+    // Fall back to legacy formatting
+    return images.map((img) => formatImageDescription(img, language)).join('\n');
+  }
+
+  const lines: string[] = [`${images.length} semantically analyzed images available:`];
+
+  for (const img of images) {
+    const a = img.analysis;
+
+    if (a) {
+      // Image with semantic analysis
+      lines.push(`\n**${img.id}**: [${a.pedagogical.contentType}] ${a.description}`);
+      lines.push(`  - Concepts: ${a.concepts.join(', ')}`);
+      lines.push(`  - Relevance: ${a.pedagogical.relevanceToCourse}`);
+      lines.push(`  - Suggested Placement: ${a.pedagogical.suggestedPlacement}`);
+      lines.push(`  - Complexity: ${a.pedagogical.complexity}`);
+      if (img.width && img.height) {
+        const ratio = (img.width / img.height).toFixed(2);
+        lines.push(`  - Dimensions: ${img.width}×${img.height} (${ratio} aspect ratio)`);
+      }
+      lines.push(`  - Page: ${img.pageNumber}`);
+    } else {
+      // Image without analysis (shouldn't happen if we filtered properly)
+      lines.push(`\n**${img.id}**: ${formatImageDescription(img, language)}`);
+    }
+  }
+
+  lines.push('\n**Image Selection Guidelines:**');
+  lines.push('- Select images whose concepts match your slide\'s key points');
+  lines.push('- Use suggestedPlacement to guide positioning (central_focus for key diagrams, supporting_detail for examples)');
+  lines.push('- Consider complexity relative to target audience');
+  lines.push('- If no suitable images exist for this slide, do not force images - use text and shapes only');
+
+  return lines.join('\n');
+}
+
+/**
  * Build a multimodal user content array for the AI SDK.
  * Interleaves text and images so the model can associate img_id with actual image.
  * Each image label includes dimensions when available so the model knows the size

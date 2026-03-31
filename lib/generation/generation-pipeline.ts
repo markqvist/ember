@@ -22,6 +22,7 @@ export {
   formatTeacherPersonaForPrompt,
   formatImageDescription,
   formatImagePlaceholder,
+  formatAnalyzedImagesForSlideContent,
   buildVisionUserContent,
 } from './prompt-formatters';
 

@@ -33,6 +33,7 @@ import {
   formatTeacherPersonaForPrompt,
   formatImageDescription,
   formatImagePlaceholder,
+  formatAnalyzedImagesForSlideContent,
 } from './prompt-formatters';
 import type { PPTElement, Slide, SlideBackground, SlideTheme } from '@/lib/types/slides';
 import type { QuizQuestion } from '@/lib/types/stage';
@@ -483,30 +484,53 @@ async function generateSlideContent(
   let visionImages: Array<{ id: string; src: string }> | undefined;
 
   if (assignedImages && assignedImages.length > 0) {
-    const prioritizedImages = sortPdfImagesForVision(assignedImages);
-    if (visionEnabled && imageMapping) {
-      // Vision mode: split into vision images and text-only
-      const withSrc = prioritizedImages.filter((img) => imageMapping[img.id]);
-      const visionSlice = withSrc.slice(0, MAX_VISION_IMAGES);
-      const textOnlySlice = withSrc.slice(MAX_VISION_IMAGES);
-      const noSrcImages = prioritizedImages.filter((img) => !imageMapping[img.id]);
+    // Check if images have semantic analysis data
+    const hasAnalyzedImages = assignedImages.some((img) => img.analysis);
 
-      const visionDescriptions = visionSlice.map((img) => formatImagePlaceholder(img, lang));
-      const textDescriptions = [...textOnlySlice, ...noSrcImages].map((img) =>
-        formatImageDescription(img, lang),
-      );
-      assignedImagesText = [...visionDescriptions, ...textDescriptions].join('\n');
+    if (hasAnalyzedImages) {
+      // Use semantic analysis for rich image descriptions
+      assignedImagesText = formatAnalyzedImagesForSlideContent(assignedImages, lang);
 
-      visionImages = visionSlice.map((img) => ({
-        id: img.id,
-        src: imageMapping[img.id],
-        width: img.width,
-        height: img.height,
-      }));
+      // Still prepare vision images if mapping available and vision enabled
+      if (visionEnabled && imageMapping) {
+        const includedImages = assignedImages.filter((img) => img.analysis?.include !== false);
+        const withSrc = includedImages.filter((img) => imageMapping[img.id]);
+        const visionSlice = withSrc.slice(0, MAX_VISION_IMAGES);
+
+        visionImages = visionSlice.map((img) => ({
+          id: img.id,
+          src: imageMapping[img.id],
+          width: img.width,
+          height: img.height,
+        }));
+      }
     } else {
-      assignedImagesText = prioritizedImages
-        .map((img) => formatImageDescription(img, lang))
-        .join('\n');
+      // Legacy behavior: no semantic analysis
+      const prioritizedImages = sortPdfImagesForVision(assignedImages);
+      if (visionEnabled && imageMapping) {
+        // Vision mode: split into vision images and text-only
+        const withSrc = prioritizedImages.filter((img) => imageMapping[img.id]);
+        const visionSlice = withSrc.slice(0, MAX_VISION_IMAGES);
+        const textOnlySlice = withSrc.slice(MAX_VISION_IMAGES);
+        const noSrcImages = prioritizedImages.filter((img) => !imageMapping[img.id]);
+
+        const visionDescriptions = visionSlice.map((img) => formatImagePlaceholder(img, lang));
+        const textDescriptions = [...textOnlySlice, ...noSrcImages].map((img) =>
+          formatImageDescription(img, lang),
+        );
+        assignedImagesText = [...visionDescriptions, ...textDescriptions].join('\n');
+
+        visionImages = visionSlice.map((img) => ({
+          id: img.id,
+          src: imageMapping[img.id],
+          width: img.width,
+          height: img.height,
+        }));
+      } else {
+        assignedImagesText = prioritizedImages
+          .map((img) => formatImageDescription(img, lang))
+          .join('\n');
+      }
     }
   }
 

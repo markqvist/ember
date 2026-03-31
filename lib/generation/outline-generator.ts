@@ -189,7 +189,7 @@ export async function generateSceneOutlinesFromRequirements(
  * Format analyzed images for outline generation prompt
  * Uses semantic analysis data when available
  */
-function formatAnalyzedImagesForOutline(pdfImages: PdfImage[]): string {
+export function formatAnalyzedImagesForOutline(pdfImages: PdfImage[]): string {
   const analyzedImages = pdfImages.filter((img) => img.analysis);
 
   if (analyzedImages.length === 0) {
