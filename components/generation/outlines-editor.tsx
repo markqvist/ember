@@ -143,12 +143,14 @@ export function OutlinesEditor({
                   }
                   disabled={isLoading}
                 >
-                  <SelectTrigger className="w-28">
+                  <SelectTrigger className="w-32">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="slide">{t('generation.sceneTypeSlide')}</SelectItem>
                     <SelectItem value="quiz">{t('generation.sceneTypeQuiz')}</SelectItem>
+                    <SelectItem value="interactive">{t('generation.sceneTypeInteractive')}</SelectItem>
+                    <SelectItem value="pbl">{t('generation.sceneTypePbl')}</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button
@@ -263,6 +265,184 @@ export function OutlinesEditor({
                           <SelectItem value="text">{t('generation.quizTypeText')}</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {outline.type === 'interactive' && (
+                <div className="p-3 bg-muted/50 rounded-lg space-y-3">
+                  <Label className="text-sm font-medium">{t('generation.interactiveConfigLabel')}</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">{t('generation.interactiveConceptName')}</Label>
+                      <Input
+                        value={outline.interactiveConfig?.conceptName || ''}
+                        onChange={(e) =>
+                          updateOutline(index, {
+                            interactiveConfig: {
+                              ...outline.interactiveConfig,
+                              conceptName: e.target.value,
+                              conceptOverview: outline.interactiveConfig?.conceptOverview || '',
+                              designIdea: outline.interactiveConfig?.designIdea || '',
+                            },
+                          })
+                        }
+                        placeholder={t('generation.interactiveConceptNamePlaceholder')}
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">{t('generation.interactiveSubject')}</Label>
+                      <Input
+                        value={outline.interactiveConfig?.subject || ''}
+                        onChange={(e) =>
+                          updateOutline(index, {
+                            interactiveConfig: {
+                              ...outline.interactiveConfig,
+                              subject: e.target.value,
+                              conceptName: outline.interactiveConfig?.conceptName || '',
+                              conceptOverview: outline.interactiveConfig?.conceptOverview || '',
+                              designIdea: outline.interactiveConfig?.designIdea || '',
+                            },
+                          })
+                        }
+                        placeholder={t('generation.interactiveSubjectPlaceholder')}
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t('generation.interactiveConceptOverview')}</Label>
+                    <Textarea
+                      value={outline.interactiveConfig?.conceptOverview || ''}
+                      onChange={(e) =>
+                        updateOutline(index, {
+                          interactiveConfig: {
+                            ...outline.interactiveConfig,
+                            conceptOverview: e.target.value,
+                            conceptName: outline.interactiveConfig?.conceptName || '',
+                            designIdea: outline.interactiveConfig?.designIdea || '',
+                          },
+                        })
+                      }
+                      placeholder={t('generation.interactiveConceptOverviewPlaceholder')}
+                      rows={2}
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t('generation.interactiveDesignIdea')}</Label>
+                    <Textarea
+                      value={outline.interactiveConfig?.designIdea || ''}
+                      onChange={(e) =>
+                        updateOutline(index, {
+                          interactiveConfig: {
+                            ...outline.interactiveConfig,
+                            designIdea: e.target.value,
+                            conceptName: outline.interactiveConfig?.conceptName || '',
+                            conceptOverview: outline.interactiveConfig?.conceptOverview || '',
+                          },
+                        })
+                      }
+                      placeholder={t('generation.interactiveDesignIdeaPlaceholder')}
+                      rows={3}
+                      disabled={isLoading}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {outline.type === 'pbl' && (
+                <div className="p-3 bg-muted/50 rounded-lg space-y-3">
+                  <Label className="text-sm font-medium">{t('generation.pblConfigLabel')}</Label>
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t('generation.pblProjectTopic')}</Label>
+                    <Input
+                      value={outline.pblConfig?.projectTopic || ''}
+                      onChange={(e) =>
+                        updateOutline(index, {
+                          pblConfig: {
+                            ...outline.pblConfig,
+                            projectTopic: e.target.value,
+                            projectDescription: outline.pblConfig?.projectDescription || '',
+                            targetSkills: outline.pblConfig?.targetSkills || [],
+                            issueCount: outline.pblConfig?.issueCount || 3,
+                            language: outline.pblConfig?.language || 'en-US',
+                          },
+                        })
+                      }
+                      placeholder={t('generation.pblProjectTopicPlaceholder')}
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t('generation.pblProjectDescription')}</Label>
+                    <Textarea
+                      value={outline.pblConfig?.projectDescription || ''}
+                      onChange={(e) =>
+                        updateOutline(index, {
+                          pblConfig: {
+                            ...outline.pblConfig,
+                            projectDescription: e.target.value,
+                            projectTopic: outline.pblConfig?.projectTopic || '',
+                            targetSkills: outline.pblConfig?.targetSkills || [],
+                            issueCount: outline.pblConfig?.issueCount || 3,
+                            language: outline.pblConfig?.language || 'en-US',
+                          },
+                        })
+                      }
+                      placeholder={t('generation.pblProjectDescriptionPlaceholder')}
+                      rows={2}
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">{t('generation.pblIssueCount')}</Label>
+                      <Input
+                        type="number"
+                        value={outline.pblConfig?.issueCount || 3}
+                        onChange={(e) =>
+                          updateOutline(index, {
+                            pblConfig: {
+                              ...outline.pblConfig,
+                              issueCount: parseInt(e.target.value) || 3,
+                              projectTopic: outline.pblConfig?.projectTopic || '',
+                              projectDescription: outline.pblConfig?.projectDescription || '',
+                              targetSkills: outline.pblConfig?.targetSkills || [],
+                              language: outline.pblConfig?.language || 'en-US',
+                            },
+                          })
+                        }
+                        min={1}
+                        max={10}
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">{t('generation.pblTargetSkills')}</Label>
+                      <Textarea
+                        value={outline.pblConfig?.targetSkills?.join('\n') || ''}
+                        onChange={(e) =>
+                          updateOutline(index, {
+                            pblConfig: {
+                              ...outline.pblConfig,
+                              targetSkills: e.target.value
+                                .split('\n')
+                                .map((s) => s.trim())
+                                .filter(Boolean),
+                              projectTopic: outline.pblConfig?.projectTopic || '',
+                              projectDescription: outline.pblConfig?.projectDescription || '',
+                              issueCount: outline.pblConfig?.issueCount || 3,
+                              language: outline.pblConfig?.language || 'en-US',
+                            },
+                          })
+                        }
+                        placeholder={t('generation.pblTargetSkillsPlaceholder')}
+                        rows={2}
+                        disabled={isLoading}
+                      />
                     </div>
                   </div>
                 </div>
