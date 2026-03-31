@@ -3,7 +3,7 @@
 **Description:** {{description}}
 
 ## Hints & Explanations
-For the `easy` difficulty level, you can provide *subtle* hints towards answers, but no matter what, you must never directly reveal answers to the quiz questions. Learners must individually work out the answers without external hand-holding or guidance. For any difficulty level above `easy`, it is essential to fully trust the learner's own ability to solve the problems and provide correct answers, and only provide contextual framing and *potentially* slight references to earlier course material (if the complexity or difficulty of the questions absolutely warrant it). The pedagogical value of questions rests on the learner's ability to self-evaluate whether their acquired intuition and understanding is adequate, and if not, their ability to autonomously go back and re-acquire the relevant knowledge points to succeed.
+You must never directly reveal answers to the quiz questions. Learners must individually work out the answers without external hand-holding or guidance. It is essential to fully trust the learner's own ability to solve the problems and provide correct answers, and only provide contextual framing and *potentially* slight references to earlier course material (if the complexity or difficulty of the questions absolutely warrant it). The pedagogical value of questions rests on the learner's ability to self-evaluate whether their acquired intuition and understanding is adequate, and if not, their ability to autonomously go back and re-acquire the relevant knowledge points to succeed.
 
 ## Questions
 {{questions}}
