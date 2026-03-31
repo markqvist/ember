@@ -74,6 +74,7 @@ async function fetchSceneContent(
       style?: string;
     };
     agents?: AgentInfo[];
+    userProfile?: string;
   },
   signal?: AbortSignal,
 ): Promise<SceneContentResult> {
@@ -321,6 +322,7 @@ export function useSceneGenerator(options: UseSceneGeneratorOptions = {}) {
               imageMapping: params.imageMapping,
               stageInfo: params.stageInfo,
               agents: params.agents,
+              userProfile: params.userProfile,
             },
             signal,
           );
