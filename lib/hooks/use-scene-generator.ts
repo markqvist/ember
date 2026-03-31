@@ -7,6 +7,7 @@ import { useSettingsStore } from '@/lib/store/settings';
 import { db } from '@/lib/utils/database';
 import type { SceneOutline, PdfImage, ImageMapping } from '@/lib/types/generation';
 import type { AgentInfo } from '@/lib/generation/generation-pipeline';
+import type { SlideSpeechHistory } from '@/lib/generation/pipeline-types';
 import type { Scene } from '@/lib/types/stage';
 import type { Action, SpeechAction } from '@/lib/types/action';
 import type { TTSProviderId } from '@/lib/audio/types';
@@ -102,6 +103,7 @@ async function fetchSceneActions(
     stageId: string;
     agents?: AgentInfo[];
     previousSpeeches?: string[];
+    speechHistory?: SlideSpeechHistory[];
     userProfile?: string;
   },
   signal?: AbortSignal,
@@ -289,14 +291,21 @@ export function useSceneGenerator(options: UseSceneGeneratorOptions = {}) {
         log.warn('Media generation error:', err);
       });
 
-      // Get previousSpeeches from last completed scene
-      let previousSpeeches: string[] = [];
+      // Build cumulative speech history from all completed scenes
+      let speechHistory: SlideSpeechHistory[] = [];
       const sortedScenes = [...scenes].sort((a, b) => a.order - b.order);
-      if (sortedScenes.length > 0) {
-        const lastScene = sortedScenes[sortedScenes.length - 1];
-        previousSpeeches = (lastScene.actions || [])
+      for (let i = 0; i < sortedScenes.length; i++) {
+        const scene = sortedScenes[i];
+        const speeches = (scene.actions || [])
           .filter((a): a is SpeechAction => a.type === 'speech')
           .map((a) => a.text);
+        if (speeches.length > 0) {
+          speechHistory.push({
+            slideIndex: i + 1,
+            slideTitle: scene.title,
+            speeches,
+          });
+        }
       }
 
       // Serial generation loop — two-step per outline
@@ -345,6 +354,11 @@ export function useSceneGenerator(options: UseSceneGeneratorOptions = {}) {
             break;
           }
 
+          // Get previous speeches from last completed scene (for backward compat)
+          const previousSpeeches = speechHistory.length > 0
+            ? speechHistory[speechHistory.length - 1].speeches
+            : [];
+
           // Step 2: Generate actions + assemble scene
           options.onPhaseChange?.('actions', outline);
           const actionsResult = await fetchSceneActions(
@@ -355,6 +369,7 @@ export function useSceneGenerator(options: UseSceneGeneratorOptions = {}) {
               stageId: stage.id,
               agents: params.agents,
               previousSpeeches,
+              speechHistory,
               userProfile: params.userProfile,
             },
             signal,
@@ -389,7 +404,17 @@ export function useSceneGenerator(options: UseSceneGeneratorOptions = {}) {
             removeGeneratingOutline(outline.id);
             store.getState().addScene(scene);
             options.onSceneGenerated?.(scene, outline.order);
-            previousSpeeches = actionsResult.previousSpeeches || [];
+            // Update speech history with newly generated scene
+            const newSpeeches = (scene.actions || [])
+              .filter((a): a is SpeechAction => a.type === 'speech')
+              .map((a) => a.text);
+            if (newSpeeches.length > 0) {
+              speechHistory.push({
+                slideIndex: speechHistory.length + 1,
+                slideTitle: scene.title,
+                speeches: newSpeeches,
+              });
+            }
           } else {
             if (abortRef.current || store.getState().generationEpoch !== startEpoch) {
               pausedByFailureOrAbort = true;
@@ -517,11 +542,26 @@ export function useSceneGenerator(options: UseSceneGeneratorOptions = {}) {
 
         // Step 2: Actions
         const sortedScenes = [...store.getState().scenes].sort((a, b) => a.order - b.order);
-        const lastScene = sortedScenes[sortedScenes.length - 1];
-        const previousSpeeches = lastScene
-          ? (lastScene.actions || [])
-              .filter((a): a is SpeechAction => a.type === 'speech')
-              .map((a) => a.text)
+
+        // Build cumulative speech history from all completed scenes
+        const speechHistory: SlideSpeechHistory[] = [];
+        for (let i = 0; i < sortedScenes.length; i++) {
+          const scene = sortedScenes[i];
+          const speeches = (scene.actions || [])
+            .filter((a): a is SpeechAction => a.type === 'speech')
+            .map((a) => a.text);
+          if (speeches.length > 0) {
+            speechHistory.push({
+              slideIndex: i + 1,
+              slideTitle: scene.title,
+              speeches,
+            });
+          }
+        }
+
+        // Get previous speeches from last completed scene (for backward compat)
+        const previousSpeeches = speechHistory.length > 0
+          ? speechHistory[speechHistory.length - 1].speeches
           : [];
 
         const actionsResult = await fetchSceneActions(
@@ -532,6 +572,7 @@ export function useSceneGenerator(options: UseSceneGeneratorOptions = {}) {
             stageId: state.stage.id,
             agents: params.agents,
             previousSpeeches,
+            speechHistory,
             userProfile: params.userProfile,
           },
           signal,

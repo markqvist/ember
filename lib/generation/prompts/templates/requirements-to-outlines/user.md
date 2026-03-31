@@ -26,7 +26,7 @@ Generate scene outlines based on the following course requirements.
 
 {{availableImages}}
 
-### Web Search Results
+### Research Results
 
 {{researchContext}}
 

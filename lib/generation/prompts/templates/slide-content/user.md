@@ -5,7 +5,7 @@
 - **Title**: {{title}}
 - **Description**: {{description}}
 - **Key Points**:
-  {{keyPoints}}
+{{keyPoints}}
 
 ## Teacher Persona
 

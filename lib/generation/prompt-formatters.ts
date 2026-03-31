@@ -33,11 +33,23 @@ export function buildCourseContext(ctx?: SceneGenerationContext): string {
     lines.push(`Current progression of the course: Page ${ctx.pageIndex} of ${ctx.totalPages}. Continue naturally from the previous page. Do not greet or re-introduce.`);
   }
 
-  // TODO: Actually include speech from previous pages
-  // instead of this nonsense.
-  if (ctx.previousSpeeches.length > 0) {
-    lines.push('\n## Previously Covered');
-    lines.push("*This section contains an overview of what has previously been covered in the course.*")
+  // Render comprehensive speech history from all previous slides
+  if (ctx.speechHistory && ctx.speechHistory.length > 0) {
+    lines.push('\n## Course Speech History');
+    lines.push('*Complete transcript of what has been covered so far. Use this to maintain continuity, avoid repetition, reference specific prior concepts, and build upon previously introduced ideas. When referencing earlier content, cite the specific slide number.*');
+
+    for (const entry of ctx.speechHistory) {
+      lines.push(`\n### Slide ${entry.slideIndex}: ${entry.slideTitle}`);
+      for (const speech of entry.speeches) {
+        // Truncate very long speeches to prevent token bloat while preserving meaning
+        const displaySpeech = speech.length > 800 ? speech.slice(0, 800) + '...' : speech;
+        lines.push(`- ${displaySpeech}`);
+      }
+    }
+  } else if (ctx.previousSpeeches.length > 0) {
+    // Fallback: use legacy previousSpeeches if speechHistory is not available
+    lines.push('\n## Previously Covered In This Course');
+    lines.push('*This section contains an overview of what has previously been covered in the course.*');
     lines.push('\nPrevious page speech (for transition reference):');
     const lastSpeech = ctx.previousSpeeches[ctx.previousSpeeches.length - 1];
     lines.push(`  "...${lastSpeech.slice(-150)}"`);

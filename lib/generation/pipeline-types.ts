@@ -16,12 +16,20 @@ export interface AgentInfo {
 
 // ==================== Cross-Page Context ====================
 
+/** Speech history entry for a single slide */
+export interface SlideSpeechHistory {
+  slideIndex: number; // 1-based slide index
+  slideTitle: string; // Title of the slide
+  speeches: string[]; // All speech actions from that slide
+}
+
 /** Cross-page context for maintaining speech coherence across scenes */
 export interface SceneGenerationContext {
   pageIndex: number; // Current page (1-based)
   totalPages: number; // Total number of pages
   allTitles: string[]; // All page titles in order
-  previousSpeeches: string[]; // Speech texts from the previous page only
+  previousSpeeches: string[]; // Speech texts from the previous page only (backward compat)
+  speechHistory: SlideSpeechHistory[]; // Full cumulative speech history from all previous slides
 }
 
 // ==================== Generated Slide Data Interface ====================

@@ -1,8 +1,13 @@
 # Quiz Information
-Questions: {{questions}}
-Title: {{title}}
-Key Points: {{keyPoints}}
-Description: {{description}}
+**Title:** {{title}}
+**Description:** {{description}}
+
+## Questions
+{{questions}}
+
+## Key Points
+{{keyPoints}}
+
 {{courseContext}}
 {{agents}}
 

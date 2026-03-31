@@ -23,6 +23,7 @@ import type {
   GeneratedPBLContent,
 } from '@/lib/types/generation';
 import type { SpeechAction } from '@/lib/types/action';
+import type { SlideSpeechHistory } from '@/lib/generation/pipeline-types';
 import { createLogger } from '@/lib/logger';
 import { apiError, apiSuccess } from '@/lib/server/api-response';
 import { resolveModelFromHeaders } from '@/lib/server/resolve-model';
@@ -41,6 +42,7 @@ export async function POST(req: NextRequest) {
       stageId,
       agents,
       previousSpeeches: incomingPreviousSpeeches,
+      speechHistory: incomingSpeechHistory,
       userProfile,
     } = body as {
       outline: SceneOutline;
@@ -53,6 +55,7 @@ export async function POST(req: NextRequest) {
       stageId: string;
       agents?: AgentInfo[];
       previousSpeeches?: string[];
+      speechHistory?: SlideSpeechHistory[];
       userProfile?: string;
     };
 
@@ -118,11 +121,13 @@ export async function POST(req: NextRequest) {
     // ── Build cross-scene context ──
     const allTitles = allOutlines.map((o) => o.title);
     const pageIndex = allOutlines.findIndex((o) => o.id === outline.id);
+    const currentPageIndex = (pageIndex >= 0 ? pageIndex : 0) + 1;
     const ctx: SceneGenerationContext = {
-      pageIndex: (pageIndex >= 0 ? pageIndex : 0) + 1,
+      pageIndex: currentPageIndex,
       totalPages: allOutlines.length,
       allTitles,
       previousSpeeches: incomingPreviousSpeeches ?? [],
+      speechHistory: incomingSpeechHistory ?? [],
     };
 
     // ── Generate actions ──

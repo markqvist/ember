@@ -973,6 +973,7 @@ function GenerationPreviewContent() {
           stageId: stage.id,
           agents,
           previousSpeeches: [],
+          speechHistory: [],
           userProfile,
         }),
         signal,
