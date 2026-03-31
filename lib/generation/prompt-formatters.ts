@@ -12,7 +12,8 @@ export function buildCourseContext(ctx?: SceneGenerationContext): string {
   const lines: string[] = [];
 
   // Course outline with position marker
-  lines.push('\n# Course Outline');
+  lines.push('\n# Context: Course Information\n*This section contains information on the overall course being generated. Use it to anchor your current generation in the overall flow of the course and ensure coherence, continuity and optimal knowledge delivery.*');
+  lines.push('\n## Course Outline');
   ctx.allTitles.forEach((t, i) => {
     const marker = i === ctx.pageIndex - 1 ? ' ← current' : '';
     lines.push(`${i + 1}. ${t}${marker}`);
@@ -21,30 +22,28 @@ export function buildCourseContext(ctx?: SceneGenerationContext): string {
   // Position information
   lines.push('');
   lines.push(
-    'IMPORTANT: All pages belong to the SAME class session. Do NOT greet again after the first page. When referencing content from earlier pages, say "we just covered" or "as mentioned on page N" — NEVER say "last class" or "previous session" because there is no previous session.',
+    'IMPORTANT: All pages belong to the SAME course session. Do NOT greet again after the first page. When referencing content from earlier pages, say "we just covered" or "as mentioned on page N" — NEVER say "last class" or "previous session" because there is no previous session.',
   );
   lines.push('');
   if (ctx.pageIndex === 1) {
-    lines.push('Position: This is the FIRST page. Open with a greeting and course introduction.');
+    lines.push('Current progression of the course: This is the first page. Open with a greeting and course introduction.');
   } else if (ctx.pageIndex === ctx.totalPages) {
-    lines.push('Position: This is the LAST page. Conclude the course with a summary and closing.');
-    lines.push(
-      'Transition: Continue naturally from the previous page. Do NOT greet or re-introduce.',
-    );
+    lines.push('Current progression of the course: This is the last page. Conclude the course with a summary and closing. Continue naturally from the previous page. Do not greet or re-introduce.');
   } else {
-    lines.push(`Position: Page ${ctx.pageIndex} of ${ctx.totalPages}.`);
-    lines.push(
-      'Transition: Continue naturally from the previous page. Do NOT greet or re-introduce.',
-    );
+    lines.push(`Current progression of the course: Page ${ctx.pageIndex} of ${ctx.totalPages}. Continue naturally from the previous page. Do not greet or re-introduce.`);
   }
 
-  // Previous page speech for transition reference
+  // TODO: Actually include speech from previous pages
+  // instead of this nonsense.
   if (ctx.previousSpeeches.length > 0) {
-    lines.push('');
-    lines.push('Previous page speech (for transition reference):');
+    lines.push('\n## Previously Covered');
+    lines.push("*This section contains an overview of what has previously been covered in the course.*")
+    lines.push('\nPrevious page speech (for transition reference):');
     const lastSpeech = ctx.previousSpeeches[ctx.previousSpeeches.length - 1];
     lines.push(`  "...${lastSpeech.slice(-150)}"`);
   }
+
+  lines.push('');
 
   return lines.join('\n');
 }
@@ -68,7 +67,7 @@ export function formatTeacherPersonaForPrompt(agents?: AgentInfo[]): string {
   const teacher = agents.find((a) => a.role === 'teacher');
   if (!teacher?.persona) return '';
 
-  return `Name: ${teacher.name}\n${teacher.persona}\n\n*Adapt the content style and tone to match this teacher's personality.* IMPORTANT: The teacher's name and identity must NOT appear on the slides — no "Teacher ${teacher.name}'s tips", no "Teacher's message", etc. Slides should read as neutral, professional visual aids.`;
+  return `Name: ${teacher.name}\n${teacher.persona}\n\n*Adapt the content style and tone to match this teacher's personality.* IMPORTANT: The teacher's name and identity must not appear on the slides — no "Teacher ${teacher.name}'s tips", no "Teacher's message", etc. Slides should read as neutral, professional visual aids.`;
 }
 
 /**
