@@ -43,3 +43,4 @@
 - [ ] Fix strange PDF content formatting in prompts
 - [ ] Add some way to include previous courses as "completed context"
 - [ ] Add generative / agentic classroom and slide modification abilities
+- [ ] Fix [image spotlight bug](https://github.com/THU-MAIC/OpenMAIC/issues/342)

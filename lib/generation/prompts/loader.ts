@@ -50,7 +50,7 @@ async function ensureIntrospectionDir(): Promise<void> {
  * Log a resolved prompt to the introspection directory
  * Writes prompts with structured filenames for observability
  */
-async function logResolvedPrompt(
+export async function logResolvedPrompt(
   promptId: PromptId,
   promptType: 'system' | 'user',
   content: string,

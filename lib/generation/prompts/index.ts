@@ -17,6 +17,7 @@ export {
   buildPrompt,
   interpolateVariables,
   clearPromptCache,
+  logResolvedPrompt,
 } from './loader';
 
 // Prompt IDs constant

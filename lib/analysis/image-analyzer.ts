@@ -9,6 +9,7 @@ import { callLLM } from '@/lib/ai/llm';
 import { getModel, parseModelString } from '@/lib/ai/providers';
 import { resolveApiKey, resolveBaseUrl, resolveProxy } from '@/lib/server/provider-config';
 import { buildVisionUserContent } from '@/lib/generation/prompt-formatters';
+import { logResolvedPrompt } from '@/lib/generation/prompts';
 import type { LanguageModel } from 'ai';
 import type {
   ImageAnalysis,
@@ -185,10 +186,15 @@ async function analyzeSingleImage(
   const systemPrompt = buildAnalysisSystemPrompt(context);
 
   // Build user content with image
+  const userPromptText = 'Analyze this image for the course described above. Output JSON only.';
   const userContent = buildVisionUserContent(
-    'Analyze this image for the course described above. Output JSON only.',
+    userPromptText,
     [{ id: image.id, src: image.src, width: image.width, height: image.height }]
   );
+
+  // Log prompts for introspection (fire-and-forget)
+  void logResolvedPrompt('image-analysis', 'system', systemPrompt);
+  void logResolvedPrompt('image-analysis', 'user', userPromptText + '\n\n[Image: ' + image.id + ']');
 
   // Call LLM with vision
   const result = await callLLM(
