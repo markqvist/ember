@@ -1,9 +1,11 @@
 {{courseContext}}
 
 # Quiz Requirements
-Title: {{title}}
-Description: {{description}}
-Test Points: {{keyPoints}}
+**Title:** {{title}}
+**Description:** {{description}}
+**Test Points:**
+{{keyPoints}}
+
 Question Count: {{questionCount}}, Difficulty: {{difficulty}}, Question Types: {{questionTypes}}
 
 # Learner Profile

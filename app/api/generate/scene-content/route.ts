@@ -15,6 +15,7 @@ import {
   buildCourseContext,
 } from '@/lib/generation/generation-pipeline';
 import type { AgentInfo, SceneGenerationContext } from '@/lib/generation/generation-pipeline';
+import type { SlideSpeechHistory } from '@/lib/generation/pipeline-types';
 import type { SceneOutline, PdfImage, ImageMapping } from '@/lib/types/generation';
 import { createLogger } from '@/lib/logger';
 import { apiError, apiSuccess } from '@/lib/server/api-response';
@@ -35,6 +36,7 @@ export async function POST(req: NextRequest) {
       stageInfo,
       stageId,
       agents,
+      speechHistory: incomingSpeechHistory,
       userProfile,
     } = body as {
       outline: SceneOutline;
@@ -49,6 +51,7 @@ export async function POST(req: NextRequest) {
       };
       stageId: string;
       agents?: AgentInfo[];
+      speechHistory?: SlideSpeechHistory[];
       userProfile?: string;
     };
 
@@ -135,6 +138,7 @@ export async function POST(req: NextRequest) {
     const generatedMediaMapping: ImageMapping = {};
 
     // ── Build cross-scene context for coherence ──
+    // Use client-provided speech history if available, otherwise build from outline array
     const allTitles = allOutlines.map((o) => o.title);
     const pageIndex = allOutlines.findIndex((o) => o.id === outline.id);
     const ctx: SceneGenerationContext = {
@@ -142,7 +146,7 @@ export async function POST(req: NextRequest) {
       totalPages: allOutlines.length,
       allTitles,
       previousSpeeches: [], // Content generation has no prior speeches
-      speechHistory: [],    // Content generation has no prior speech history
+      speechHistory: incomingSpeechHistory ?? [], // Use client-provided speech history
     };
 
     // ── Generate content ──

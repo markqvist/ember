@@ -75,6 +75,7 @@ async function fetchSceneContent(
       style?: string;
     };
     agents?: AgentInfo[];
+    speechHistory?: SlideSpeechHistory[];
     userProfile?: string;
   },
   signal?: AbortSignal,
@@ -331,6 +332,7 @@ export function useSceneGenerator(options: UseSceneGeneratorOptions = {}) {
               imageMapping: params.imageMapping,
               stageInfo: params.stageInfo,
               agents: params.agents,
+              speechHistory,
               userProfile: params.userProfile,
             },
             signal,
