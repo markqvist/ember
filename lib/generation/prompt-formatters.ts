@@ -53,7 +53,7 @@ export function buildCourseContext(ctx?: SceneGenerationContext): string {
 export function formatAgentsForPrompt(agents?: AgentInfo[]): string {
   if (!agents || agents.length === 0) return '';
 
-  const lines = ['# Classroom Agents'];
+  const lines = ['\n# Classroom Agents'];
   for (const a of agents) {
     const personaPart = a.persona ? `\n\n${a.persona}` : '';
     lines.push(`## id: "${a.id}", name: "${a.name}"\n\n**Role:** ${a.role}${personaPart}\n`);
