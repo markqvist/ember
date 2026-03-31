@@ -36,9 +36,9 @@
 - [x] Fix Tailwind CDN dependency for generated classrooms, should use local version
 - [x] Add ability to include more complex simulations hosted from classroom data directory
 - [x] Fix missing user profile information in prompts
+- [x] Add previous slides context to content and actions generation
+- [x] Significantly improve inadequate `buildCourseContext` in `prompt-formatter.ts`
 - [ ] Fix `[Object object]` entries for quiz question options (in `quiz-actions` template)
-- [ ] Add previous slides context to quiz content and actions generation
-- [ ] Significantly improve inadequate `buildCourseContext` in `prompt-formatter.ts`
 - [ ] Implement research via `lc`
 - [ ] Fix strange PDF content formatting in prompts
 - [ ] Add some way to include previous courses as "completed context"
