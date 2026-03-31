@@ -39,8 +39,11 @@
 - [x] Add previous slides context to content and actions generation
 - [x] Significantly improve inadequate `buildCourseContext` in `prompt-formatter.ts`
 - [x] Fix `[Object object]` entries for quiz question options (in `quiz-actions` template)
+- [x] Fix image/video spotlight action not working
+- [x] Add pre-outline image analysis step, only include relevant images in generation pipeline
+- [x] Actually include semantically valuable image descriptions in course generation
+- [x] Let generation models select relevant images instead of just randomly picking
 - [ ] Implement research via `lc`
 - [ ] Fix strange PDF content formatting in prompts
 - [ ] Add some way to include previous courses as "completed context"
 - [ ] Add generative / agentic classroom and slide modification abilities
-- [ ] Fix [image spotlight bug](https://github.com/THU-MAIC/OpenMAIC/issues/342)
