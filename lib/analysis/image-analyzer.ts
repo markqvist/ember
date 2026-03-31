@@ -221,7 +221,7 @@ async function analyzeSingleImage(
  */
 function buildAnalysisSystemPrompt(context: ImageAnalysisContext): string {
   const userProfileSection = context.userProfile
-    ? `\n## Learner Profile\n${context.userProfile}\n`
+    ? `\n\n## Learner Profile\n${context.userProfile}`
     : '';
 
   return `# Image Analysis for Course Generation
