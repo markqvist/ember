@@ -663,7 +663,11 @@ function GenerationPreviewContent() {
                         imageAnalysis: {
                           status: 'analyzing',
                           progress: { completed, total, currentImageId: currentId, currentStatus: status },
-                          analyses,
+                          // Strip base64 src to avoid sessionStorage quota issues
+                          analyses: analyses.map((a) => {
+                            const { src: _, ...rest } = a;
+                            return rest;
+                          }) as AnalyzedImage[],
                         },
                       });
                     } else if (event.type === 'analysis') {
@@ -711,7 +715,12 @@ function GenerationPreviewContent() {
                             completed: result.metadata.totalImages,
                             total: result.metadata.totalImages,
                           },
-                          analyses: result.analyses,
+                          // Strip base64 src from analyses before persisting to avoid
+                          // sessionStorage quota errors and serialization issues
+                          analyses: (result.analyses || analyses).map((a: AnalyzedImage) => {
+                            const { src: _, ...rest } = a;
+                            return rest;
+                          }) as AnalyzedImage[],
                         },
                       };
                       persistSession(completedSession);
