@@ -61,8 +61,8 @@ export const generationEnUS = {
     sessionNotFound: 'Session Not Found',
     sessionNotFoundDesc: 'Please fill in course requirements to start the generation process.',
     goBackAndRetry: 'Go Back and Retry',
-    classroomReady: 'Your personalized AI learning environment has been generated successfully.',
-    aiWorking: 'AI Agents Working...',
+    classroomReady: 'Your personalized learning environment has been generated.',
+    aiWorking: 'Inference tasks running...',
     textTruncated: 'Document text is long, using first {n} characters for generation',
     imageTruncated:
       '{total} images found, exceeding the {max} image limit. Extra images will use text descriptions only',
