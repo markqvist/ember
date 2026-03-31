@@ -12,10 +12,10 @@ export function buildCourseContext(ctx?: SceneGenerationContext): string {
   const lines: string[] = [];
 
   // Course outline with position marker
-  lines.push('# Course Outline');
+  lines.push('\n# Course Outline');
   ctx.allTitles.forEach((t, i) => {
     const marker = i === ctx.pageIndex - 1 ? ' ← current' : '';
-    lines.push(`  ${i + 1}. ${t}${marker}`);
+    lines.push(`${i + 1}. ${t}${marker}`);
   });
 
   // Position information
