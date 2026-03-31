@@ -1,3 +1,5 @@
+{{courseContext}}
+
 Perform the required conceptual modeling for the following subject.
 
 ---

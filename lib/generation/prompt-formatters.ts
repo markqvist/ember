@@ -35,6 +35,7 @@ export function buildCourseContext(ctx?: SceneGenerationContext): string {
 
   // Render comprehensive speech history from all previous slides
   if (ctx.speechHistory && ctx.speechHistory.length > 0) {
+    console.log("!!!!!!!!!!! SPEECH HISTORY AVAILABLE");
     lines.push('\n## Course Speech History');
     lines.push('*Complete transcript of what has been covered so far. Use this to maintain continuity, avoid repetition, reference specific prior concepts, and build upon previously introduced ideas. When referencing earlier content, cite the specific slide number.*');
 
@@ -47,12 +48,15 @@ export function buildCourseContext(ctx?: SceneGenerationContext): string {
       }
     }
   } else if (ctx.previousSpeeches.length > 0) {
+    console.log("!!!!!!!!!!! PREVSPEECH AVAILABLE");
     // Fallback: use legacy previousSpeeches if speechHistory is not available
     lines.push('\n## Previously Covered In This Course');
     lines.push('*This section contains an overview of what has previously been covered in the course.*');
     lines.push('\nPrevious page speech (for transition reference):');
     const lastSpeech = ctx.previousSpeeches[ctx.previousSpeeches.length - 1];
     lines.push(`  "...${lastSpeech.slice(-150)}"`);
+  } else {
+    console.log("NO COURSE SPEECH CONTEXT AVAILABLE!");
   }
 
   lines.push('');

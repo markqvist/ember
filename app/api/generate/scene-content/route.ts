@@ -12,8 +12,9 @@ import {
   applyOutlineFallbacks,
   generateSceneContent,
   buildVisionUserContent,
+  buildCourseContext,
 } from '@/lib/generation/generation-pipeline';
-import type { AgentInfo } from '@/lib/generation/generation-pipeline';
+import type { AgentInfo, SceneGenerationContext } from '@/lib/generation/generation-pipeline';
 import type { SceneOutline, PdfImage, ImageMapping } from '@/lib/types/generation';
 import { createLogger } from '@/lib/logger';
 import { apiError, apiSuccess } from '@/lib/server/api-response';
@@ -133,6 +134,17 @@ export async function POST(req: NextRequest) {
     // resolveImageIds() in generation-pipeline.ts will keep these placeholders in elements.
     const generatedMediaMapping: ImageMapping = {};
 
+    // ── Build cross-scene context for coherence ──
+    const allTitles = allOutlines.map((o) => o.title);
+    const pageIndex = allOutlines.findIndex((o) => o.id === outline.id);
+    const ctx: SceneGenerationContext = {
+      pageIndex: (pageIndex >= 0 ? pageIndex : 0) + 1,
+      totalPages: allOutlines.length,
+      allTitles,
+      previousSpeeches: [], // Content generation has no prior speeches
+      speechHistory: [],    // Content generation has no prior speech history
+    };
+
     // ── Generate content ──
     log.info(`Generating content: "${effectiveOutline.title}" (${effectiveOutline.type}) [model=${modelString}]`);
 
@@ -146,6 +158,7 @@ export async function POST(req: NextRequest) {
       generatedMediaMapping,
       agents,
       userProfile,
+      ctx,
     );
 
     if (!content) {

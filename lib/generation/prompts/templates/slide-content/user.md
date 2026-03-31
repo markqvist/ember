@@ -1,3 +1,5 @@
+{{courseContext}}
+
 # Generation Requirements
 
 ## Scene Information

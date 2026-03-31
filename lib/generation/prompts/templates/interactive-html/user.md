@@ -1,3 +1,5 @@
+{{courseContext}}
+
 Create an enlightening, interactive learning experience for the following concept.
 
 ---

@@ -157,6 +157,7 @@ export async function generateSceneContent(
   generatedMediaMapping?: ImageMapping,
   agents?: AgentInfo[],
   userProfile?: string,
+  ctx?: SceneGenerationContext,
 ): Promise<
   | GeneratedSlideContent
   | GeneratedQuizContent
@@ -179,6 +180,7 @@ export async function generateSceneContent(
       generatedMediaMapping,
       agents,
       userProfile,
+      ctx,
     );
   }
 
@@ -193,11 +195,12 @@ export async function generateSceneContent(
         generatedMediaMapping,
         agents,
         userProfile,
+        ctx,
       );
     case 'quiz':
-      return generateQuizContent(outline, aiCall, userProfile);
+      return generateQuizContent(outline, aiCall, userProfile, ctx);
     case 'interactive':
-      return generateInteractiveContent(outline, aiCall, outline.language, userProfile);
+      return generateInteractiveContent(outline, aiCall, outline.language, userProfile, ctx);
     case 'pbl':
       return generatePBLSceneContent(outline, languageModel);
     default:
@@ -471,6 +474,7 @@ async function generateSlideContent(
   generatedMediaMapping?: ImageMapping,
   agents?: AgentInfo[],
   userProfile?: string,
+  ctx?: SceneGenerationContext,
 ): Promise<GeneratedSlideContent | null> {
   const lang = outline.language || 'en-US';
 
@@ -551,6 +555,7 @@ async function generateSlideContent(
     canvas_height: canvasHeight,
     teacherContext,
     userProfile: userProfile || '',
+    courseContext: buildCourseContext(ctx),
   });
 
   if (!prompts) {
@@ -636,6 +641,7 @@ async function generateQuizContent(
   outline: SceneOutline,
   aiCall: AICallFn,
   userProfile?: string,
+  ctx?: SceneGenerationContext,
 ): Promise<GeneratedQuizContent | null> {
   const quizConfig = outline.quizConfig || {
     questionCount: 3,
@@ -651,6 +657,7 @@ async function generateQuizContent(
     difficulty: quizConfig.difficulty,
     questionTypes: quizConfig.questionTypes.join(', '),
     userProfile: userProfile || '',
+    courseContext: buildCourseContext(ctx),
   });
 
   if (!prompts) {
@@ -742,6 +749,7 @@ async function generateInteractiveContent(
   aiCall: AICallFn,
   language: 'en-US' | 'en-GB' = 'en-US',
   userProfile?: string,
+  ctx?: SceneGenerationContext,
 ): Promise<GeneratedInteractiveContent | null> {
   const config = outline.interactiveConfig!;
 
@@ -755,6 +763,7 @@ async function generateInteractiveContent(
       conceptOverview: config.conceptOverview,
       keyPoints: (outline.keyPoints || []).map((p, i) => `${i + 1}. ${p}`).join('\n'),
       designIdea: config.designIdea,
+      courseContext: buildCourseContext(ctx),
     });
 
     if (modelPrompts) {
@@ -791,6 +800,7 @@ async function generateInteractiveContent(
     designIdea: config.designIdea,
     language,
     userProfile: userProfile || '',
+    courseContext: buildCourseContext(ctx),
   });
 
   if (!htmlPrompts) {

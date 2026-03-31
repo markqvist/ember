@@ -11,9 +11,9 @@ import {
   generateSceneActions,
   generateSceneContent,
 } from '@/lib/generation/scene-generator';
-import type { AICallFn } from '@/lib/generation/pipeline-types';
+import type { AICallFn, SceneGenerationContext } from '@/lib/generation/pipeline-types';
 import type { AgentInfo } from '@/lib/generation/pipeline-types';
-import { formatTeacherPersonaForPrompt } from '@/lib/generation/prompt-formatters';
+import { buildCourseContext, formatTeacherPersonaForPrompt } from '@/lib/generation/prompt-formatters';
 import { getDefaultAgents } from '@/lib/orchestration/registry/store';
 import { createLogger } from '@/lib/logger';
 import { parseModelString } from '@/lib/ai/providers';
@@ -333,6 +333,16 @@ export async function generateClassroom(
       totalScenes: outlines.length,
     });
 
+    // Build cross-scene context for coherence
+    const allTitles = outlines.map((o) => o.title);
+    const ctx: SceneGenerationContext = {
+      pageIndex: index + 1,
+      totalPages: outlines.length,
+      allTitles,
+      previousSpeeches: [], // Content generation has no prior speeches
+      speechHistory: [],    // Content generation has no prior speech history
+    };
+
     const content = await generateSceneContent(
       safeOutline,
       aiCall,
@@ -343,6 +353,7 @@ export async function generateClassroom(
       undefined,
       agents,
       userProfileText,
+      ctx,
     );
     if (!content) {
       log.warn(`Skipping scene "${safeOutline.title}" — content generation failed`);

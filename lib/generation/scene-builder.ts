@@ -101,6 +101,7 @@ export async function buildSceneFromOutline(
     undefined,
     agents,
     userProfile,
+    ctx,
   );
   if (!content) {
     log.error(`Failed to generate content for: ${outline.title}`);

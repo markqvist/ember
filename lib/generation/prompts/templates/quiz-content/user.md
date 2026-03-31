@@ -1,3 +1,5 @@
+{{courseContext}}
+
 # Quiz Requirements
 Title: {{title}}
 Description: {{description}}
