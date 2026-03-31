@@ -195,9 +195,9 @@ export async function generateSceneContent(
         userProfile,
       );
     case 'quiz':
-      return generateQuizContent(outline, aiCall);
+      return generateQuizContent(outline, aiCall, userProfile);
     case 'interactive':
-      return generateInteractiveContent(outline, aiCall, outline.language);
+      return generateInteractiveContent(outline, aiCall, outline.language, userProfile);
     case 'pbl':
       return generatePBLSceneContent(outline, languageModel);
     default:
@@ -635,6 +635,7 @@ async function generateSlideContent(
 async function generateQuizContent(
   outline: SceneOutline,
   aiCall: AICallFn,
+  userProfile?: string,
 ): Promise<GeneratedQuizContent | null> {
   const quizConfig = outline.quizConfig || {
     questionCount: 3,
@@ -649,6 +650,7 @@ async function generateQuizContent(
     questionCount: quizConfig.questionCount,
     difficulty: quizConfig.difficulty,
     questionTypes: quizConfig.questionTypes.join(', '),
+    userProfile: userProfile || '',
   });
 
   if (!prompts) {
@@ -739,6 +741,7 @@ async function generateInteractiveContent(
   outline: SceneOutline,
   aiCall: AICallFn,
   language: 'en-US' | 'en-GB' = 'en-US',
+  userProfile?: string,
 ): Promise<GeneratedInteractiveContent | null> {
   const config = outline.interactiveConfig!;
 
@@ -787,6 +790,7 @@ async function generateInteractiveContent(
     scientificConstraints,
     designIdea: config.designIdea,
     language,
+    userProfile: userProfile || '',
   });
 
   if (!htmlPrompts) {
@@ -953,6 +957,7 @@ export async function generateSceneActions(
       questions: questionsText,
       courseContext: buildCourseContext(ctx),
       agents: agentsText,
+      userProfile: userProfile || '',
     });
 
     if (!prompts) {
@@ -980,6 +985,7 @@ export async function generateSceneActions(
       designIdea: config?.designIdea || '',
       courseContext: buildCourseContext(ctx),
       agents: agentsText,
+      userProfile: userProfile || '',
     });
 
     if (!prompts) {
@@ -1049,8 +1055,8 @@ function formatElementsForPrompt(elements: PPTElement[]): string {
       let summary = '';
       if (el.type === 'text' && 'content' in el) {
         // Extract text content summary (strip HTML tags)
-        const textContent = ((el.content as string) || '').replace(/<[^>]*>/g, '').substring(0, 50);
-        summary = `Content summary: "${textContent}${textContent.length >= 50 ? '...' : ''}"`;
+        const textContent = ((el.content as string) || '').replace(/<[^>]*>/g, '').substring(0, 256);
+        summary = `Content summary: "${textContent}${textContent.length >= 256 ? '...' : ''}"`;
       } else if (el.type === 'chart' && 'chartType' in el) {
         summary = `Chart type: ${el.chartType}`;
       } else if (el.type === 'image') {
@@ -1058,7 +1064,7 @@ function formatElementsForPrompt(elements: PPTElement[]): string {
       } else if (el.type === 'shape' && 'shapeName' in el) {
         summary = `Shape: ${el.shapeName || 'unknown'}`;
       } else if (el.type === 'latex' && 'latex' in el) {
-        summary = `Formula: ${((el.latex as string) || '').substring(0, 30)}`;
+        summary = `Formula: ${((el.latex as string) || '').substring(0, 256)}`;
       } else {
         summary = `${el.type} element`;
       }

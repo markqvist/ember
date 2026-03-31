@@ -6,6 +6,9 @@ Key Points: {{keyPoints}}
 {{courseContext}}
 {{agents}}
 
+# User Profile - Who is this course generated for
+{{userProfile}}
+
 **Language Requirement**: Generated speech content must be in the same language as the key points above.
 
 ---

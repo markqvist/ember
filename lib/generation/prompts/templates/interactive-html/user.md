@@ -11,6 +11,12 @@ Create an enlightening, interactive learning experience for the following concep
 
 ---
 
+## Learner Profile
+
+{{userProfile}}
+
+---
+
 ## Language
 
 The entire application must be in {{language}}.

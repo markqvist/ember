@@ -927,8 +927,8 @@ function GenerationPreviewContent() {
 
       const userProfile =
         contentSession.requirements.userNickname || contentSession.requirements.userBio
-          ? `Student: ${contentSession.requirements.userNickname || 'Unknown'}${contentSession.requirements.userBio ? ` — ${contentSession.requirements.userBio}` : ''}`
-          : undefined;
+          ? `**Name:** ${contentSession.requirements.userNickname || 'Unknown'}${contentSession.requirements.userBio ? `\n**Provided Information:**\n${contentSession.requirements.userBio}` : '\n**Provided Information:** None'}\n\nConsider this learner's background when designing the course. Adapt difficulty, examples, and teaching approach accordingly.\n\n---`
+          : 'No learner information available';
 
       store.setGeneratingOutlines(confirmedOutlines);
 

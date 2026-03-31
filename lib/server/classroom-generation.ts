@@ -315,7 +315,7 @@ export async function generateClassroom(
   // Build user profile string for prompt injection
   const userProfileText =
     input.userNickname || input.userBio
-      ? `## Student Profile\n\nStudent: ${input.userNickname || 'Unknown'}${input.userBio ? ` — ${input.userBio}` : ''}\n\nConsider this student's background when designing the course. Adapt difficulty, examples, and teaching approach accordingly.\n\n---`
+      ? `## Learner Profile\n\n**Name:** ${input.userNickname || 'Unknown'}${input.userBio ? `\n**Provided Information**:\n${input.userBio}` : '\n**Provided Information:** None'}\n\nConsider this learner's background when designing the course. Adapt difficulty, examples, and teaching approach accordingly.\n\n---`
       : '';
 
   log.info('Stage 2: Generating scene content and actions...');

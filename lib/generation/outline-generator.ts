@@ -77,7 +77,7 @@ export async function generateSceneOutlinesFromRequirements(
   // Build user profile string for prompt injection
   const userProfileText =
     requirements.userNickname || requirements.userBio
-      ? `## Student Profile\n\nStudent: ${requirements.userNickname || 'Unknown'}${requirements.userBio ? ` — ${requirements.userBio}` : ''}\n\nConsider this student's background when designing the course. Adapt difficulty, examples, and teaching approach accordingly.\n\n---`
+      ? `## Learner Profile\n\n**Name:** ${requirements.userNickname || 'Unknown'}${requirements.userBio ? `\n**Provided Information:**\n${requirements.userBio}` : '\n**Provided Information:** None'}\n\nConsider this student's background when designing the course. Adapt difficulty, examples, and teaching approach accordingly.\n\n---`
       : '';
 
   // Build AI-generated media instructions based on enabled flags
