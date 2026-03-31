@@ -42,6 +42,8 @@ export interface GenerateClassroomInput {
   enableVideoGeneration?: boolean;
   enableTTS?: boolean;
   agentMode?: 'default' | 'generate';
+  userNickname?: string;
+  userBio?: string;
 }
 
 export type ClassroomGenerationStep =
@@ -161,6 +163,9 @@ Return a JSON object with this exact structure:
   }));
 }
 
+// DEPRECATED: This API-based generation path is orphaned and not used by the frontend.
+// The UI uses the streaming generation flow via /generation-preview instead.
+// This endpoint is pending reimplementation for programmatic API access.
 export async function generateClassroom(
   input: GenerateClassroomInput,
   options: {
@@ -307,6 +312,12 @@ export async function generateClassroom(
   const store = createInMemoryStore(stage);
   const api = createStageAPI(store);
 
+  // Build user profile string for prompt injection
+  const userProfileText =
+    input.userNickname || input.userBio
+      ? `## Student Profile\n\nStudent: ${input.userNickname || 'Unknown'}${input.userBio ? ` — ${input.userBio}` : ''}\n\nConsider this student's background when designing the course. Adapt difficulty, examples, and teaching approach accordingly.\n\n---`
+      : '';
+
   log.info('Stage 2: Generating scene content and actions...');
   let generatedScenes = 0;
 
@@ -331,6 +342,7 @@ export async function generateClassroom(
       undefined,
       undefined,
       agents,
+      userProfileText,
     );
     if (!content) {
       log.warn(`Skipping scene "${safeOutline.title}" — content generation failed`);

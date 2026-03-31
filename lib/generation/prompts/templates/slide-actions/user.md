@@ -13,7 +13,7 @@
 
 {{agents}}
 
-# User Profile - Who is this course generated for
+# Learner Profile
 {{userProfile}}
 
 **Language Requirement**: Generated speech content must be in the same language as the key points above.

@@ -945,6 +945,7 @@ function GenerationPreviewContent() {
           stageInfo,
           stageId: stage.id,
           agents,
+          userProfile,
         }),
         signal,
       });

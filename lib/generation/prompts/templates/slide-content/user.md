@@ -11,6 +11,10 @@
 
 {{teacherContext}}
 
+## Learner Profile
+
+{{userProfile}}
+
 ## Available Resources
 
 - **Available Images**: {{assignedImages}}

@@ -156,6 +156,7 @@ export async function generateSceneContent(
   visionEnabled?: boolean,
   generatedMediaMapping?: ImageMapping,
   agents?: AgentInfo[],
+  userProfile?: string,
 ): Promise<
   | GeneratedSlideContent
   | GeneratedQuizContent
@@ -177,6 +178,7 @@ export async function generateSceneContent(
       visionEnabled,
       generatedMediaMapping,
       agents,
+      userProfile,
     );
   }
 
@@ -190,6 +192,7 @@ export async function generateSceneContent(
         visionEnabled,
         generatedMediaMapping,
         agents,
+        userProfile,
       );
     case 'quiz':
       return generateQuizContent(outline, aiCall);
@@ -467,6 +470,7 @@ async function generateSlideContent(
   visionEnabled?: boolean,
   generatedMediaMapping?: ImageMapping,
   agents?: AgentInfo[],
+  userProfile?: string,
 ): Promise<GeneratedSlideContent | null> {
   const lang = outline.language || 'en-US';
 
@@ -546,6 +550,7 @@ async function generateSlideContent(
     canvas_width: canvasWidth,
     canvas_height: canvasHeight,
     teacherContext,
+    userProfile: userProfile || '',
   });
 
   if (!prompts) {
