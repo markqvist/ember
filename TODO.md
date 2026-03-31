@@ -38,7 +38,7 @@
 - [x] Fix missing user profile information in prompts
 - [x] Add previous slides context to content and actions generation
 - [x] Significantly improve inadequate `buildCourseContext` in `prompt-formatter.ts`
-- [ ] Fix `[Object object]` entries for quiz question options (in `quiz-actions` template)
+- [x] Fix `[Object object]` entries for quiz question options (in `quiz-actions` template)
 - [ ] Implement research via `lc`
 - [ ] Fix strange PDF content formatting in prompts
 - [ ] Add some way to include previous courses as "completed context"
