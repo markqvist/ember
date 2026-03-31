@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ScanLine,
+  ScanEye,
   Microscope,
   Search,
   Globe,
@@ -31,6 +32,8 @@ export function StepVisualizer({
   switch (stepId) {
     case 'pdf-analysis':
       return <PdfScanVisualizer />;
+    case 'image-analysis':
+      return <ImageAnalysisVisualizer />;
     case 'research':
       return <ResearchVisualizer sources={researchSources || []} />;
     case 'outline':
@@ -81,6 +84,172 @@ function PdfScanVisualizer() {
       >
         <ScanLine className="size-6 text-cyan-500/70" />
       </motion.div>
+    </div>
+  );
+}
+
+// Image Analysis: Grid of images being analyzed with scanning indicator
+function ImageAnalysisVisualizer() {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  // Simulate cycling through images being analyzed
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % 6);
+    }, 800);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="size-56 relative flex items-center justify-center">
+      {/* Background glow */}
+      <motion.div
+        className="absolute inset-0 blur-3xl rounded-full bg-indigo-500/8"
+        animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0.5, 0.3] }}
+        transition={{ duration: 3.5, repeat: Infinity }}
+      />
+
+      {/* Image grid container */}
+      <div className="relative w-44 h-44">
+        {/* Grid of image placeholders */}
+        <div className="grid grid-cols-3 grid-rows-2 gap-2 h-full">
+          {[0, 1, 2, 3, 4, 5].map((i) => {
+            const isActive = i === activeIndex;
+            const isPast = i < activeIndex;
+            return (
+              <motion.div
+                key={i}
+                className={cn(
+                  'relative rounded-lg border-2 overflow-hidden bg-white dark:bg-slate-800',
+                  isActive
+                    ? 'border-indigo-400 shadow-lg shadow-indigo-500/20'
+                    : isPast
+                      ? 'border-emerald-400/50'
+                      : 'border-slate-200 dark:border-slate-700',
+                )}
+                animate={{
+                  scale: isActive ? 1.05 : 1,
+                  opacity: isPast ? 0.6 : 1,
+                }}
+                transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              >
+                {/* Image placeholder content */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
+                  <motion.div
+                    className={cn(
+                      'w-8 h-6 rounded border border-dashed flex items-center justify-center',
+                      isActive
+                        ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20'
+                        : isPast
+                          ? 'border-emerald-400/30 bg-emerald-50/50 dark:bg-emerald-900/10'
+                          : 'border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/30',
+                    )}
+                  >
+                    <svg
+                      className={cn(
+                        'size-4',
+                        isActive
+                          ? 'text-indigo-500'
+                          : isPast
+                            ? 'text-emerald-500/60'
+                            : 'text-slate-400',
+                      )}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"
+                      />
+                    </svg>
+                  </motion.div>
+                  {/* Status indicator */}
+                  <div className="flex items-center gap-1">
+                    {isPast ? (
+                      <motion.svg
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="size-3 text-emerald-500"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="m4.5 12.75 6 6 9-13.5"
+                        />
+                      </motion.svg>
+                    ) : isActive ? (
+                      <motion.div
+                        className="size-2 rounded-full bg-indigo-500"
+                        animate={{ opacity: [1, 0.3, 1] }}
+                        transition={{ duration: 0.8, repeat: Infinity }}
+                      />
+                    ) : (
+                      <div className="size-2 rounded-full bg-slate-300 dark:bg-slate-600" />
+                    )}
+                    <span
+                      className={cn(
+                        'text-[7px] font-medium uppercase',
+                        isActive
+                          ? 'text-indigo-600 dark:text-indigo-400'
+                          : isPast
+                            ? 'text-emerald-600/60 dark:text-emerald-400/60'
+                            : 'text-slate-400',
+                      )}
+                    >
+                      {isPast ? 'Done' : isActive ? 'Scan' : 'Wait'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Scanning overlay for active image */}
+                {isActive && (
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-b from-transparent via-indigo-500/10 to-transparent"
+                    animate={{ top: ['-100%', '100%'] }}
+                    transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
+                  />
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Eye/scan icon */}
+        <motion.div
+          className="absolute -top-2 -right-2 size-8 rounded-full bg-indigo-500 text-white flex items-center justify-center shadow-lg shadow-indigo-500/30"
+          animate={{ scale: [1, 1.1, 1] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          <ScanEye className="size-4" />
+        </motion.div>
+
+        {/* Progress ring */}
+        <svg className="absolute -inset-3 size-[calc(100%+24px)] -rotate-90 pointer-events-none">
+          <motion.circle
+            cx="50%"
+            cy="50%"
+            r="94"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            className="text-indigo-500/20"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: (activeIndex + 1) / 6 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            style={{
+              strokeDasharray: '1 1',
+            }}
+          />
+        </svg>
+      </div>
     </div>
   );
 }

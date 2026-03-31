@@ -203,7 +203,7 @@ async function analyzeSingleImage(
       model,
       system: systemPrompt,
       messages: [{ role: 'user', content: userContent }],
-      maxOutputTokens: 2000,
+      maxOutputTokens: 16384,
     },
     'image-analysis'
   );

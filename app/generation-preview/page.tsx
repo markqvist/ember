@@ -725,6 +725,9 @@ function GenerationPreviewContent() {
                           .replace('{included}', String(result.metadata.includedImages))
                           .replace('{total}', String(result.metadata.totalImages))
                       );
+
+                      // Clear status message after a brief delay to prevent it lingering
+                      setTimeout(() => setStatusMessage(''), 1500);
                     } else if (event.type === 'error') {
                       log.error('Image analysis error:', event.error);
                       persistSession({
@@ -746,6 +749,10 @@ function GenerationPreviewContent() {
           }
         }
       }
+      log.info("Image analysis completed");
+
+      // Clear any lingering status message from image analysis before next step
+      setStatusMessage('');
 
       // Step: Research (if enabled)
       const researchStepIdx = activeSteps.findIndex((s) => s.id === 'research');
@@ -782,6 +789,7 @@ function GenerationPreviewContent() {
         activeSteps = getActiveSteps(currentSession);
       }
 
+      log.info("Processing image mapping");
       // Load imageMapping early (needed for both outline and scene generation)
       let imageMapping: ImageMapping = {};
       if (currentSession.imageStorageIds && currentSession.imageStorageIds.length > 0) {
@@ -794,6 +802,7 @@ function GenerationPreviewContent() {
         log.debug('Using imageMapping from session (old format)');
         imageMapping = currentSession.imageMapping;
       }
+      log.info("Image mapping completed");
 
       // ── Agent generation (before outlines so persona can influence structure) ──
       const settings = useSettingsStore.getState();
@@ -803,6 +812,7 @@ function GenerationPreviewContent() {
         role: string;
         persona?: string;
       }> = [];
+      log.info("Agent setup completed");
 
       // Create stage client-side (needed for agent generation stageId)
       const stageId = nanoid(10);
@@ -816,6 +826,7 @@ function GenerationPreviewContent() {
         updatedAt: Date.now(),
       };
       generatedStageRef.current = stage;
+      log.info("Stage setup complete");
 
       if (settings.agentMode === 'auto') {
         const agentStepIdx = activeSteps.findIndex((s) => s.id === 'agent-generation');
@@ -900,7 +911,9 @@ function GenerationPreviewContent() {
             persona: a!.persona,
           }));
       }
+      log.info("Agent generation completed");
 
+      log.info("Starting outline generation");
       // ── Generate outlines (with agent personas for teacher context) ──
       let outlines = currentSession.sceneOutlines;
 
