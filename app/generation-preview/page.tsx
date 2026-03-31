@@ -657,9 +657,7 @@ function GenerationPreviewContent() {
 
                     if (event.type === 'progress') {
                       const { completed, total, currentId, status } = event.data;
-                      setStatusMessage(
-                        `Analyzing image ${completed}/${total}: ${currentId} (${status})`
-                      );
+                      setStatusMessage(`Analyzed ${completed}/${total} images`);
                       persistSession({
                         ...currentSession,
                         imageAnalysis: {
