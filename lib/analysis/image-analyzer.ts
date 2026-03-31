@@ -10,6 +10,7 @@ import { getModel, parseModelString } from '@/lib/ai/providers';
 import { resolveApiKey, resolveBaseUrl, resolveProxy } from '@/lib/server/provider-config';
 import { buildVisionUserContent } from '@/lib/generation/prompt-formatters';
 import { logResolvedPrompt } from '@/lib/generation/prompts';
+import { parseJsonResponse } from '@/lib/generation/json-repair';
 import type { LanguageModel } from 'ai';
 import type {
   ImageAnalysis,
@@ -38,7 +39,7 @@ const ANALYSIS_TIMEOUT_MS = 300000;
 /**
  * Retry configuration for failed analyses
  */
-const MAX_RETRIES = 1;
+const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 2000;
 
 /**
@@ -282,42 +283,29 @@ ACCEPT (include: true) if:
 
 /**
  * Parse analysis JSON from model response
+ * Uses the same robust parsing as the generation pipeline
  */
 function parseAnalysisJson(response: string): ImageAnalysis {
-  // Try to extract JSON from the response
-  let jsonStr = response.trim();
+  // Use the robust JSON parser from the generation pipeline
+  const parsed = parseJsonResponse<ImageAnalysis>(response);
 
-  // Remove markdown code fences if present
-  if (jsonStr.startsWith('```')) {
-    const match = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (match) {
-      jsonStr = match[1].trim();
-    }
+  if (parsed === null) {
+    log.error('Failed to parse analysis JSON from response');
+    log.error('Raw response:', response.substring(0, 8192));
+    throw new Error('Failed to parse analysis JSON: could not extract valid JSON from response');
   }
 
-  // Try to find JSON object if there's surrounding text
-  const objectMatch = jsonStr.match(/\{[\s\S]*\}/);
-  if (objectMatch) {
-    jsonStr = objectMatch[0];
+  // Ensure required fields exist
+  if (typeof parsed.include !== 'boolean') {
+    log.warn('Missing or invalid "include" field, defaulting to false');
+    parsed.include = false;
   }
 
-  try {
-    const parsed = JSON.parse(jsonStr);
-
-    // Ensure required fields exist
-    if (typeof parsed.include !== 'boolean') {
-      throw new Error('Missing or invalid "include" field');
-    }
-
-    if (!['high', 'medium', 'low'].includes(parsed.confidence)) {
-      parsed.confidence = 'medium';
-    }
-
-    return parsed as ImageAnalysis;
-  } catch (error) {
-    log.error('Failed to parse analysis JSON:', error, 'Response:', response.slice(0, 200));
-    throw new Error(`Failed to parse analysis JSON: ${error}`);
+  if (!['high', 'medium', 'low'].includes(parsed.confidence)) {
+    parsed.confidence = 'medium';
   }
+
+  return parsed;
 }
 
 /**

@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
             baseUrl,
             providerType,
             requiresApiKey,
-            concurrency: 3,
+            concurrency: 1,
             onProgress: (completed, total, currentId, status) => {
               sendEvent({
                 type: 'progress',
