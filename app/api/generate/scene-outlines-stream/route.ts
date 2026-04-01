@@ -254,24 +254,27 @@ export async function POST(req: NextRequest) {
         try {
           startHeartbeat();
 
-          const streamParams = visionImages?.length
-            ? {
-                model: languageModel,
-                system: prompts.system,
-                messages: [
-                  {
-                    role: 'user' as const,
-                    content: buildVisionUserContent(prompts.user, visionImages),
-                  },
-                ],
-                maxOutputTokens: modelInfo?.outputWindow,
-              }
-            : {
-                model: languageModel,
-                system: prompts.system,
-                prompt: prompts.user,
-                maxOutputTokens: modelInfo?.outputWindow,
-              };
+          // Only use pre-analyzed descriptions for now
+          // const streamParams = visionImages?.length
+          //   ? {
+          //       model: languageModel,
+          //       system: prompts.system,
+          //       messages: [
+          //         {
+          //           role: 'user' as const,
+          //           content: buildVisionUserContent(prompts.user, visionImages),
+          //         },
+          //       ],
+          //       maxOutputTokens: modelInfo?.outputWindow,
+          //     }
+          //   : {
+          //       model: languageModel,
+          //       system: prompts.system,
+          //       prompt: prompts.user,
+          //       maxOutputTokens: modelInfo?.outputWindow,
+          //     };
+
+          const streamParams = { model: languageModel, system: prompts.system, prompt: prompts.user, maxOutputTokens: modelInfo?.outputWindow };
 
           let parsedOutlines: SceneOutline[] = [];
           let lastError: string | undefined;
