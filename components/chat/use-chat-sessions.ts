@@ -1018,9 +1018,19 @@ export function useChatSessions(options: UseChatSessionsOptions = {}) {
       const userMessageId = `user-${now}`;
 
       // Read all selected agent IDs from settings store
+      // Filter out any generated agents to prevent bleeding from auto-generated classrooms
       const settingsState = useSettingsStore.getState();
+      const registry = useAgentRegistry.getState();
       const agentIds: string[] =
-        settingsState.selectedAgentIds?.length > 0 ? settingsState.selectedAgentIds : ['default-1'];
+        settingsState.selectedAgentIds
+          ?.filter((id) => {
+            const agent = registry.getAgent(id);
+            return agent && !agent.isGenerated;
+          })
+          .filter((id) => id) || [];
+      if (agentIds.length === 0) {
+        agentIds.push('default-1');
+      }
 
       const userMessage: UIMessage<ChatMessageMetadata> = {
         id: userMessageId,
@@ -1201,11 +1211,19 @@ export function useChatSessions(options: UseChatSessionsOptions = {}) {
       const agentId = request.agentId || 'default-1';
 
       // Read all selected agent IDs from settings store
+      // Filter out any generated agents to prevent bleeding from auto-generated classrooms
       const settingsState = useSettingsStore.getState();
+      const registry = useAgentRegistry.getState();
       const agentIds: string[] =
-        settingsState.selectedAgentIds?.length > 0
-          ? [...settingsState.selectedAgentIds]
-          : [agentId];
+        settingsState.selectedAgentIds
+          ?.filter((id) => {
+            const agent = registry.getAgent(id);
+            return agent && !agent.isGenerated;
+          })
+          .filter((id) => id) || [];
+      if (agentIds.length === 0) {
+        agentIds.push(agentId);
+      }
       // Ensure the trigger agent is included
       if (!agentIds.includes(agentId)) {
         agentIds.unshift(agentId);
