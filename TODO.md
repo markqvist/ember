@@ -43,7 +43,7 @@
 - [x] Add pre-outline image analysis step, only include relevant images in generation pipeline
 - [x] Actually include semantically valuable image descriptions in course generation
 - [x] Let generation models select relevant images instead of just randomly picking
-- [ ] Fix generated agents bleeding into classrooms where they don't belong
+- [x] Fix generated agents bleeding into classrooms where they don't belong
 - [ ] Implement research via `lc`
 - [ ] Fix strange PDF content formatting in prompts
 - [ ] Add some way to include previous courses as "completed context"
