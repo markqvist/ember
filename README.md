@@ -207,7 +207,7 @@ pnpm build && pnpm start
 | **Actions editing** | None | Modify actions, regenerate audio per-action |
 | **Classroom editing** | None | Rename, reconfigure post-generation |
 | **Per-slide JSON editing** | None | Raw JSON editor with validation |
-| **Alide editor** | None | Full editing support, media upload |
+| **Slide editor** | None | Full editing support, media upload |
 | **Media upload** | None | Full image/video support with persistence |
 | **Classroom export/import** | None | Complete ZIP archive with all media |
 | **Multi-file simulations** | None | Hosted interactive content with assets |
