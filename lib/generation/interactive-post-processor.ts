@@ -82,6 +82,8 @@ document.addEventListener("DOMContentLoaded", function() {
         delimiters: [
             {left: '\\\\[', right: '\\\\]', display: true},
             {left: '\\\\(', right: '\\\\)', display: false},
+            {left: '\\[', right: '\\]', display: true},
+            {left: '\\(', right: '\\)', display: false},
             {left: '$$', right: '$$', display: true},
             {left: '$', right: '$', display: false}
         ],
@@ -125,7 +127,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     setInterval(() => {
         const text = document.body.innerText;
-        if (text.includes('\\\\(') || text.includes('$$')) {
+        if (text.includes('\\\\(') || text.includes('\\(') || text.includes('$$')) {
             safeRender();
         }
     }, 2000);
