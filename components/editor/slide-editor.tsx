@@ -48,6 +48,7 @@ import { Switch } from '@/components/ui/switch';
 import { useI18n } from '@/lib/hooks/use-i18n';
 import { toast } from 'sonner';
 import { nanoid } from 'nanoid';
+import katex from 'katex';
 import type {
   PPTElement,
   PPTTextElement,
@@ -247,14 +248,22 @@ function createDefaultElement(type: PPTElement['type']): PPTElement {
         width: 400,
         height: 120,
       } as PPTTableElement;
-    case 'latex':
+    case 'latex': {
+      const defaultLatex = 'E = mc^2';
+      const html = katex.renderToString(defaultLatex, {
+        throwOnError: false,
+        displayMode: true,
+        output: 'html',
+      });
       return {
         ...base,
         type: 'latex',
-        latex: 'E = mc^2',
+        latex: defaultLatex,
+        html,
         width: 300,
         height: 60,
       } as PPTLatexElement;
+    }
     case 'video':
       return {
         ...base,
@@ -983,13 +992,28 @@ function LatexElementEditor({
   element: PPTLatexElement;
   onChange: (updated: PPTLatexElement) => void;
 }) {
+  const handleLatexChange = (newLatex: string) => {
+    try {
+      const html = katex.renderToString(newLatex, {
+        throwOnError: false,
+        displayMode: true,
+        output: 'html',
+      });
+      onChange({ ...element, latex: newLatex, html });
+    } catch {
+      // If KaTeX fails to render, still update the latex but clear the html
+      // so the element doesn't display stale/incorrect rendered output
+      onChange({ ...element, latex: newLatex, html: undefined });
+    }
+  };
+
   return (
     <div className="space-y-3">
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-foreground">LaTeX Formula</label>
         <Textarea
           value={element.latex}
-          onChange={(e) => onChange({ ...element, latex: e.target.value })}
+          onChange={(e) => handleLatexChange(e.target.value)}
           placeholder="E = mc^2"
           className="w-full min-h-[80px] text-xs resize-none font-mono"
         />
