@@ -614,7 +614,7 @@ function GenerationPreviewContent() {
           // Build user profile for context
           const userProfileText = currentSession.requirements.userNickname || currentSession.requirements.userBio
             ? `**Name:** ${currentSession.requirements.userNickname || 'Unknown'}${currentSession.requirements.userBio ? `\n**Provided Information:**\n${currentSession.requirements.userBio}` : '\n**Provided Information:** None'}`
-            : '';
+            : '*No specific learner information available*';
 
           // Call analysis API
           const analysisRes = await fetch('/api/analyze-images', {
@@ -1138,7 +1138,7 @@ function GenerationPreviewContent() {
       const userProfile =
         contentSession.requirements.userNickname || contentSession.requirements.userBio
           ? `**Name:** ${contentSession.requirements.userNickname || 'Unknown'}${contentSession.requirements.userBio ? `\n**Provided Information:**\n${contentSession.requirements.userBio}` : '\n**Provided Information:** None'}\n\nConsider this learner's background when designing the course. Adapt difficulty, examples, and teaching approach accordingly.\n\n---`
-          : 'No learner information available';
+          : '*No specific learner information available*';
 
       store.setGeneratingOutlines(confirmedOutlines);
 
