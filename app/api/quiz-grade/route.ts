@@ -18,6 +18,7 @@ interface GradeRequest {
   points: number;
   commentPrompt?: string;
   language?: string;
+  userProfile?: string;
 }
 
 interface GradeResponse {
@@ -28,7 +29,7 @@ interface GradeResponse {
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as GradeRequest;
-    const { question, userAnswer, points, commentPrompt, language } = body;
+    const { question, userAnswer, points, commentPrompt, language, userProfile } = body;
 
     if (!question || !userAnswer) {
       return apiError('MISSING_REQUIRED_FIELD', 400, 'question and userAnswer are required');
@@ -37,13 +38,21 @@ export async function POST(req: NextRequest) {
     // Resolve model from request headers
     const { model: languageModel } = resolveModelFromHeaders(req);
 
-    const systemPrompt = `You are a professional educational assessor. Grade the student's answer and provide brief feedback.
+    // Build learner context for personalized grading
+    const learnerContext = userProfile && userProfile !== '*No specific learner information available*'
+      ? `\n\n## Learner Profile\n${userProfile}\n\nWhen grading, consider the learner's profile, age, background and experience and adapt your grading approach accordingly. Frame your feedback to be most useful in terms of continual improvement and development given their experience level and prerequisites.`
+      : '';
+
+    const systemPrompt = `Your task is to grade the student's answer and provide brief feedback. ${learnerContext}
+
 You must reply in the following JSON format only (no other content):
-{"score": <integer from 0 to ${points}>, "comment": "<one or two sentences of feedback>"}`;
+{"score": <integer from 0 to ${points}>, "comment": "<two or three sentences of feedback>"}`;
 
     const userPrompt = `Question: ${question}
 Full marks: ${points} points
 ${commentPrompt ? `Grading guidance: ${commentPrompt}\n` : ''}Student answer: ${userAnswer}`;
+
+    log.info(`Starting quiz grading task...\n${systemPrompt}\n${userPrompt}`);
 
     const result = await callLLM(
       {

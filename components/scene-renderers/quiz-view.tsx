@@ -22,6 +22,7 @@ const log = createLogger('QuizView');
 import type { QuizQuestion } from '@/lib/types/stage';
 import { useDraftCache } from '@/lib/hooks/use-draft-cache';
 import { SpeechButton } from '@/components/audio/speech-button';
+import { getUserProfileFromStorage } from '@/lib/utils/user-profile';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -97,6 +98,9 @@ async function gradeShortAnswerQuestion(
     if (modelConfig.providerType) headers['x-provider-type'] = modelConfig.providerType;
     if (modelConfig.requiresApiKey) headers['x-requires-api-key'] = 'true';
 
+    // Retrieve learner profile for personalized grading
+    const userProfile = getUserProfileFromStorage();
+
     const res = await fetch('/api/quiz-grade', {
       method: 'POST',
       headers,
@@ -106,6 +110,7 @@ async function gradeShortAnswerQuestion(
         points: pts,
         commentPrompt: q.commentPrompt,
         language,
+        userProfile,
       }),
     });
 
