@@ -218,13 +218,8 @@ export function getModel(config: ModelConfig): ModelWithInfo {
             if (headersTimeoutSec > 0) dispatcherOptions.headersTimeout = headersTimeoutSec * 1000;
             if (bodyTimeoutSec > 0) dispatcherOptions.bodyTimeout = bodyTimeoutSec * 1000;
 
-            // Log timeout configuration once for visibility
-            if (!globalThis.__llmTimeoutLogged) {
-              log.info(
-                `[LLM Timeout] Using extended timeouts for ${providerId}: connect=${connectTimeoutSec}s, headers=${headersTimeoutSec}s, body=${bodyTimeoutSec}s (0=disabled)`
-              );
-              (globalThis as Record<string, unknown>).__llmTimeoutLogged = true;
-            }
+            // Log timeout configuration for visibility
+            log.info(`[LLM Timeout] Using extended timeouts for ${providerId}: connect=${connectTimeoutSec}s, headers=${headersTimeoutSec}s, body=${bodyTimeoutSec}s (0=disabled)`);
 
             return undiciFetch(url as string, {
               ...(modifiedInit as Record<string, unknown>),
