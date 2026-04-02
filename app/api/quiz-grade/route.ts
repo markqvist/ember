@@ -71,7 +71,7 @@ ${commentPrompt ? `Grading guidance: ${commentPrompt}\n` : ''}Student answer: ${
       // Fallback: give partial credit with a generic comment
       gradeResult = {
         score: Math.round(points * 0.5),
-        comment: 'Answer received. Please refer to the standard answer.',
+        comment: 'Sorry. An error occurred, and answer grading inference task failed. Please refer to the standard answer.',
       };
     }
 
