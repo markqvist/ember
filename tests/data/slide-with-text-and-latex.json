@@ -1,0 +1,19 @@
+{
+  "elements": [
+    {
+      "id": "text_001",
+      "type": "text",
+      "content": "<p>The quadratic formula:</p>"
+    },
+    {
+      "id": "latex_001",
+      "type": "latex",
+      "latex": "x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}"
+    },
+    {
+      "id": "text_002",
+      "type": "text",
+      "content": "<p>Use this to solve equations.</p>"
+    }
+  ]
+}

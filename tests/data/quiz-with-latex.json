@@ -1,0 +1,22 @@
+{
+  "questions": [
+    {
+      "question": "What is the formula for kinetic energy?",
+      "options": [
+        "$E_k = \\frac{1}{2}mv^2$",
+        "$E = mc^2$",
+        "$F = ma$"
+      ],
+      "correct": 0
+    },
+    {
+      "question": "Calculate \\frac{d}{dx}(x^2)",
+      "options": [
+        "$2x$",
+        "$x^2$",
+        "$\\frac{x^3}{3}$"
+      ],
+      "correct": 0
+    }
+  ]
+}

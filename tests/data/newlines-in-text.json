@@ -1,0 +1,9 @@
+{
+  "elements": [
+    {
+      "id": "text_001",
+      "type": "text",
+      "content": "Line 1\nLine 2\nLine 3"
+    }
+  ]
+}
