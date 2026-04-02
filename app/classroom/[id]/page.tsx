@@ -15,6 +15,37 @@ import { generateMediaForOutlines } from '@/lib/media/media-orchestrator';
 
 const log = createLogger('Classroom');
 
+/**
+ * Retrieve user profile from localStorage and format for generation prompts.
+ * Falls back to a default message if no profile is configured.
+ */
+function getUserProfileFromStorage(): string {
+  try {
+    const storageData = localStorage.getItem('user-profile-storage');
+    if (!storageData) {
+      log.debug('No user profile found in localStorage');
+      return '*No specific learner information available*';
+    }
+
+    const parsed = JSON.parse(storageData);
+    const nickname = parsed?.state?.nickname || parsed?.nickname || '';
+    const bio = parsed?.state?.bio || parsed?.bio || '';
+
+    if (!nickname && !bio) {
+      log.debug('User profile exists but is empty');
+      return '*No specific learner information available*';
+    }
+
+    const formattedProfile = `**Name:** ${nickname || 'Unknown'}${bio ? `\n**Provided Information:**\n${bio}` : '\n**Provided Information:** None'}\n\nConsider this learner's background when designing the course. Adapt difficulty, examples, and teaching approach accordingly.\n\n---`;
+
+    log.debug('Successfully reconstructed userProfile from localStorage');
+    return formattedProfile;
+  } catch (error) {
+    log.warn('Failed to parse user profile from localStorage:', error);
+    return '*No specific learner information available*';
+  }
+}
+
 export default function ClassroomDetailPage() {
   const params = useParams();
   const classroomId = params?.id as string;
@@ -165,6 +196,12 @@ export default function ClassroomDetailPage() {
         .filter(Boolean);
 
       loadImageMapping(storageIds).then((imageMapping) => {
+        // Use userProfile from sessionStorage if available, otherwise reconstruct from localStorage
+        const userProfile = params.userProfile || getUserProfileFromStorage();
+        if (!params.userProfile) {
+          log.info('userProfile not found in sessionStorage, reconstructed from localStorage');
+        }
+
         generateRemaining({
           pdfImages: params.pdfImages,
           imageMapping,
@@ -175,7 +212,7 @@ export default function ClassroomDetailPage() {
             style: stage.style,
           },
           agents: params.agents,
-          userProfile: params.userProfile,
+          userProfile,
         });
       });
     } else if (outlines.length > 0 && stage) {
