@@ -3,6 +3,9 @@
  * 
  * Tests the json-repair.ts module's handling of LaTeX escape sequences
  * in AI-generated model outputs.
+ * 
+ * CRITICAL: Test inputs use String.raw to prevent JavaScript from interpreting
+ * escape sequences like \f, \t, \n before they reach the parser.
  */
 
 import { parseJsonResponse, tryParseJson } from '../lib/generation/json-repair';
@@ -26,40 +29,43 @@ interface TestResult {
   error?: string;
 }
 
+// Helper to create raw strings without JavaScript escape interpretation
+const raw = String.raw;
+
 // Comprehensive test cases covering all scenarios
 const testCases: TestCase[] = [
   // === CORRECTLY ESCAPED INPUTS (should remain intact) ===
   {
     name: "Correctly escaped: simple fraction",
-    input: `{"elements": [{"type": "latex", "latex": "\\\\frac{a}{b}"}]}`,
+    input: raw`{"elements": [{"type": "latex", "latex": "\\frac{a}{b}"}]}`,
     expectedLatex: "\\frac{a}{b}",
     shouldParse: true,
-    description: "Model correctly double-escaped backslash, should parse to single backslash"
+    description: "Model correctly double-escaped backslash, should parse to single backslash in output"
   },
   {
     name: "Correctly escaped: quadratic formula",
-    input: `{"elements": [{"type": "latex", "latex": "x = \\\\frac{-b \\\\pm \\\\sqrt{b^2-4ac}}{2a}"}]}`,
+    input: raw`{"elements": [{"type": "latex", "latex": "x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}"}]}`,
     expectedLatex: "x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}",
     shouldParse: true,
     description: "Complex formula with correct escaping"
   },
   {
     name: "Correctly escaped: text command",
-    input: `{"elements": [{"type": "latex", "latex": "P_{\\\\text{loss}}"}]}`,
+    input: raw`{"elements": [{"type": "latex", "latex": "P_{\\text{loss}}"}]}`,
     expectedLatex: "P_{\\text{loss}}",
     shouldParse: true,
     description: "\\text command correctly escaped"
   },
   {
     name: "Correctly escaped: left/right delimiters",
-    input: `{"elements": [{"type": "latex", "latex": "\\\\left(\\\\frac{765}{25}\\\\right)^2"}]}`,
+    input: raw`{"elements": [{"type": "latex", "latex": "\\left(\\frac{765}{25}\\right)^2"}]}`,
     expectedLatex: "\\left(\\frac{765}{25}\\right)^2",
     shouldParse: true,
     description: "\\left and \\right commands correctly escaped"
   },
   {
     name: "Correctly escaped: multiple commands",
-    input: `{"elements": [{"type": "latex", "latex": "\\\\frac{P_{\\\\text{loss}}(25\\\\text{kV})}{P_{\\\\text{loss}}(765\\\\text{kV})} = \\\\left(\\\\frac{765}{25}\\\\right)^2 \\\\approx 937"}]}`,
+    input: raw`{"elements": [{"type": "latex", "latex": "\\frac{P_{\\text{loss}}(25\\text{kV})}{P_{\\text{loss}}(765\\text{kV})} = \\left(\\frac{765}{25}\\right)^2 \\approx 937"}]}`,
     expectedLatex: "\\frac{P_{\\text{loss}}(25\\text{kV})}{P_{\\text{loss}}(765\\text{kV})} = \\left(\\frac{765}{25}\\right)^2 \\approx 937",
     shouldParse: true,
     description: "Full complex formula from user's bug report - correctly escaped version"
@@ -68,28 +74,28 @@ const testCases: TestCase[] = [
   // === INCORRECTLY ESCAPED INPUTS (need repair) ===
   {
     name: "Incorrect: unescaped fraction",
-    input: `{"elements": [{"type": "latex", "latex": "\\frac{a}{b}"}]}`,
+    input: raw`{"elements": [{"type": "latex", "latex": "\frac{a}{b}"}]}`,
     expectedLatex: "\\frac{a}{b}",
     shouldParse: true,
-    description: "Model forgot to escape - \\f will be interpreted as form feed"
+    description: "Model forgot to escape - \\f should be repaired to not be interpreted as form feed"
   },
   {
     name: "Incorrect: unescaped text command",
-    input: `{"elements": [{"type": "latex", "latex": "P_{\\text{loss}}"}]}`,
+    input: raw`{"elements": [{"type": "latex", "latex": "P_{\text{loss}}"}]}`,
     expectedLatex: "P_{\\text{loss}}",
     shouldParse: true,
-    description: "\\t will be interpreted as tab character"
+    description: "\\t should be repaired to not be interpreted as tab character"
   },
   {
     name: "Incorrect: unescaped sqrt",
-    input: `{"elements": [{"type": "latex", "latex": "\\sqrt{x}"}]}`,
+    input: raw`{"elements": [{"type": "latex", "latex": "\sqrt{x}"}]}`,
     expectedLatex: "\\sqrt{x}",
     shouldParse: true,
     description: "\\s is not a special escape, but \\sqrt is valid LaTeX"
   },
   {
     name: "Incorrect: user's exact bug report",
-    input: `{"elements": [{"type": "latex", "latex": "\\rac{P_{\\ ext{loss}}(25\\ ext{kV})}{P_{\\ ext{loss}}(765\\ ext{kV})} = \\left(\\rac{765}{25}\\right)^2 \\approx 937"}]}`,
+    input: raw`{"elements": [{"type": "latex", "latex": "\rac{P_{\ ext{loss}}(25\ ext{kV})}{P_{\ ext{loss}}(765\ ext{kV})} = \left(\rac{765}{25}\right)^2 \approx 937"}]}`,
     expectedLatex: "\\frac{P_{\\text{loss}}(25\\text{kV})}{P_{\\text{loss}}(765\\text{kV})} = \\left(\\frac{765}{25}\\right)^2 \\approx 937",
     shouldParse: true,
     description: "The actual corrupted output from bug report - \\f consumed as form feed, \\t as tab"
@@ -98,14 +104,14 @@ const testCases: TestCase[] = [
   // === MIXED INPUTS (some escaped, some not) ===
   {
     name: "Mixed: some escaped, some not",
-    input: `{"elements": [{"type": "latex", "latex": "\\\\frac{a}{b} + \\frac{c}{d}"}]}`,
+    input: raw`{"elements": [{"type": "latex", "latex": "\\frac{a}{b} + \frac{c}{d}"}]}`,
     expectedLatex: "\\frac{a}{b} + \\frac{c}{d}",
     shouldParse: true,
     description: "First fraction escaped, second not - both should result in valid LaTeX"
   },
   {
     name: "Mixed: text command partially escaped",
-    input: `{"elements": [{"type": "latex", "latex": "P_{\\\\text{loss}} + Q_{\\text{gain}}"}]}`,
+    input: raw`{"elements": [{"type": "latex", "latex": "P_{\\text{loss}} + Q_{\text{gain}}"}]}`,
     expectedLatex: "P_{\\text{loss}} + Q_{\\text{gain}}",
     shouldParse: true,
     description: "One text command escaped, one not"
@@ -114,35 +120,35 @@ const testCases: TestCase[] = [
   // === EDGE CASES ===
   {
     name: "Edge: empty latex string",
-    input: `{"elements": [{"type": "latex", "latex": ""}]}`,
+    input: raw`{"elements": [{"type": "latex", "latex": ""}]}`,
     expectedLatex: "",
     shouldParse: true,
     description: "Empty string should remain empty"
   },
   {
     name: "Edge: latex with no backslashes",
-    input: `{"elements": [{"type": "latex", "latex": "E = mc^2"}]}`,
+    input: raw`{"elements": [{"type": "latex", "latex": "E = mc^2"}]}`,
     expectedLatex: "E = mc^2",
     shouldParse: true,
     description: "Simple formula without LaTeX commands"
   },
   {
     name: "Edge: already double-escaped backslash",
-    input: `{"elements": [{"type": "latex", "latex": "\\\\\\\\frac{a}{b}"}]}`,
+    input: raw`{"elements": [{"type": "latex", "latex": "\\\\frac{a}{b}"}]}`,
     expectedLatex: "\\\\frac{a}{b}",
     shouldParse: true,
-    description: "Four backslashes should become two"
+    description: "Four backslashes should become two in the parsed output"
   },
   {
     name: "Edge: backslash at end of string",
-    input: `{"elements": [{"type": "latex", "latex": "\\\\frac{a}{b}\\"}]}`,
+    input: raw`{"elements": [{"type": "latex", "latex": "\\frac{a}{b}\\"}]}`,
     expectedLatex: "\\frac{a}{b}",
     shouldParse: true,
-    description: "Trailing backslash - may cause issues"
+    description: "Trailing backslash - should be handled gracefully"
   },
   {
     name: "Edge: unicode and special characters",
-    input: `{"elements": [{"type": "latex", "latex": "\\\\alpha + \\\\beta = \\\\gamma \\u00B0"}]}`,
+    input: raw`{"elements": [{"type": "latex", "latex": "\\alpha + \\beta = \\gamma \u00B0"}]}`,
     expectedLatex: "\\alpha + \\beta = \\gamma °",
     shouldParse: true,
     description: "Unicode escape sequence in JSON"
@@ -151,21 +157,21 @@ const testCases: TestCase[] = [
   // === VALID JSON ESCAPES (should NOT be touched) ===
   {
     name: "Valid JSON: newline in text",
-    input: `{"elements": [{"type": "text", "content": "Line 1\\nLine 2"}]}`,
+    input: raw`{"elements": [{"type": "text", "content": "Line 1\nLine 2"}]}`,
     expectedLatex: undefined,
     shouldParse: true,
     description: "\\n is valid JSON escape and should remain as newline"
   },
   {
     name: "Valid JSON: tab in text",
-    input: `{"elements": [{"type": "text", "content": "Col1\\tCol2"}]}`,
+    input: raw`{"elements": [{"type": "text", "content": "Col1\tCol2"}]}`,
     expectedLatex: undefined,
     shouldParse: true,
     description: "\\t in non-latex field should remain as tab"
   },
   {
     name: "Valid JSON: quote escaping",
-    input: `{"elements": [{"type": "text", "content": "He said \\"hello\\""}]}`,
+    input: raw`{"elements": [{"type": "text", "content": "He said \"hello\""}]}`,
     expectedLatex: undefined,
     shouldParse: true,
     description: "Escaped quotes should work correctly"
@@ -174,10 +180,10 @@ const testCases: TestCase[] = [
   // === COMPLEX NESTED STRUCTURES ===
   {
     name: "Complex: multiple elements with mixed escaping",
-    input: `{
+    input: raw`{
       "elements": [
         {"type": "text", "content": "Formula:"},
-        {"type": "latex", "latex": "\\\\frac{P_{\\\\text{loss}}}{P_{\\text{gain}}} = \\left(\\frac{V_1}{V_2}\\right)^2"},
+        {"type": "latex", "latex": "\\frac{P_{\\text{loss}}}{P_{\text{gain}}} = \left(\frac{V_1}{V_2}\right)^2"},
         {"type": "text", "content": "End"}
       ]
     }`,
@@ -189,17 +195,17 @@ const testCases: TestCase[] = [
   // === STRESS TESTS ===
   {
     name: "Stress: many backslashes",
-    input: `{"elements": [{"type": "latex", "latex": "\\\\\\\\\\\\\\\\frac{a}{b}"}]}`,
+    input: raw`{"elements": [{"type": "latex", "latex": "\\\\\\\\frac{a}{b}"}]}`,
     expectedLatex: "\\\\\\\\frac{a}{b}",
     shouldParse: true,
-    description: "Eight backslashes - should become four"
+    description: "Eight backslashes - should become four in output"
   },
   {
     name: "Stress: long formula with many commands",
-    input: `{"elements": [{"type": "latex", "latex": "\\\\int_{0}^{\\\\infty} \\\\frac{\\\\sin(x)}{x} dx = \\\\frac{\\\\pi}{2} = \\\\sum_{n=0}^{\\\\infty} \\frac{(-1)^n}{(2n+1)}"}]}`,
+    input: raw`{"elements": [{"type": "latex", "latex": "\\int_{0}^{\\infty} \\frac{\\sin(x)}{x} dx = \\frac{\\pi}{2} = \\sum_{n=0}^{\\infty} \frac{(-1)^n}{(2n+1)}"}]}`,
     expectedLatex: "\\int_{0}^{\\infty} \\frac{\\sin(x)}{x} dx = \\frac{\\pi}{2} = \\sum_{n=0}^{\\infty} \\frac{(-1)^n}{(2n+1)}",
     shouldParse: true,
-    description: "Long formula with integral, fraction, sum - all escaped"
+    description: "Long formula with integral, fraction, sum - mixed escaping"
   }
 ];
 
@@ -240,7 +246,7 @@ function runTest(testCase: TestCase): TestResult {
           passed: false,
           input: testCase.input,
           parsedLatex: actualLatex,
-          error: `LaTeX mismatch.\nExpected: ${testCase.expectedLatex}\nActual: ${actualLatex}`
+          error: `LaTeX mismatch.\nExpected: ${JSON.stringify(testCase.expectedLatex)}\nActual: ${JSON.stringify(actualLatex)}`
         };
       }
     }
@@ -288,9 +294,6 @@ function runAllTests(): void {
       }
       if (result.error) {
         console.log(`   Error: ${result.error}`);
-      }
-      if (result.parsedLatex) {
-        console.log(`   Parsed LaTeX: ${result.parsedLatex}`);
       }
       console.log(`   Input: ${result.input.substring(0, 200)}${result.input.length > 200 ? '...' : ''}`);
       console.log();
