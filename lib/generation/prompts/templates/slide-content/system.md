@@ -470,7 +470,7 @@ When splitting a derivation across multiple LaTeX elements (one per line), simpl
 
 **LaTeX Support**: This project uses KaTeX for formula rendering, which supports virtually all standard LaTeX math commands including arrows, logic symbols, ellipsis, accents, delimiters, and AMS math extensions. You may use any standard LaTeX math command freely.
 
-- `\text{}` can render English text. For Chinese labels, use a separate TextElement.
+- `\text{}` can render English text normally.
 
 **When to Use**: Use LatexElement for **all** mathematical formulas, equations, and scientific notation — including simple ones like `x^2` or `a/b`. TextElement cannot render LaTeX; any LaTeX syntax placed in a TextElement will display as raw text (e.g., "\frac{1}{2}" appears literally). For plain text that happens to contain numbers (e.g., "Chapter 3", "Score: 95"), use TextElement.
 
