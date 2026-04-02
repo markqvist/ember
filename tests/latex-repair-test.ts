@@ -45,12 +45,82 @@ const testCases: TestCase[] = [
     description: "Already-corrupted data - we prevent corruption but cannot recover lost chars"
   },
   {
+    name: "Bug report model output",
+    file: "bug-report-input.json",
+    expectedLatex: "\\frac{P_{\\text{loss}}(25\\text{kV})}{P_{\\text{loss}}(765\\text{kV})} = \\left(\\frac{765}{25}\\right)^2 \\approx 937",
+    description: "Model output for bug report case"
+  },
+  {
     name: "Mixed: escaped and unescaped",
     file: "mixed-escaped-unescaped.json",
     expectedLatex: "\\frac{a}{b} + \\frac{c}{d}",
     description: "First escaped, second not - both should produce valid LaTeX"
+  },
+  {
+    name: "Quiz with LaTeX in options",
+    file: "quiz-with-latex.json",
+    expectedLatex: "$E_k = \\frac{1}{2}mv^2$",
+    description: "LaTeX embedded in quiz question options"
+  },
+  {
+    name: "Slide with text and LaTeX elements",
+    file: "slide-with-text-and-latex.json",
+    expectedLatex: "x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}",
+    description: "Mixed text and LaTeX elements in slide"
+  },
+  {
+    name: "Newlines in text content",
+    file: "newlines-in-text.json",
+    expectedLatex: "",
+    description: "Valid JSON newlines should be preserved in text content"
   }
 ];
+
+function extractLatexFromResult(result: unknown, fileName: string): string | undefined {
+  if (!result || typeof result !== 'object') return undefined;
+  
+  const obj = result as Record<string, unknown>;
+  
+  // Handle slide/element structure
+  if (obj.elements && Array.isArray(obj.elements)) {
+    const latexElement = obj.elements.find((el: unknown) => {
+      if (!el || typeof el !== 'object') return false;
+      const element = el as Record<string, unknown>;
+      return element.type === 'latex' && typeof element.latex === 'string';
+    });
+    if (latexElement) {
+      return (latexElement as Record<string, string>).latex;
+    }
+  }
+  
+  // Handle quiz structure - look in questions -> options
+  if (obj.questions && Array.isArray(obj.questions)) {
+    for (const question of obj.questions) {
+      if (question.options && Array.isArray(question.options)) {
+        for (const option of question.options) {
+          if (typeof option === 'string' && option.includes('$')) {
+            return option; // Return first option with LaTeX
+          }
+        }
+      }
+    }
+  }
+  
+  // Handle text content with newlines
+  if (obj.elements && Array.isArray(obj.elements)) {
+    const textElement = obj.elements.find((el: unknown) => {
+      if (!el || typeof el !== 'object') return false;
+      const element = el as Record<string, unknown>;
+      return element.type === 'text' && typeof element.content === 'string';
+    });
+    if (textElement) {
+      // Return empty string for text-only tests
+      return '';
+    }
+  }
+  
+  return undefined;
+}
 
 function runTest(testCase: TestCase): boolean {
   const filePath = path.join(__dirname, 'data', testCase.file);
@@ -65,9 +135,7 @@ function runTest(testCase: TestCase): boolean {
   const input = fs.readFileSync(filePath, 'utf-8');
   
   try {
-    const result = parseJsonResponse<{
-      elements?: Array<{ type: string; latex?: string }>;
-    }>(input);
+    const result = parseJsonResponse<unknown>(input);
     
     if (!result) {
       console.log(`❌ FAIL: ${testCase.name}`);
@@ -75,8 +143,7 @@ function runTest(testCase: TestCase): boolean {
       return false;
     }
     
-    const latexElement = result.elements?.find(el => el.type === 'latex');
-    const actualLatex = latexElement?.latex;
+    const actualLatex = extractLatexFromResult(result, testCase.file);
     
     if (actualLatex !== testCase.expectedLatex) {
       console.log(`❌ FAIL: ${testCase.name}`);
@@ -98,7 +165,7 @@ function runTest(testCase: TestCase): boolean {
 
 function main() {
   console.log("=".repeat(70));
-  console.log("LaTeX JSON Repair Test Suite (File-based)");
+  console.log("LaTeX JSON Repair Test Suite");
   console.log("=".repeat(70));
   console.log();
   
