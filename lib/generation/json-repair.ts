@@ -6,6 +6,103 @@ import { jsonrepair } from 'jsonrepair';
 import { createLogger } from '@/lib/logger';
 const log = createLogger('Generation');
 
+/**
+ * Pre-process JSON string to fix unescaped LaTeX commands before parsing.
+ * 
+ * This is critical because JSON.parse() will interpret sequences like \f, \t, \n, \r
+ * as control characters, corrupting LaTeX commands like \frac, \text, etc.
+ * 
+ * The function detects when we're inside JSON string values and escapes
+ * single backslashes followed by letters that would be interpreted as JSON escapes.
+ * 
+ * Key insight: We need to handle backslashes by looking at the NEXT character:
+ * - If next char is a JSON escape char (f, n, r, t, b, etc.), we need to escape the backslash
+ *   so JSON.parse sees \\f instead of \f, producing \f in output instead of form feed
+ * - If next char is another backslash, it's already escaped - keep as-is
+ */
+function preProcessLatexEscapes(jsonStr: string): string {
+  // Characters that can follow a backslash to form a valid JSON escape
+  const jsonEscapeChars = new Set(['"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u']);
+  
+  let result = '';
+  let i = 0;
+  let inString = false;
+  
+  while (i < jsonStr.length) {
+    const char = jsonStr[i];
+    
+    // Track whether we're inside a JSON string
+    if (char === '"') {
+      // Check if this quote is escaped by counting preceding backslashes
+      let backslashCount = 0;
+      let j = i - 1;
+      while (j >= 0 && jsonStr[j] === '\\') {
+        backslashCount++;
+        j--;
+      }
+      // Quote is escaped if odd number of backslashes precede it
+      if (backslashCount % 2 === 0) {
+        inString = !inString;
+      }
+      result += char;
+      i++;
+    } else if (char === '\\' && inString && i + 1 < jsonStr.length) {
+      const nextChar = jsonStr[i + 1];
+      
+      // Count how many consecutive backslashes we have
+      let consecutiveBackslashes = 1;
+      let j = i + 1;
+      while (j < jsonStr.length && jsonStr[j] === '\\') {
+        consecutiveBackslashes++;
+        j++;
+      }
+      
+      // If we have an odd number of backslashes, the last one is "unescaped"
+      // and we need to check what follows
+      if (consecutiveBackslashes % 2 === 1) {
+        // Odd number of backslashes - the sequence ends with an unescaped backslash
+        // Check what character comes after all the backslashes
+        const charAfterBackslashes = jsonStr[i + consecutiveBackslashes];
+        
+        if (charAfterBackslashes && jsonEscapeChars.has(charAfterBackslashes)) {
+          // The unescaped backslash is followed by a JSON escape character
+          // We need to add another backslash to escape it
+          // Example: \f becomes \\f (in source: '\\' + '\\' + 'f' = \\\\f)
+          // After JSON.parse: \\f becomes \f in the output
+          result += '\\'.repeat(consecutiveBackslashes + 1) + charAfterBackslashes;
+          i += consecutiveBackslashes + 1;
+        } else if (charAfterBackslashes && /[a-zA-Z]/.test(charAfterBackslashes)) {
+          // Unescaped backslash followed by a letter that's NOT a JSON escape
+          // This is a LaTeX command that needs the same treatment
+          result += '\\'.repeat(consecutiveBackslashes + 1) + charAfterBackslashes;
+          i += consecutiveBackslashes + 1;
+        } else {
+          // Other character after backslash(es) - keep as-is
+          result += '\\'.repeat(consecutiveBackslashes);
+          if (charAfterBackslashes) {
+            result += charAfterBackslashes;
+          }
+          i += consecutiveBackslashes + (charAfterBackslashes ? 1 : 0);
+        }
+      } else {
+        // Even number of backslashes - they're already properly escaped
+        // Keep them as-is along with the next character
+        const charAfterBackslashes = jsonStr[i + consecutiveBackslashes];
+        result += '\\'.repeat(consecutiveBackslashes);
+        if (charAfterBackslashes) {
+          result += charAfterBackslashes;
+        }
+        i += consecutiveBackslashes + (charAfterBackslashes ? 1 : 0);
+      }
+    } else {
+      result += char;
+      i++;
+    }
+  }
+  
+  return result;
+}
+
 export function parseJsonResponse<T>(response: string): T | null {
   // Strategy 1: Try to extract JSON from markdown code blocks (may have multiple)
   const codeBlockMatches = response.matchAll(/```(?:json)?\s*([\s\S]*?)```/g);
@@ -98,34 +195,27 @@ export function parseJsonResponse<T>(response: string): T | null {
  * Try to parse JSON with various fixes for common AI response issues
  */
 export function tryParseJson<T>(jsonStr: string): T | null {
-  // Attempt 1: Try parsing as-is
+  // Pre-process to fix unescaped LaTeX commands BEFORE first parse attempt
+  // This is critical because JSON.parse() will corrupt \frac to <form feed>rac
+  const preProcessed = preProcessLatexEscapes(jsonStr);
+  
+  // Attempt 1: Try parsing the pre-processed string
   try {
-    return JSON.parse(jsonStr) as T;
+    return JSON.parse(preProcessed) as T;
   } catch {
     // Continue to fix attempts
   }
 
-  // Attempt 2: Fix common JSON issues from AI responses
+  // Attempt 2: Additional fixes for edge cases
   try {
-    let fixed = jsonStr;
+    let fixed = preProcessed;
 
-    // Fix 1: Handle LaTeX-style escapes that break JSON (e.g., \frac, \left, \right, \times, etc.)
-    // These are common in math content and need to be double-escaped
-    // Match backslash followed by letters (LaTeX commands) inside strings
+    // Fix: Handle any remaining LaTeX-style escapes inside string values
+    // This catches cases the pre-processor might have missed
     fixed = fixed.replace(/"([^"]*?)"/g, (_match, content) => {
       // Double-escape any backslash followed by a letter (except valid JSON escapes)
       const fixedContent = content.replace(/\\([a-zA-Z])/g, '\\\\$1');
       return `"${fixedContent}"`;
-    });
-
-    // Fix 2: Fix other invalid escape sequences (e.g., \S, \L, etc.)
-    // Valid JSON escapes: \", \\, \/, \b, \f, \n, \r, \t, \uXXXX
-    fixed = fixed.replace(/\\([^"\\\/bfnrtu\n\r])/g, (match, char) => {
-      // If it's a letter, it's likely a LaTeX command
-      if (/[a-zA-Z]/.test(char)) {
-        return '\\\\' + char;
-      }
-      return match;
     });
 
     // Fix 3: Try to fix truncated JSON arrays/objects
