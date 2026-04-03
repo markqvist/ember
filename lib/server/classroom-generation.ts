@@ -398,7 +398,7 @@ export async function generateClassroom(
     });
 
     try {
-      const mediaMap = await generateMediaForClassroom(outlines, stageId, options.baseUrl);
+      const mediaMap = await generateMediaForClassroom(outlines, stageId);
       replaceMediaPlaceholders(scenes, mediaMap);
       log.info(`Media generation complete: ${Object.keys(mediaMap).length} files`);
     } catch (err) {
@@ -417,7 +417,7 @@ export async function generateClassroom(
     });
 
     try {
-      await generateTTSForClassroom(scenes, stageId, options.baseUrl);
+      await generateTTSForClassroom(scenes, stageId);
       log.info('TTS generation complete');
     } catch (err) {
       log.warn('TTS generation phase failed, continuing:', err);
@@ -432,14 +432,11 @@ export async function generateClassroom(
     totalScenes: outlines.length,
   });
 
-  const persisted = await persistClassroom(
-    {
-      id: stageId,
-      stage,
-      scenes,
-    },
-    options.baseUrl,
-  );
+  const persisted = await persistClassroom({
+    id: stageId,
+    stage,
+    scenes,
+  });
 
   log.info(`Classroom persisted: ${persisted.id}, URL: ${persisted.url}`);
 
