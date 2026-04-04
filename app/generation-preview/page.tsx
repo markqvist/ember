@@ -150,6 +150,14 @@ function GenerationPreviewContent() {
     }
   };
 
+  /** Detect file format from name extension */
+  const getFileFormat = (name: string): 'pdf' | 'markdown' | 'text' => {
+    const ext = name.split('.').pop()?.toLowerCase();
+    if (ext === 'md' || ext === 'markdown') return 'markdown';
+    if (ext === 'txt') return 'text';
+    return 'pdf';
+  };
+
   const parseSinglePdfSource = async (
     source: SessionPdfSource,
     currentSession: GenerationSessionState,
@@ -160,6 +168,56 @@ function GenerationPreviewContent() {
       throw new Error(t('generation.pdfLoadFailed'));
     }
 
+    const format = getFileFormat(source.name || 'document.pdf');
+
+    // ── Text files: parse inline, no API call needed ──
+    if (format === 'text') {
+      const text = await pdfBlob.text();
+      return {
+        source,
+        text,
+        rawTextLength: text.length,
+        pageCount: 0,
+        images: [],
+      };
+    }
+
+    // ── Markdown files: route to /api/parse-markdown ──
+    if (format === 'markdown') {
+      const mdFile = new File([pdfBlob], source.name || 'document.md', {
+        type: 'text/markdown',
+      });
+      const parseFormData = new FormData();
+      parseFormData.append('file', mdFile);
+
+      const parseResponse = await fetch('/api/parse-markdown', {
+        method: 'POST',
+        body: parseFormData,
+        signal,
+      });
+
+      if (!parseResponse.ok) {
+        const errorData = await parseResponse.json().catch(() => ({
+          error: t('generation.pdfParseFailed'),
+        }));
+        throw new Error(errorData.error || t('generation.pdfParseFailed'));
+      }
+
+      const parseResult = await parseResponse.json();
+      if (!parseResult.success || !parseResult.data) {
+        throw new Error(t('generation.pdfParseFailed'));
+      }
+
+      return {
+        source,
+        text: String(parseResult.data.text || ''),
+        rawTextLength: String(parseResult.data.text || '').length,
+        pageCount: 0,
+        images: [],
+      };
+    }
+
+    // ── PDF files: route to /api/parse-pdf (original path) ──
     const pdfFile = new File([pdfBlob], source.name || 'document.pdf', {
       type: 'application/pdf',
     });
