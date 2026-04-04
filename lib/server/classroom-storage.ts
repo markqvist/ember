@@ -238,14 +238,14 @@ export async function saveClassroomMediaFiles(
 
 /**
  * Update scenes to add audioUrl references for server-served audio files
+ * Uses host-relative URLs for portability across different hosts/ports
  */
 export function updateScenesWithAudioUrls(
   scenes: Scene[],
   classroomId: string,
-  baseUrl: string,
   audioFiles?: AudioFileData[]
 ): void {
-  const audioBaseUrl = `${baseUrl}/api/classroom-media/${classroomId}/audio`;
+  const audioBaseUrl = `/api/classroom-media/${classroomId}/audio`;
 
   // Build a map of audioId -> format
   const audioFormatMap = new Map<string, string>();
@@ -278,16 +278,65 @@ function isEmbeddedMediaId(value: string): boolean {
 }
 
 /**
+ * Sanitize a URL to host-relative format
+ * Converts absolute URLs to host-relative paths for portability
+ * Preserves existing host-relative URLs and non-URL values
+ */
+export function sanitizeToHostRelative(url: string | undefined): string | undefined {
+  if (!url) return url;
+  try {
+    const parsed = new URL(url);
+    // Return only pathname, preserving query strings if present
+    return parsed.pathname + parsed.search;
+  } catch {
+    // Not a valid absolute URL - could already be relative or invalid
+    // If it starts with /, it's already host-relative
+    // Otherwise, return as-is (might be a placeholder or data URL)
+    return url;
+  }
+}
+
+/**
+ * Sanitize all media URLs in scenes to host-relative format
+ * Recursively processes actions and slide content
+ */
+export function sanitizeScenesToHostRelative(scenes: Scene[]): void {
+  for (const scene of scenes) {
+    // Sanitize action URLs (audio)
+    if (scene.actions) {
+      for (const action of scene.actions) {
+        if (action.type === 'speech') {
+          const speechAction = action as { audioUrl?: string };
+          speechAction.audioUrl = sanitizeToHostRelative(speechAction.audioUrl);
+        }
+      }
+    }
+
+    // Sanitize slide element URLs (images/videos)
+    if (scene.type === 'slide') {
+      const canvas = (scene.content as { canvas?: { elements?: Array<{ src?: string; type?: string }> } })?.canvas;
+      if (canvas?.elements) {
+        for (const element of canvas.elements) {
+          if ((element.type === 'image' || element.type === 'video') && element.src) {
+            element.src = sanitizeToHostRelative(element.src) || element.src;
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
  * Update scenes to replace media placeholders with server URLs
  * Handles both AI-generated (gen_*) and embedded (emb_*) media
+ * Uses host-relative URLs for portability across different hosts/ports
  */
 export function updateScenesWithMediaUrls(
   scenes: Scene[],
   classroomId: string,
-  baseUrl: string,
   mediaFiles?: MediaFileData[]
 ): void {
-  const mediaBaseUrl = `${baseUrl}/api/classroom-media/${classroomId}/media`;
+  const mediaBaseUrl = `/api/classroom-media/${classroomId}/media`;
 
   // Build a map of elementId -> extension from mimeType
   const mediaExtMap = new Map<string, string>();
@@ -330,20 +379,19 @@ export async function persistClassroom(
     audioFiles?: AudioFileData[];
     mediaFiles?: MediaFileData[];
   },
-  baseUrl: string,
 ): Promise<PersistedClassroomData & { url: string }> {
   // Save audio files to disk if provided
   if (data.audioFiles && data.audioFiles.length > 0) {
     await saveClassroomAudioFiles(data.id, data.audioFiles);
-    // Update scenes with audio URLs
-    updateScenesWithAudioUrls(data.scenes, data.id, baseUrl, data.audioFiles);
+    // Update scenes with audio URLs (host-relative)
+    updateScenesWithAudioUrls(data.scenes, data.id, data.audioFiles);
   }
 
   // Save media files to disk if provided
   if (data.mediaFiles && data.mediaFiles.length > 0) {
     await saveClassroomMediaFiles(data.id, data.mediaFiles);
-    // Update scenes with media URLs
-    updateScenesWithMediaUrls(data.scenes, data.id, baseUrl, data.mediaFiles);
+    // Update scenes with media URLs (host-relative)
+    updateScenesWithMediaUrls(data.scenes, data.id, data.mediaFiles);
   }
 
   const classroomData: PersistedClassroomData = {
@@ -359,7 +407,7 @@ export async function persistClassroom(
 
   return {
     ...classroomData,
-    url: `${baseUrl}/classroom/${data.id}`,
+    url: `/classroom/${data.id}`,
   };
 }
 
@@ -447,6 +495,7 @@ async function calculateClassroomSize(classroomId: string): Promise<number> {
 
 /**
  * Export a classroom to a ZIP buffer
+ * Sanitizes all media URLs to host-relative format for portability and privacy
  */
 export async function exportClassroomToZip(classroomId: string): Promise<ClassroomExportResult> {
   // Validate classroom exists
@@ -465,8 +514,13 @@ export async function exportClassroomToZip(classroomId: string): Promise<Classro
 
   const zip = new JSZip();
 
-  // Add the main classroom JSON
-  zip.file(CLASSROOM_JSON_FILENAME, JSON.stringify(classroom, null, 2));
+  // Sanitize URLs to host-relative format for portability
+  // This ensures classrooms can be imported on any host/port and protects privacy
+  const sanitizedClassroom = JSON.parse(JSON.stringify(classroom)) as PersistedClassroomData;
+  sanitizeScenesToHostRelative(sanitizedClassroom.scenes);
+
+  // Add the main classroom JSON (sanitized)
+  zip.file(CLASSROOM_JSON_FILENAME, JSON.stringify(sanitizedClassroom, null, 2));
 
   // Add all files from the classroom directory recursively
   const classroomDir = path.join(CLASSROOMS_DIR, classroomId);
@@ -529,10 +583,10 @@ export function validateClassroomData(data: unknown): ClassroomValidationResult 
 
 /**
  * Import a classroom from a ZIP buffer
+ * Sanitizes URLs to host-relative format for portability
  */
 export async function importClassroomFromZip(
   zipBuffer: Buffer,
-  baseUrl: string,
   allowOverwrite = false
 ): Promise<ClassroomImportResult> {
   // Parse ZIP
@@ -579,6 +633,10 @@ export async function importClassroomFromZip(
 
   const classroomId = validation.id!;
   const classroom = classroomData as PersistedClassroomData;
+
+  // Sanitize URLs to host-relative format
+  // This ensures legacy or external ZIPs with absolute URLs are properly sanitized
+  sanitizeScenesToHostRelative(classroom.scenes);
 
   // Check for existing classroom
   const existingClassroom = await readClassroom(classroomId);
@@ -643,7 +701,7 @@ export async function importClassroomFromZip(
   return {
     id: classroomId,
     name: classroom.stage.name,
-    url: `${baseUrl}/classroom/${classroomId}`,
+    url: `/classroom/${classroomId}`,
     overwritten,
   };
 }

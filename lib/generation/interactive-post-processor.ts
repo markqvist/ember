@@ -17,10 +17,18 @@ export function postProcessInteractiveHtml(html: string): string {
   // Convert LaTeX delimiters while protecting script tags
   let processed = convertLatexDelimiters(html);
 
+  /////////////////////////////////////////////////////////////
+  // I'm gonna leave this here for posterity. Whoever thought
+  // this one up deserves to have their software development
+  // authorization revoked.
+  //
   // Inject KaTeX resources if not already present
-  if (!processed.toLowerCase().includes('katex')) {
-    processed = injectKatex(processed);
-  }
+  // if (!processed.toLowerCase().includes('katex')) {
+  //   processed = injectKatex(processed);
+  // }
+  /////////////////////////////////////////////////////////////
+
+  processed = injectKatex(processed);
 
   return processed;
 }
@@ -82,6 +90,8 @@ document.addEventListener("DOMContentLoaded", function() {
         delimiters: [
             {left: '\\\\[', right: '\\\\]', display: true},
             {left: '\\\\(', right: '\\\\)', display: false},
+            {left: '\\[', right: '\\]', display: true},
+            {left: '\\(', right: '\\)', display: false},
             {left: '$$', right: '$$', display: true},
             {left: '$', right: '$', display: false}
         ],
@@ -125,7 +135,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     setInterval(() => {
         const text = document.body.innerText;
-        if (text.includes('\\\\(') || text.includes('$$')) {
+        if (text.includes('\\\\(') || text.includes('\\(') || text.includes('$$')) {
             safeRender();
         }
     }, 2000);
@@ -135,8 +145,10 @@ document.addEventListener("DOMContentLoaded", function() {
   // Use indexOf + substring instead of String.replace() because the
   // katexInjection string contains '$' characters that .replace() would
   // interpret as special substitution patterns ($$ → $, $' → post-match text).
+  console.log("Checking KaTeX injection point...");
   const headCloseIdx = html.indexOf('</head>');
   if (headCloseIdx !== -1) {
+    console.log("Injecting into HTML head");
     return (
       html.substring(0, headCloseIdx) +
       katexInjection +
@@ -148,6 +160,7 @@ document.addEventListener("DOMContentLoaded", function() {
   // Fallback: inject before </body> if </head> is missing
   const bodyCloseIdx = html.indexOf('</body>');
   if (bodyCloseIdx !== -1) {
+    console.log("Injecting before HTML body");
     return (
       html.substring(0, bodyCloseIdx) +
       katexInjection +
@@ -157,5 +170,6 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 
   // Last resort: append at end
+  console.log("Couldn't find valid injection point, falling back to append");
   return html + katexInjection;
 }

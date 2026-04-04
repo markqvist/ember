@@ -98,7 +98,7 @@ export const stageEnUS = {
     incorrect: 'incorrect',
     answering: 'In Progress',
     submitAnswers: 'Submit Answers',
-    aiGrading: 'AI is grading...',
+    aiGrading: 'Grading answers...',
     aiGradingWait: 'Please wait, analyzing your answers',
     quizReport: 'Quiz Report',
     retry: 'Retry',

@@ -7,7 +7,6 @@ import {
   MAX_CLASSROOM_EXPORT_SIZE,
   type ClassroomImportResult,
 } from '@/lib/server/classroom-storage';
-import { buildRequestOrigin } from '@/lib/server/classroom-storage';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,10 +68,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const baseUrl = buildRequestOrigin(request);
-
     // Import the classroom
-    const result = await importClassroomFromZip(zipBuffer, baseUrl, allowOverwrite);
+    const result = await importClassroomFromZip(zipBuffer, allowOverwrite);
 
     return apiSuccess<Record<string, unknown>>(result as unknown as Record<string, unknown>, 201);
   } catch (error) {

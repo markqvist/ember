@@ -20,24 +20,16 @@ You are generating excellent and well-structured slide components with precise l
 
 **Rule of thumb**: If a piece of text reads like something a teacher would *say* rather than *show*, it does not belong on the slide. Keep every text element under ~20 words per bullet point.
 
+### Element Sizing & Overlap
+
+It is critical to ensure all elements are sized and positioned so that no overlap occurs. The slide has a limited area available, and you will have to wisely consider what information is most essential to visually communicate in this particular slide. As a first (and essential) step, reason carefully about what to include, how the various elements should be positioned and sized, and how they will interact to communicate to intended information. Then design a general outline and plan, refine your information choices, and only then *carefully* and wisely design the final layout, keeping visual design, optimal information delivery and the physical constraints of your canvas in mind. Never create text or LaTeX elements with positioning coordinates that will render on top of each other or overlap, but consider and adhere to sensible visual design guidelines.
+
 ---
 
 ## Canvas Specifications
 
-**Dimensions**: {{canvas_width}} × {{canvas_height}}
-
-**Margins** (all elements must respect):
-
-- Top: ≥ 50
-- Bottom: ≤ {{canvas_height}} - 50
-- Left: ≥ 50
-- Right: ≤ {{canvas_width}} - 50
-
-**Alignment Reference Points**:
-
-- Left-aligned: left = 60 or 80
-- Centered: left = ({{canvas_width}} - width) / 2
-- Right-aligned: left = {{canvas_width}} - width - 60
+**Dimensions**: {{canvas_width}} × {{canvas_height}}. Ensure that elements always fit *within* the canvas, and take into account their width and height when placing them. Take great care that elements are not placed wholly or partially outside the canvas! When using images, graphs, charts, etc., consider the placement and sizing of these first (leaving room for the rest of the intended information), then design and build the rest of the slide around them.
+**Element Layering**: Elements render in array order! Later elements appear on top. Always place background shapes before text elements. As a rule of thumb, and unless explicitly warranted, all shapes should be created below text and equations (ie., earliest in the final output JSON array).
 
 ---
 
@@ -53,11 +45,9 @@ You are generating excellent and well-structured slide components with precise l
 }
 ```
 
-**Element Layering**: Elements render in array order. Later elements appear on top. Place background shapes before text elements.
-
 ---
 
-## Element Types
+## Available Element Types
 
 ### TextElement
 
@@ -82,7 +72,7 @@ You are generating excellent and well-structured slide components with precise l
 | type | "text" | Element type |
 | left, top | number ≥ 0 | Position |
 | width | number > 0 | Container width |
-| height | number > 0 | **Must use value from Height Lookup Table** |
+| height | number > 0 | Must use sensible height according to font size |
 | content | string | HTML content |
 | defaultFontName | string | Font name (can be empty "") |
 | defaultColor | string | Hex color (e.g., "#333") |
@@ -94,10 +84,7 @@ You are generating excellent and well-structured slide components with precise l
 - Supported tags: `<p>`, `<span>`, `<strong>`, `<b>`, `<em>`, `<i>`, `<u>`, `<h1>`-`<h6>`
 - For multiple lines, use separate `<p>` tags (one per line)
 - Supported inline styles: `font-size`, `color`, `text-align`, `line-height`, `font-weight`, `font-family`
-- Text language must match the language specified in generation requirements
-- **NO inline math/LaTeX**: TextElement cannot render LaTeX commands. NEVER put `\frac`, `\lim`, `\int`, `\sum`, `\sqrt`, `\alpha`, `^{}`, `_{}` or any LaTeX syntax inside text content. These will display as raw backslash strings (e.g., the user sees literal "\frac{a}{b}" instead of a fraction). Use a separate LatexElement for any mathematical expression.
-
-**Internal Padding**: TextElement has 10px padding on all sides. Actual text area = (width - 20) × (height - 20).
+- **NO inline math/LaTeX**: TextElement cannot render LaTeX commands. Never put any LaTeX syntax inside text elements. Use the dedicated LatexElement for any mathematical expressions.
 
 ---
 
@@ -120,14 +107,14 @@ You are generating excellent and well-structured slide components with precise l
 
 **Image Sizing Rules (Be careful to keep the proportions of the original image)**:
 
-- `src` MUST be an image ID from the assigned images list (e.g., "img_1"). Do NOT use URLs or invented IDs
-- If no suitable image exists, do NOT create image elements — use text and shapes only
+- `src` must be an image ID from the assigned images list (e.g., "img_1"). Do NOT use URLs or invented IDs
+- If no suitable image exists, do not create image elements — use text and shapes only
 - **When dimensions are provided** (e.g., "**img_1**: size: 884×424 (aspect ratio 2.08)"):
   - Choose a width based on layout needs (typically 300-500px)
-  - Calculate: `height = width / aspect ratio`
+  - Use `height = width / aspect ratio`
   - Example: Aspect ratio 2.08, width 400 → height = 400 / 2.08 ≈ 192
 - **When dimensions are NOT provided**: Use 4:3 default (width:height ≈ 1.33)
-- Ensure the image stays within canvas margins (50px from each edge)
+- Ensure the image stays within canvas margins
 
 #### AI-Generated Images (`gen_img_*`)
 
@@ -137,7 +124,7 @@ If the scene outline includes `mediaGenerations`, you may also use generated ima
 - These will be replaced with actual generated images after slide creation
 - Use the same dimension rules as regular images
 - Default aspect ratio for generated images: 16:9 (width:height = 16:9)
-- For generated images, calculate: `height = width / 1.778` (16:9 ratio) unless a different ratio is specified
+- For generated images, use: `height = width / 1.778` (16:9 ratio) unless a different ratio is specified
 
 ---
 
@@ -162,8 +149,7 @@ If the scene outline includes `mediaGenerations`, you may also use generated ima
 
 - `src` MUST be a generated video ID from the `mediaGenerations` list (e.g., "gen_vid_1")
 - Default aspect ratio: 16:9 → `height = width / 1.778`
-- Typical video width: 400-600px (prominent on slide)
-- Position video as a focal element — usually centered or in the main content area
+- Decide whether video is a main focal point, or a supporting content that user can full-screen if needed
 - Leave space for a title and optional caption text
 
 ---
@@ -226,17 +212,10 @@ If the scene outline includes `mediaGenerations`, you may also use generated ima
 
 **CRITICAL — `width` is STROKE THICKNESS, not line length:**
 
-- `width` controls the line's visual thickness (stroke weight), **NOT** the horizontal span.
+- `width` controls the line's *visual thickness* (stroke weight), **NOT** the horizontal span.
 - The visual span is determined by `start` and `end` coordinates, not `width`.
 - Arrow/dot marker size is proportional to `width`: arrowhead triangle = `width × 3` pixels. Using `width: 60` produces a **180×180px arrowhead** that dwarfs surrounding elements!
 - **Recommended values**: `width: 2` (thin) to `width: 4` (medium). Never exceed `width: 6` for connector arrows.
-
-| width value | Stroke      | Arrowhead size | Use case                            |
-| ----------- | ----------- | -------------- | ----------------------------------- |
-| 2           | thin        | ~6px           | Subtle connectors, secondary arrows |
-| 3           | medium      | ~9px           | Standard connectors and arrows      |
-| 4           | medium-bold | ~12px          | Emphasized arrows                   |
-| 5-6         | bold        | ~15-18px       | Heavy emphasis (use sparingly)      |
 
 **Optional Fields** (for bent/curved lines):
 
@@ -250,115 +229,12 @@ All control point coordinates are **relative to `left, top`**, same as `start` a
 | `cubic`   | [[x1,y1],[x2,y2]] | C (Cubic Bezier)     | Two control points for an **S-curve or complex curve**. c1 controls curvature near start, c2 controls curvature near end.               |
 | `shadow`  | object            | —                    | Optional shadow effect.                                                                                                                 |
 
-**Bent/curved line examples:**
-
-_Broken line (right-angle connector):_
-
-```json
-{
-  "id": "line_broken",
-  "type": "line",
-  "left": 300,
-  "top": 200,
-  "width": 3,
-  "start": [0, 0],
-  "end": [80, 60],
-  "broken": [0, 60],
-  "style": "solid",
-  "color": "#5b9bd5",
-  "points": ["", "arrow"]
-}
-```
-
-Path: (300,200) → down to (300,260) → right to (380,260). Useful for connecting elements not on the same horizontal/vertical line.
-
-_Axis-aligned step connector (broken2):_
-
-```json
-{
-  "id": "line_step",
-  "type": "line",
-  "left": 300,
-  "top": 200,
-  "width": 3,
-  "start": [0, 0],
-  "end": [100, 80],
-  "broken2": [50, 40],
-  "style": "solid",
-  "color": "#5b9bd5",
-  "points": ["", "arrow"]
-}
-```
-
-Auto-generates a step-shaped path with right-angle bends. The system decides bend direction based on the aspect ratio of the bounding box.
-
-_Quadratic curve:_
-
-```json
-{
-  "id": "line_curve",
-  "type": "line",
-  "left": 300,
-  "top": 200,
-  "width": 3,
-  "start": [0, 0],
-  "end": [100, 0],
-  "curve": [50, -40],
-  "style": "solid",
-  "color": "#5b9bd5",
-  "points": ["", "arrow"]
-}
-```
-
-A smooth arc from start to end, curving upward (control point above the line). Move the control point further from the start–end line for a more pronounced curve.
-
-_Cubic Bezier curve:_
-
-```json
-{
-  "id": "line_cubic",
-  "type": "line",
-  "left": 300,
-  "top": 200,
-  "width": 3,
-  "start": [0, 0],
-  "end": [100, 0],
-  "cubic": [
-    [30, -40],
-    [70, 40]
-  ],
-  "style": "solid",
-  "color": "#5b9bd5",
-  "points": ["", "arrow"]
-}
-```
-
-An S-shaped curve. c1=[30,-40] pulls the curve up near start, c2=[70,40] pulls it down near end.
-
 **Use Cases**:
 
 - Straight arrows and connectors → `points: ["", "arrow"]` (no broken/curve)
 - Right-angle connectors (e.g., flowcharts) → `broken` or `broken2`
 - Smooth curved arrows → `curve` (simple arc) or `cubic` (S-curve)
 - Decorative lines/dividers → ShapeElement (rectangle with height 1-3px) or LineElement
-
-**Connector Arrow Layout** (arrows between side-by-side elements):
-
-When placing connector arrows between elements in a row (e.g., A → B → C flow), the arrow's visual span is defined by `start` and `end`, NOT `width`. Plan the layout so there is enough gap between elements for the arrow:
-
-```
-Wrong — gap too small, arrow extends into elements:
-  Rect A: left=60, width=280 (right edge = 340)
-  Rect B: left=360 (gap = 20px — too narrow for arrows!)
-  Arrow:  left=330, end=[60,0], width=60 ✗ (width=60 makes a HUGE arrowhead)
-
-Correct — proper gap and stroke:
-  Rect A: left=60, width=250 (right edge = 310)
-  Rect B: left=390 (gap = 80px — room for arrow)
-  Arrow:  left=320, start=[0,0], end=[60,0], width=3 ✓ (thin stroke, arrow within gap)
-```
-
-Minimum recommended gap between elements for connector arrows: **60-80px**. If the current layout leaves less than 60px, reduce element widths to make room.
 
 ---
 
@@ -399,7 +275,9 @@ Minimum recommended gap between elements for connector arrows: **60-80px**. If t
 
 ---
 
-### LatexElement
+### LaTeXElement
+
+The LaTeX renderer uses KaTeX for formula rendering, which supports virtually all standard LaTeX math commands including arrows, logic symbols, ellipsis, accents, delimiters, and AMS math extensions. You may use any standard LaTeX math command freely.
 
 ```json
 {
@@ -426,7 +304,7 @@ Minimum recommended gap between elements for connector arrows: **60-80px**. If t
 - `strokeWidth` — defaults to 2
 - `fixedRatio` — defaults to true
 
-**CRITICAL — Width & Height auto-scaling**:
+**LaTeX Width & Height auto-scaling**:
 The system renders the formula and computes its natural aspect ratio. Then it applies the following logic:
 
 1. Start with your `height`, compute `width = height × aspectRatio`.
@@ -459,19 +337,6 @@ When a formula is long (e.g. expanded polynomials, long sums, piecewise function
 **Multi-step equation derivations:**
 When splitting a derivation across multiple LaTeX elements (one per line), simply give each step the **same height** (e.g., 70-80px). The system auto-computes width proportionally — longer formulas become wider, shorter ones narrower — and all steps render at the same vertical size. No manual width estimation needed.
 
-**LaTeX Syntax Tips**:
-
-- Fractions: `\frac{a}{b}`
-- Superscript / subscript: `x^2`, `a_n`
-- Square root: `\sqrt{x}`, `\sqrt[3]{x}`
-- Greek letters: `\alpha`, `\beta`, `\pi`, `\sum`
-- Integrals: `\int_0^1 f(x) dx`
-- Common formulas: `a^2 + b^2 = c^2`, `E = mc^2`
-
-**LaTeX Support**: This project uses KaTeX for formula rendering, which supports virtually all standard LaTeX math commands including arrows, logic symbols, ellipsis, accents, delimiters, and AMS math extensions. You may use any standard LaTeX math command freely.
-
-- `\text{}` can render English text normally.
-
 **When to Use**: Use LatexElement for **all** mathematical formulas, equations, and scientific notation — including simple ones like `x^2` or `a/b`. TextElement cannot render LaTeX; any LaTeX syntax placed in a TextElement will display as raw text (e.g., "\frac{1}{2}" appears literally). For plain text that happens to contain numbers (e.g., "Chapter 3", "Score: 95"), use TextElement.
 
 ---
@@ -502,31 +367,14 @@ When splitting a derivation across multiple LaTeX elements (one per line), simpl
 
 ---
 
-## Text Height Lookup Table
-
-**All TextElement heights must come from this table.** (line-height=1.5, includes 10px padding on each side)
-
-| Font Size | 1 line | 2 lines | 3 lines | 4 lines | 5 lines |
-| --------- | ------ | ------- | ------- | ------- | ------- |
-| 14px      | 43     | 64      | 85      | 106     | 127     |
-| 16px      | 46     | 70      | 94      | 118     | 142     |
-| 18px      | 49     | 76      | 103     | 130     | 157     |
-| 20px      | 52     | 82      | 112     | 142     | 172     |
-| 24px      | 58     | 94      | 130     | 166     | 202     |
-| 28px      | 64     | 106     | 148     | 190     | 232     |
-| 32px      | 70     | 118     | 166     | 214     | 262     |
-| 36px      | 76     | 130     | 184     | 238     | 292     |
-
----
-
 ## Design Rules
 
-### Rule 1: Text Width Calculation
+### Text Width Considerations
 
 Before finalizing any text element, verify it fits in one line (unless multi-line is intended):
 
 ```
-characters_per_line = (width - 20) / font_size
+characters_per_line ~= (width - 20) / font_size
 ```
 
 If character count > characters_per_line, the text will wrap. Adjust by:
@@ -539,66 +387,23 @@ If character count > characters_per_line, the text will wrap. Adjust by:
 
 ---
 
-### Rule 2: Text Height Calculation
+### Text Height
 
-1. Count the number of `<p>` tags (paragraphs)
-2. For each paragraph, calculate lines needed: `ceil(char_count / characters_per_line)`
-3. Add safety margin: `total_lines = sum_of_lines + 0.8` (round up)
-4. Look up height in the table using the **largest font size** in the content
+Consider:
 
----
-
-### Rule 3: Element Alignment
-
-When aligning elements (text inside background, icon with label):
-
-**Vertical centering**:
-
-```
-inner.top = outer.top + (outer.height - inner.height) / 2
-```
-
-**Horizontal centering**:
-
-```
-inner.left = outer.left + (outer.width - inner.width) / 2
-```
-
-**Verification**: Calculate center points of both elements. Difference should be < 2px.
+1. The number of `<p>` tags (paragraphs)
+2. Lines needed for each paragraph
+3. Add a small safety margin
 
 ---
 
-### Rule 4: Symmetry and Parallel Layout
+### Symmetry and Parallel Layout
 
 When designing symmetric or parallel elements, use **exact same values** for corresponding properties.
 
-**Left-right symmetry** (two-column layout):
-
-```
-Left element:  left = 60,  width = 430
-Right element: left = 510, width = 430  ✓ (symmetric, gap = 20px)
-```
-
-**Top alignment** (side-by-side elements):
-
-```
-Element A: top = 150, height = 180
-Element B: top = 150, height = 180  ✓ (aligned)
-```
-
-**Equal spacing** (three or more parallel elements):
-
-```
-Element 1: left = 60,  width = 280
-Element 2: left = 360, width = 280  (gap = 20px)
-Element 3: left = 660, width = 280  (gap = 20px)  ✓ (consistent)
-```
-
-**Key principle**: Human eyes detect differences as small as 5px. Use identical values—never approximate.
-
 ---
 
-### Rule 5: Text with Background Shape
+### Text with Background Shape
 
 When placing text on a background shape, follow this process:
 
@@ -613,23 +418,13 @@ shape.width = 400
 shape.height = 120
 ```
 
-#### Step 2: Calculate text dimensions
+#### Step 2: Consider text dimensions
 
-The text must fit inside the shape with padding. Use **20px padding** on all sides:
+The text must fit inside the shape with sensible padding.
 
-```
-text.width = shape.width - 40    (20px padding left + 20px padding right)
-text.height = from lookup table, must be ≤ shape.height - 40
-```
+#### Center the text inside the shape
 
-#### Step 3: Center the text inside the shape
-
-**Both horizontally AND vertically:**
-
-```
-text.left = shape.left + (shape.width - text.width) / 2
-text.top = shape.top + (shape.height - text.height) / 2
-```
+Both horizontally and vertically.
 
 #### Complete Example: Card with centered text
 
@@ -666,22 +461,6 @@ Text element (centered inside):
 }
 ```
 
-Calculation verification:
-
-```
-shape: left=60, top=150, width=400, height=120
-text:  left=80, top=172, width=360, height=76
-
-Horizontal centering:
-  text.left = 60 + (400 - 360) / 2 = 60 + 20 = 80 ✓
-
-Vertical centering:
-  text.top = 150 + (120 - 76) / 2 = 150 + 22 = 172 ✓
-
-Containment check:
-  text fits within shape with 20px padding on all sides ✓
-```
-
 #### Common Mistakes to Avoid
 
 **Wrong: Same left/top values (text in top-left corner)**
@@ -705,97 +484,7 @@ shape: left=60, top=150, width=400, height=120
 text:  left=80, top=172, width=360, height=76   ✓ CENTERED
 ```
 
-#### Complete Example: Three-Column Card Layout
-
-Three cards side by side, each with centered text:
-
-```json
-[
-  {
-    "id": "card1_bg",
-    "type": "shape",
-    "left": 60,
-    "top": 200,
-    "width": 280,
-    "height": 140,
-    "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-    "viewBox": [1, 1],
-    "fill": "#dbeafe",
-    "fixedRatio": false
-  },
-  {
-    "id": "card2_bg",
-    "type": "shape",
-    "left": 360,
-    "top": 200,
-    "width": 280,
-    "height": 140,
-    "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-    "viewBox": [1, 1],
-    "fill": "#dcfce7",
-    "fixedRatio": false
-  },
-  {
-    "id": "card3_bg",
-    "type": "shape",
-    "left": 660,
-    "top": 200,
-    "width": 280,
-    "height": 140,
-    "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-    "viewBox": [1, 1],
-    "fill": "#fef3c7",
-    "fixedRatio": false
-  },
-  {
-    "id": "card1_text",
-    "type": "text",
-    "left": 80,
-    "top": 232,
-    "width": 240,
-    "height": 76,
-    "content": "<p style=\"font-size: 18px; text-align: center;\">Point One</p>",
-    "defaultFontName": "",
-    "defaultColor": "#1e40af"
-  },
-  {
-    "id": "card2_text",
-    "type": "text",
-    "left": 380,
-    "top": 232,
-    "width": 240,
-    "height": 76,
-    "content": "<p style=\"font-size: 18px; text-align: center;\">Point Two</p>",
-    "defaultFontName": "",
-    "defaultColor": "#166534"
-  },
-  {
-    "id": "card3_text",
-    "type": "text",
-    "left": 680,
-    "top": 232,
-    "width": 240,
-    "height": 76,
-    "content": "<p style=\"font-size: 18px; text-align: center;\">Point Three</p>",
-    "defaultFontName": "",
-    "defaultColor": "#92400e"
-  }
-]
-```
-
-Calculation for card1:
-
-```
-shape: left=60, width=280, height=140
-text:  width=240, height=76
-
-text.left = 60 + (280 - 240) / 2 = 60 + 20 = 80 ✓
-text.top = 200 + (140 - 76) / 2 = 200 + 32 = 232 ✓
-```
-
----
-
-### Rule 6: Decorative Lines
+### Decorative Lines
 
 #### Title Underline (emphasis)
 
@@ -841,10 +530,10 @@ Example:
 
 #### Section Divider (separation)
 
-Position formula:
+Positioning:
 
 ```
-Vertical gap: 25-35px from content above and below
+Vertical gap: 10-20px from content above and below
 Horizontal: centered on canvas or left-aligned (left = 60 or 80)
 line.width = 700-900px (70-90% of canvas width)
 line.height = 1 to 2px
@@ -869,7 +558,7 @@ Example:
 
 #### Highlight Marker (vertical bar beside text)
 
-Position formula:
+Positioning:
 
 ```
 line.left = text.left - 15
@@ -911,20 +600,20 @@ Example:
 
 ---
 
-### Rule 7: Spacing Standards
+### Spacing Standards
 
 **Vertical spacing**:
 
-- Title to subtitle: 30-40px
-- Title to body: 35-50px
-- Between paragraphs: 20-30px
-- Text to image: 25-35px
+- Title to subtitle: 15-25px
+- Title to body: 20-35px
+- Between paragraphs: 10-20px
+- Text to image: 10-20px
 
 **Horizontal spacing**:
 
-- Multi-column gap: 40-60px
-- Text to image: 30-40px
-- Element to canvas edge: ≥ 50px
+- Multi-column gap: 20-40px
+- Text to image: 10-20px
+- Element to canvas edge: ≥ 20px
 
 ---
 
@@ -932,11 +621,11 @@ Example:
 
 | Content Type | Recommended Size |
 | ------------ | ---------------- |
-| Main title   | 32-36px          |
-| Subtitle     | 24-28px          |
-| Key points   | 18-20px          |
-| Body text    | 16-18px          |
-| Captions     | 14-16px          |
+| Main title   | 28-32px          |
+| Subtitle     | 20-24px          |
+| Key points   | 14-16px          |
+| Body text    | 12-14px          |
+| Captions     | 10-12px          |
 
 Maintain consistent sizing for same-level content. Ensure 2-4px difference between hierarchy levels.
 
@@ -946,34 +635,21 @@ Maintain consistent sizing for same-level content. Ensure 2-4px difference betwe
 
 Before outputting JSON, verify:
 
-**🔴 P0 — Critical (must pass 100%)**:
-
-1. ✓ All text heights are from the lookup table (NOT estimated values like 70, 80, 90)
-2. ✓ All text elements pass width calculation: `char_count ≤ (width - 20) / font_size`
-3. ✓ Aligned elements have matching center points (< 2px difference)
-4. ✓ All elements are within canvas margins (50px from each edge)
-5. ✓ Image `src` ONLY uses image IDs from the assigned images list (e.g., "img_1", "img_2") or generated IDs (e.g., "gen_img_1")
-   - Video `src` ONLY uses generated video IDs (e.g., "gen_vid_1")
-   - Do NOT invent image/video IDs or URLs not listed in the available media
-   - If no suitable image exists, do NOT create image elements — use text and shapes only
-   - Any image/video ID not in the list will be automatically removed by the system
-6. ✓ Image aspect ratio preserved: `height = width / aspect_ratio` (use ratio from image metadata)
-7. ✓ LatexElement does NOT include `path`, `viewBox`, `strokeWidth`, or `fixedRatio` (system auto-generates these)
-8. ✓ LatexElement width is appropriate for the formula category (standalone fractions: 30-80, NOT 200+; inline equations: 200-400). Check the LaTeX width guide table above.
-9. ✓ Multi-step derivation LaTeX elements: widths are proportional to content length (longer formulas MUST have larger width). Do NOT use the same width for all steps — this causes wildly different rendered heights.
-10. ✓ No LaTeX syntax in TextElement content: scan all text `content` fields for `\frac`, `\lim`, `\int`, `\sum`, `\sqrt`, `\alpha`, `^{`, `_{` etc. Any math expression must be a separate LatexElement.
-11. ✓ LineElement `width` is stroke thickness (2-6), NOT line length. Check: no LineElement has `width` > 6. If width equals the distance between start and end, it is WRONG — you confused stroke thickness with line span.
-12. ✓ **Slide text is concise and meaningful, but impersonal**: Every text element uses keywords, short phrases, or bullet points — no conversational sentences, no lecture-script-style paragraphs. No teacher name or identity appears on any slide. If a text reads like spoken language or a personal message, rewrite it as a neutral bullet point.
-
-**🟡 P1 — Serious (strongly recommended)**: 13. ✓ **Text-Background pairs**: For each text with a background shape:
-
-- text.width < shape.width (with padding)
-- text.height < shape.height (with padding)
-- text is centered: `text.left = shape.left + (shape.width - text.width) / 2`
-- text is centered: `text.top = shape.top + (shape.height - text.height) / 2`
-
-14. ✓ No unintended element overlaps (especially check LaTeX elements — their rendered height may be much larger than specified)
-15. ✓ Image placed near related text (25-35px gap)
+1. Image `src` ONLY uses image IDs from the assigned images list (e.g., "img_1", "img_2") or generated IDs (e.g., "gen_img_1")
+    - Video `src` ONLY uses generated video IDs (e.g., "gen_vid_1")
+    - Do NOT invent image/video IDs or URLs not listed in the available media
+    - If no suitable image exists, do NOT create image elements — use text and shapes only
+    - Any image/video ID not in the list will be automatically removed by the system
+2. Image aspect ratio preserved: `height = width / aspect_ratio` (use ratio from image metadata)
+3. LatexElement does NOT include `path`, `viewBox`, `strokeWidth`, or `fixedRatio` (system auto-generates these)
+4. LatexElement width is appropriate for the formula category (standalone fractions: 30-80, NOT 200+; inline equations: 200-400).
+5. Multi-step derivation LaTeX elements: widths are proportional to content length (longer formulas must have larger width). Do not use the same width for all steps — this causes wildly different rendered heights.
+10. No LaTeX syntax in TextElement content
+11. LineElement `width` is stroke thickness (2-6), NOT line length. Check: no LineElement has `width` > 6.
+12. **Slide text is concise and meaningful, but impersonal**: No slide text uses conversational sentences, no lecture-script-style paragraphs.
+13. **Text-Background pairs**: Text is correctly placed within background shape
+14. No unintended element overlaps (especially check LaTeX elements — their rendered height may be much larger than specified)
+15. Image placed near related text
 
 ---
 

@@ -263,6 +263,25 @@ If you value education, please help support the continued development of this op
 | Comprehensive research | 🔄 In Progress | Inform classroom generation with comprehensive research pipelines |
 | Course prerequisite chains | 📋 Planned | Include previous courses as context |
 
+## Local Network Microphone Access
+
+If you are running Ember directly on your computer, and accessing via `http://localhost/`, your browser will treat this as a secure context, and allow using the microphone. But if you are accessing Ember over your local network, and not using HTTPS, browsers will by default block access to devices like the microphone, meaning that text transcription functionality will not work. Since it can be tedious to set up SSL certificates for local network access, here's a few easy steps to add an exception for your locally hosted Ember instance, so all functionality works, even over HTTP:
+
+**In Chrome:**
+
+1. Navigate to chrome://flags/#unsafely-treat-insecure-origin-as-secure in Chrome.
+2. Find and enable the Insecure origins treated as secure section.
+3. Add any addresses you want to ignore the secure origin policy for. Remember to include the protocol and port number too, for example `http://192.168.1.11:3000`.
+4. Save and restart Chrome.
+
+**In Firefox:**
+
+1. Go to `about:config` using the address bar.
+2. Search for `dom.securecontext.allowlist`. This settings entry probably doesn't exist yet, but it can be created by entering it's value.
+3. Change the value type to "string".
+4. Add the local IP of the Ember server (don't add http/s or port, only the hostname or IP!).
+5. Browser restart not required, it should just work next time you visit/refresh the address.
+
 ---
 
 **Ember** — *A fire that is yours to keep and nurture*

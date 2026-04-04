@@ -59,8 +59,12 @@ async function downloadToBuffer(url: string): Promise<Buffer> {
   return Buffer.from(await resp.arrayBuffer());
 }
 
-function mediaServingUrl(baseUrl: string, classroomId: string, subPath: string): string {
-  return `${baseUrl}/api/classroom-media/${classroomId}/${subPath}`;
+/**
+ * Generate a host-relative media serving URL
+ * Host-relative URLs ensure classrooms remain portable across different hosts/ports
+ */
+function mediaServingUrl(classroomId: string, subPath: string): string {
+  return `/api/classroom-media/${classroomId}/${subPath}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -70,7 +74,6 @@ function mediaServingUrl(baseUrl: string, classroomId: string, subPath: string):
 export async function generateMediaForClassroom(
   outlines: SceneOutline[],
   classroomId: string,
-  baseUrl: string,
 ): Promise<Record<string, string>> {
   const mediaDir = path.join(CLASSROOMS_DIR, classroomId, 'media');
   await ensureDir(mediaDir);
@@ -123,7 +126,7 @@ export async function generateMediaForClassroom(
 
         const filename = `${req.elementId}.${ext}`;
         await fs.writeFile(path.join(mediaDir, filename), buf);
-        mediaMap[req.elementId] = mediaServingUrl(baseUrl, classroomId, `media/${filename}`);
+        mediaMap[req.elementId] = mediaServingUrl(classroomId, `media/${filename}`);
         log.info(`Generated image: ${filename}`);
       } catch (err) {
         log.warn(`Image generation failed for ${req.elementId}:`, err);
@@ -156,7 +159,7 @@ export async function generateMediaForClassroom(
         const buf = await downloadToBuffer(result.url);
         const filename = `${req.elementId}.mp4`;
         await fs.writeFile(path.join(mediaDir, filename), buf);
-        mediaMap[req.elementId] = mediaServingUrl(baseUrl, classroomId, `media/${filename}`);
+        mediaMap[req.elementId] = mediaServingUrl(classroomId, `media/${filename}`);
         log.info(`Generated video: ${filename}`);
       } catch (err) {
         log.warn(`Video generation failed for ${req.elementId}:`, err);
@@ -205,7 +208,6 @@ export function replaceMediaPlaceholders(scenes: Scene[], mediaMap: Record<strin
 export async function generateTTSForClassroom(
   scenes: Scene[],
   classroomId: string,
-  baseUrl: string,
 ): Promise<void> {
   const audioDir = path.join(CLASSROOMS_DIR, classroomId, 'audio');
   await ensureDir(audioDir);
@@ -252,7 +254,7 @@ export async function generateTTSForClassroom(
         await fs.writeFile(path.join(audioDir, filename), result.audio);
 
         speechAction.audioId = audioId;
-        speechAction.audioUrl = mediaServingUrl(baseUrl, classroomId, `audio/${filename}`);
+        speechAction.audioUrl = mediaServingUrl(classroomId, `audio/${filename}`);
         log.info(`Generated TTS: ${filename} (${result.audio.length} bytes)`);
       } catch (err) {
         log.warn(`TTS generation failed for action ${action.id}:`, err);
