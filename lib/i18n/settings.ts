@@ -176,7 +176,7 @@ export const settingsEnUS = {
     cancelEdit: 'Cancel',
     saveModel: 'Save',
     modelsManagementDescription:
-      'Manage models for this provider. To select the active model, go to "General".',
+      'Click a model to set it as active',
     // General settings
     howToUse: 'How to Use',
     step1ConfigureProvider:

@@ -38,10 +38,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const apiKey = clientBaseUrl
-      ? clientApiKey || ''
-      : resolveImageApiKey(providerId, clientApiKey);
-    const baseUrl = clientBaseUrl ? clientBaseUrl : resolveImageBaseUrl(providerId, clientBaseUrl);
+    const apiKey = resolveImageApiKey(providerId, clientApiKey);
+    const baseUrl = clientBaseUrl || resolveImageBaseUrl(providerId) || undefined;
 
     if (!apiKey) {
       return apiError('MISSING_API_KEY', 400, 'No API key configured');

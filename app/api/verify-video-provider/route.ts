@@ -38,10 +38,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const apiKey = clientBaseUrl
-      ? clientApiKey || ''
-      : resolveVideoApiKey(providerId, clientApiKey);
-    const baseUrl = clientBaseUrl ? clientBaseUrl : resolveVideoBaseUrl(providerId, clientBaseUrl);
+    const apiKey = resolveVideoApiKey(providerId, clientApiKey);
+    const baseUrl = clientBaseUrl || resolveVideoBaseUrl(providerId) || undefined;
 
     if (!apiKey) {
       return apiError('MISSING_API_KEY', 400, 'No API key configured');
