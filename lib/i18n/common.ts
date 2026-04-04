@@ -44,8 +44,8 @@ export const commonEnUS = {
   toolbar: {
     languageHint: 'Course will be generated in this language',
     pdfParser: 'Parser',
-    pdfUpload: 'Upload PDF',
-    pdfFilesSelected: '{n} PDFs selected',
+    pdfUpload: 'Upload documents',
+    pdfFilesSelected: '{n} documents selected',
     pdfMergeOrder: 'Materials will be merged in selection order',
     removePdf: 'Remove file',
     researchOn: 'Research enabled',
