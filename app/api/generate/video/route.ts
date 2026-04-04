@@ -48,9 +48,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const apiKey = clientBaseUrl
-      ? clientApiKey || ''
-      : resolveVideoApiKey(providerId, clientApiKey);
+    const apiKey = resolveVideoApiKey(providerId, clientApiKey);
     if (!apiKey) {
       return apiError(
         'MISSING_API_KEY',
@@ -59,7 +57,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const baseUrl = clientBaseUrl ? clientBaseUrl : resolveVideoBaseUrl(providerId, clientBaseUrl);
+    const baseUrl = clientBaseUrl || resolveVideoBaseUrl(providerId) || undefined;
 
     // Normalize options against provider capabilities
     const options = normalizeVideoOptions(providerId, body);

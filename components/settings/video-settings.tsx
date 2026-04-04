@@ -30,6 +30,7 @@ export function VideoSettings({ selectedProviderId }: VideoSettingsProps) {
   const { t } = useI18n();
 
   const videoModelId = useSettingsStore((state) => state.videoModelId);
+  const setVideoModelId = useSettingsStore((state) => state.setVideoModelId);
   const videoProvidersConfig = useSettingsStore((state) => state.videoProvidersConfig);
   const setVideoProviderConfig = useSettingsStore((state) => state.setVideoProviderConfig);
 
@@ -88,11 +89,11 @@ export function VideoSettings({ selectedProviderId }: VideoSettingsProps) {
         setTestMessage(t('settings.videoConnectivitySuccess'));
       } else {
         setTestStatus('error');
-        setTestMessage(`${t('settings.videoConnectivityFailed')}: ${data.message}`);
+        setTestMessage(`${t('settings.videoConnectivityFailed')}: ${data.error || data.message}`);
       }
     } catch (err) {
       setTestStatus('error');
-      setTestMessage(`${t('settings.videoConnectivityFailed')}: ${err}`);
+      setTestMessage(`${t('settings.videoConnectivityFailed')}: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setTestLoading(false);
     }
@@ -263,12 +264,21 @@ export function VideoSettings({ selectedProviderId }: VideoSettingsProps) {
           {builtInModels.map((model) => (
             <div
               key={model.id}
-              className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-card"
+              onClick={() => setVideoModelId(model.id)}
+              className={cn(
+                'flex items-center justify-between p-3 rounded-lg border bg-card cursor-pointer transition-colors',
+                videoModelId === model.id
+                  ? 'border-primary ring-1 ring-primary/30'
+                  : 'border-border/50 hover:border-border',
+              )}
             >
               <div className="flex-1 min-w-0">
                 <div className="font-mono text-sm font-medium">{model.name}</div>
                 <div className="text-xs text-muted-foreground font-mono mt-0.5">{model.id}</div>
               </div>
+              {videoModelId === model.id && (
+                <CheckCircle2 className="h-4 w-4 text-primary shrink-0 ml-2" />
+              )}
             </div>
           ))}
 
@@ -276,18 +286,30 @@ export function VideoSettings({ selectedProviderId }: VideoSettingsProps) {
           {customModels.map((model, index) => (
             <div
               key={`custom-${index}`}
-              className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-card"
+              onClick={() => setVideoModelId(model.id)}
+              className={cn(
+                'flex items-center justify-between p-3 rounded-lg border bg-card cursor-pointer transition-colors',
+                videoModelId === model.id
+                  ? 'border-primary ring-1 ring-primary/30'
+                  : 'border-border/50 hover:border-border',
+              )}
             >
               <div className="flex-1 min-w-0">
                 <div className="font-mono text-sm font-medium">{model.name}</div>
                 <div className="text-xs text-muted-foreground font-mono mt-0.5">{model.id}</div>
               </div>
               <div className="flex items-center gap-1">
+                {videoModelId === model.id && (
+                  <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                )}
                 <Button
                   variant="outline"
                   size="sm"
                   className="h-8 px-2"
-                  onClick={() => handleOpenEditModel(index)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenEditModel(index);
+                  }}
                   title={t('settings.editModel')}
                 >
                   <Settings2 className="h-3.5 w-3.5" />
@@ -296,7 +318,10 @@ export function VideoSettings({ selectedProviderId }: VideoSettingsProps) {
                   variant="outline"
                   size="sm"
                   className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={() => handleDeleteModel(index)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteModel(index);
+                  }}
                   title={t('settings.deleteModel')}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
