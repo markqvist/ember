@@ -189,7 +189,7 @@ export function TextElement({ elementInfo, selectElement }: TextElementProps) {
             lineHeight: elementInfo.lineHeight,
             letterSpacing: `${elementInfo.wordSpace || 0}px`,
             color: elementInfo.defaultColor,
-            fontFamily: elementInfo.defaultFontName,
+            fontFamily: elementInfo.defaultFontName || 'Inter, sans-serif',
             writingMode: elementInfo.vertical ? 'vertical-rl' : 'horizontal-tb',
             // @ts-expect-error - CSS custom property
             '--paragraphSpace': `${elementInfo.paragraphSpace === undefined ? 5 : elementInfo.paragraphSpace}px`,

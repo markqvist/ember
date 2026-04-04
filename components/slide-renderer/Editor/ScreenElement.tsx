@@ -45,7 +45,7 @@ export function ScreenElement({ elementInfo, elementIndex, animate }: ScreenElem
       }
       return {
         fontColor: '#333333',
-        fontName: 'Microsoft YaHei',
+        fontName: 'Inter',
       };
     },
   );
@@ -61,7 +61,7 @@ export function ScreenElement({ elementInfo, elementIndex, animate }: ScreenElem
       style={{
         zIndex: elementIndex,
         color: theme.fontColor,
-        fontFamily: theme.fontName,
+        fontFamily: theme.fontName || 'Inter, sans-serif',
       }}
     >
       <CurrentElementComponent elementInfo={elementInfo} animate={animate} />

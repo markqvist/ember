@@ -59,7 +59,7 @@ export function ShapeElement({ elementInfo, selectElement }: ShapeElementProps) 
     const defaultText: ShapeText = {
       content: '',
       align: 'middle',
-      defaultFontName: 'Microsoft Yahei',
+      defaultFontName: 'Inter',
       defaultColor: '#000000',
     };
     if (!elementInfo.text) return defaultText;
@@ -118,7 +118,7 @@ export function ShapeElement({ elementInfo, selectElement }: ShapeElementProps) 
             filter: shadowStyle ? `drop-shadow(${shadowStyle})` : '',
             transform: flipStyle,
             color: text.defaultColor,
-            fontFamily: text.defaultFontName,
+            fontFamily: text.defaultFontName || 'Inter, sans-serif',
           }}
           onMouseDown={(e) => handleSelectElement(e)}
           onTouchStart={(e) => handleSelectElement(e)}

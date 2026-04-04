@@ -525,8 +525,16 @@ When splitting a derivation across multiple LaTeX elements (one per line), simpl
 
 Before finalizing any text element, verify it fits in one line (unless multi-line is intended):
 
+**For CJK characters (Chinese, Japanese, Korean):**
+
 ```
 characters_per_line = (width - 20) / font_size
+```
+
+**For Latin text (English, accented characters, etc.):**
+
+```
+characters_per_line = (width - 20) / (font_size * 0.55)
 ```
 
 If character count > characters_per_line, the text will wrap. Adjust by:

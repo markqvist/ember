@@ -139,7 +139,7 @@ export function buildCompleteScene(
       backgroundColor: '#ffffff',
       themeColors: ['#5b9bd5', '#ed7d31', '#a5a5a5', '#ffc000', '#4472c4'],
       fontColor: '#333333',
-      fontName: 'Microsoft YaHei',
+      fontName: 'Inter',
       outline: { color: '#d14424', width: 2, style: 'solid' },
       shadow: { h: 0, v: 0, blur: 10, color: '#000000' },
     };

@@ -24,7 +24,7 @@ export function BaseShapeElement({ elementInfo }: BaseShapeElementProps) {
   const text: ShapeText = elementInfo.text || {
     content: '',
     align: 'middle',
-    defaultFontName: 'Microsoft YaHei',
+    defaultFontName: 'Inter',
     defaultColor: '#333333',
   };
 
@@ -49,7 +49,7 @@ export function BaseShapeElement({ elementInfo }: BaseShapeElementProps) {
             filter: shadowStyle ? `drop-shadow(${shadowStyle})` : '',
             transform: flipStyle,
             color: text.defaultColor,
-            fontFamily: text.defaultFontName,
+            fontFamily: text.defaultFontName || 'Inter, sans-serif',
           }}
         >
           <svg

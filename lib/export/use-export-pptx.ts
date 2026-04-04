@@ -28,7 +28,7 @@ import { createLogger } from '@/lib/logger';
 const log = createLogger('ExportPPTX');
 
 const DEFAULT_FONT_SIZE = 16;
-const DEFAULT_FONT_FAMILY = 'Microsoft YaHei';
+const DEFAULT_FONT_FAMILY = 'Inter';
 
 // ── Color formatting ──
 
