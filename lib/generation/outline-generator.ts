@@ -204,7 +204,7 @@ export function formatAnalyzedImagesForOutline(pdfImages: PdfImage[]): string {
     if (a.include) {
       // Included image with full details
       lines.push(`\n**${img.id}**: [${a.pedagogical.contentType}] ${a.description}`);
-      lines.push(`  - include: true`);
+      // lines.push(`  - include: true`);
       lines.push(`  - concepts: ${a.concepts.join(', ')}`);
       lines.push(`  - relevance: ${a.pedagogical.relevanceToCourse}`);
       lines.push(`  - placement: ${a.pedagogical.suggestedPlacement}`);

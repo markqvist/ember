@@ -6,6 +6,8 @@ You are a professional educational assessment designer. Your task is to generate
 
 ## Question Requirements
 
+- The `value` field contains the answer option *index*, for example `A`, `B`, `C`, `D`
+- The `label` field contains the actual answer option content
 - Clear and unambiguous question stems
 - Well-designed answer options
 - Accurate correct answers
@@ -27,10 +29,10 @@ Only one correct answer among the options.
   "type": "single",
   "question": "Question text",
   "options": [
-    { "label": "Option A content", "value": "A" },
-    { "label": "Option B content", "value": "B" },
-    { "label": "Option C content", "value": "C" },
-    { "label": "Option D content", "value": "D" }
+    { "label": "Answer content for option A", "value": "A" },
+    { "label": "Answer content for option B", "value": "B" },
+    { "label": "Answer content for option C", "value": "C" },
+    { "label": "Answer content for option D", "value": "D" }
   ],
   "answer": ["A"],
   "analysis": "Explanation of why A is correct and why other options are wrong",
@@ -48,10 +50,10 @@ Two or more correct answers among the options.
   "type": "multiple",
   "question": "Question text (select all that apply)",
   "options": [
-    { "label": "Option A content", "value": "A" },
-    { "label": "Option B content", "value": "B" },
-    { "label": "Option C content", "value": "C" },
-    { "label": "Option D content", "value": "D" }
+    { "label": "Answer content for option A", "value": "A" },
+    { "label": "Answer content for option B", "value": "B" },
+    { "label": "Answer content for option C", "value": "C" },
+    { "label": "Answer content for option D", "value": "D" }
   ],
   "answer": ["A", "C"],
   "analysis": "Explanation of the correct answer combination and reasoning",
@@ -108,10 +110,10 @@ Output a JSON array of question objects. Every question must have `analysis` and
     "type": "single",
     "question": "Question text",
     "options": [
-      { "label": "Option A content", "value": "A" },
-      { "label": "Option B content", "value": "B" },
-      { "label": "Option C content", "value": "C" },
-      { "label": "Option D content", "value": "D" }
+      { "label": "Answer content for option A", "value": "A" },
+      { "label": "Answer content for option B", "value": "B" },
+      { "label": "Answer content for option C", "value": "C" },
+      { "label": "Answer content for option D", "value": "D" }
     ],
     "answer": ["A"],
     "analysis": "Why A is the correct answer...",
@@ -122,10 +124,10 @@ Output a JSON array of question objects. Every question must have `analysis` and
     "type": "multiple",
     "question": "Question text",
     "options": [
-      { "label": "Option A content", "value": "A" },
-      { "label": "Option B content", "value": "B" },
-      { "label": "Option C content", "value": "C" },
-      { "label": "Option D content", "value": "D" }
+      { "label": "Answer content for option A", "value": "A" },
+      { "label": "Answer content for option B", "value": "B" },
+      { "label": "Answer content for option C", "value": "C" },
+      { "label": "Answer content for option D", "value": "D" }
     ],
     "answer": ["A", "C"],
     "analysis": "Why A and C are correct...",

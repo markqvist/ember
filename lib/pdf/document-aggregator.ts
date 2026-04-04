@@ -7,7 +7,7 @@ export const PDF_PARSE_CONCURRENCY = 2;
 
 const BASE_BUDGET_PER_FILE = 1500;
 const RESERVED_BUDGET_RATIO = 0.4;
-const SECTION_SEPARATOR = '\n\n---\n\n';
+const SECTION_SEPARATOR = '\n\n';
 
 export interface ParsedPdfAsset extends Omit<PdfImage, 'storageId' | 'visionPriority'> {
   src: string;
@@ -46,11 +46,13 @@ function replaceImageIds(text: string, idMap: ReadonlyMap<string, string>): stri
 }
 
 function buildSectionHeader(part: ParsedPdfPart, index: number): string {
+  const markerPart = index > 0 ? "--- END OF SOURCE DOCUMENT---\n\n" : "";
+  const pagecountPart = part.pageCount ? `\n- Pages: ${part.pageCount}` : ``
   const headerLines = [
-    `## Source PDF ${index + 1}: ${part.source.name}`,
-    `- Order: ${part.source.order}`,
-    `- Pages: ${part.pageCount}`,
+    `${markerPart}## Source Document ${index + 1}: ${part.source.name}`,
+    `- Order: ${part.source.order}${pagecountPart}`,
     '',
+    '--- START OF SOURCE DOCUMENT ---',
   ];
   return `${headerLines.join('\n')}\n`;
 }
@@ -225,7 +227,7 @@ export function aggregateParsedPdfs(
 
   const pdfText = rewrittenParts
     .map((part) => `${part.header}${part.text}`)
-    .join(SECTION_SEPARATOR);
+    .join(SECTION_SEPARATOR) + "\n--- END OF SOURCE DOCUMENT---";
 
   const pdfImages = flattenedStableImages.map((image) => ({
     ...image,

@@ -18,11 +18,11 @@ Generate scene outlines based on the following course requirements.
 
 ## Reference Materials
 
-### PDF Content Summary
+### Source Materials
 
 {{pdfContent}}
 
-### Available Images (Semantically Analyzed)
+### Available Images
 
 {{availableImages}}
 

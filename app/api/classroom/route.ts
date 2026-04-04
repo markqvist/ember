@@ -2,7 +2,6 @@ import { type NextRequest } from 'next/server';
 import { randomUUID } from 'crypto';
 import { apiSuccess, apiError, API_ERROR_CODES } from '@/lib/server/api-response';
 import {
-  buildRequestOrigin,
   isValidClassroomId,
   persistClassroom,
   readClassroom,
@@ -26,18 +25,14 @@ export async function POST(request: NextRequest) {
     }
 
     const id = stage.id || randomUUID();
-    const baseUrl = buildRequestOrigin(request);
 
-    const persisted = await persistClassroom(
-      {
-        id,
-        stage: { ...stage, id },
-        scenes,
-        audioFiles: audioFiles as AudioFileData[] | undefined,
-        mediaFiles: mediaFiles as MediaFileData[] | undefined,
-      },
-      baseUrl,
-    );
+    const persisted = await persistClassroom({
+      id,
+      stage: { ...stage, id },
+      scenes,
+      audioFiles: audioFiles as AudioFileData[] | undefined,
+      mediaFiles: mediaFiles as MediaFileData[] | undefined,
+    });
 
     return apiSuccess({ id: persisted.id, url: persisted.url }, 201);
   } catch (error) {

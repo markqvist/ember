@@ -123,7 +123,10 @@ export function GenerationToolbar({
 
   // PDF handler
   const handleFileSelect = (incomingFiles: File[]) => {
-    const validPdfFiles = incomingFiles.filter((file) => file.type === 'application/pdf');
+    for (const file of incomingFiles) {
+      console.log(`File type: ${file.type}`);
+    }
+    const validPdfFiles = incomingFiles.filter((file) => file.type === 'application/pdf' || file.type == 'text/markdown' || file.type == 'text/plain');
     if (validPdfFiles.length === 0) return;
 
     if (validPdfFiles.some((file) => file.size > MAX_PDF_SIZE_BYTES)) {
@@ -265,7 +268,7 @@ export function GenerationToolbar({
               type="file"
               ref={fileInputRef}
               className="hidden"
-              accept=".pdf"
+              accept=".pdf,.md,.txt"
               multiple
               onChange={(e) => {
                 const files = Array.from(e.target.files ?? []);
